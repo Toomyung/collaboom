@@ -105,13 +105,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = influencer.id;
       req.session.userType = "influencer";
 
-      return res.json({ 
-        success: true, 
-        influencer: {
-          id: influencer.id,
-          email: influencer.email,
-          name: influencer.name,
+      // Explicitly save session before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session save failed" });
         }
+        return res.json({ 
+          success: true, 
+          influencer: {
+            id: influencer.id,
+            email: influencer.email,
+            name: influencer.name,
+          }
+        });
       });
     } catch (error: any) {
       console.error("Supabase callback error:", error);
@@ -240,7 +247,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = admin.id;
       req.session.userType = "admin";
 
-      return res.json({ success: true });
+      // Explicitly save session before responding
+      req.session.save((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Session save failed" });
+        }
+        return res.json({ success: true });
+      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
