@@ -26,7 +26,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Campaign, ApplicationWithDetails, Influencer } from "@shared/schema";
+import { SiTiktok, SiInstagram } from "react-icons/si";
+import { ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -56,6 +65,7 @@ export default function AdminCampaignDetailPage() {
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set());
   const [showCsvDialog, setShowCsvDialog] = useState(false);
   const [csvContent, setCsvContent] = useState("");
+  const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
@@ -444,14 +454,40 @@ export default function AdminCampaignDetailPage() {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{app.influencer?.name || "Unknown"}</p>
+                              <button
+                                type="button"
+                                className="font-medium text-primary hover:underline cursor-pointer text-left"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (app.influencer) {
+                                    setSelectedInfluencer(app.influencer);
+                                  }
+                                }}
+                                data-testid={`influencer-name-${app.id}`}
+                              >
+                                {app.influencer?.name || "Unknown"}
+                              </button>
                               <p className="text-xs text-muted-foreground">
                                 {app.influencer?.email}
                               </p>
                             </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            @{app.influencer?.tiktokHandle}
+                          <TableCell>
+                            {app.influencer?.tiktokHandle ? (
+                              <a
+                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary hover:underline flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                                data-testid={`tiktok-link-${app.id}`}
+                              >
+                                @{app.influencer.tiktokHandle}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
@@ -691,6 +727,113 @@ user@example.com,1Z999AA10123456784,UPS,2024-01-15,"
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Influencer Detail Sheet */}
+      <Sheet open={!!selectedInfluencer} onOpenChange={(open) => !open && setSelectedInfluencer(null)}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          {selectedInfluencer && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{selectedInfluencer.name || "Influencer Details"}</SheetTitle>
+                <SheetDescription>{selectedInfluencer.email}</SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-6">
+                {/* Social Handles */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground">Social Profiles</h3>
+                  <div className="space-y-2">
+                    {selectedInfluencer.tiktokHandle && (
+                      <a
+                        href={`https://www.tiktok.com/@${selectedInfluencer.tiktokHandle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                        data-testid="drawer-tiktok-link"
+                      >
+                        <SiTiktok className="h-4 w-4" />
+                        @{selectedInfluencer.tiktokHandle}
+                        <ExternalLink className="h-3 w-3 ml-auto" />
+                      </a>
+                    )}
+                    {selectedInfluencer.instagramHandle && (
+                      <a
+                        href={`https://www.instagram.com/${selectedInfluencer.instagramHandle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                        data-testid="drawer-instagram-link"
+                      >
+                        <SiInstagram className="h-4 w-4" />
+                        @{selectedInfluencer.instagramHandle}
+                        <ExternalLink className="h-3 w-3 ml-auto" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm text-muted-foreground">Score</p>
+                        <Star className="h-4 w-4 text-yellow-500" />
+                      </div>
+                      <p className="text-2xl font-bold">{selectedInfluencer.score ?? 0}</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm text-muted-foreground">Penalty</p>
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                      </div>
+                      <p className="text-2xl font-bold">{selectedInfluencer.penalty ?? 0}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Contact Info */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground">Contact</h3>
+                  <div className="text-sm space-y-1">
+                    <p>Phone: {selectedInfluencer.phone || "-"}</p>
+                    <p>PayPal: {selectedInfluencer.paypalEmail || "-"}</p>
+                  </div>
+                </div>
+
+                {/* Shipping Address */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground">Shipping Address</h3>
+                  <p className="text-sm">
+                    {selectedInfluencer.addressLine1 || "No address"}
+                    {selectedInfluencer.addressLine2 && (
+                      <>
+                        <br />
+                        {selectedInfluencer.addressLine2}
+                      </>
+                    )}
+                    {selectedInfluencer.city && (
+                      <>
+                        <br />
+                        {selectedInfluencer.city}, {selectedInfluencer.state} {selectedInfluencer.zipCode}
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {/* View Full Profile Link */}
+                <Link href="/admin/influencers">
+                  <Button variant="outline" className="w-full" data-testid="button-view-all-influencers">
+                    View All Influencers
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </AdminLayout>
   );
 }
