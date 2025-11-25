@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ import {
   Copy,
   Archive,
   MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -42,15 +44,45 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface PaginatedCampaignsResponse {
+  items: Campaign[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+const DEFAULT_PAGE_SIZE = 20;
+
 export default function AdminCampaignListPage() {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize = DEFAULT_PAGE_SIZE;
 
-  const { data: campaigns, isLoading } = useQuery<Campaign[]>({
-    queryKey: ["/api/admin/campaigns"],
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset to first page when search changes
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when status filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  const { data, isLoading } = useQuery<PaginatedCampaignsResponse>({
+    queryKey: ["/api/admin/campaigns", { page, pageSize, search: debouncedSearch, status: statusFilter !== "all" ? statusFilter : undefined }],
     enabled: isAuthenticated && isAdmin,
   });
+
+  const campaigns = data?.items;
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   if (authLoading) {
     return (
@@ -66,15 +98,6 @@ export default function AdminCampaignListPage() {
   if (!isAuthenticated || !isAdmin) {
     return <Redirect to="/admin/login" />;
   }
-
-  const filteredCampaigns = campaigns?.filter((campaign) => {
-    const matchesSearch =
-      !searchQuery ||
-      campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || campaign.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
 
   const getStatusBadge = (status: string) => {
     const configs: Record<string, { label: string; className: string }> = {
@@ -141,7 +164,7 @@ export default function AdminCampaignListPage() {
                   <Skeleton key={i} className="h-12" />
                 ))}
               </div>
-            ) : filteredCampaigns && filteredCampaigns.length > 0 ? (
+            ) : campaigns && campaigns.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -154,7 +177,7 @@ export default function AdminCampaignListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCampaigns.map((campaign) => (
+                  {campaigns.map((campaign) => (
                     <TableRow key={campaign.id} data-testid={`row-campaign-${campaign.id}`}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -230,7 +253,7 @@ export default function AdminCampaignListPage() {
                 </div>
                 <h3 className="text-lg font-medium mb-2">No campaigns found</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchQuery || statusFilter !== "all"
+                  {debouncedSearch || statusFilter !== "all"
                     ? "Try adjusting your filters"
                     : "Create your first campaign to get started"}
                 </p>
@@ -241,6 +264,63 @@ export default function AdminCampaignListPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} campaigns
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                data-testid="button-prev-page"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPage(pageNum)}
+                      className="w-8 h-8 p-0"
+                      data-testid={`button-page-${pageNum}`}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                data-testid="button-next-page"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
