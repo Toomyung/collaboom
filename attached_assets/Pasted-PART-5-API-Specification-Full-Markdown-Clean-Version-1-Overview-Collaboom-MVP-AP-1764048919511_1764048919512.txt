@@ -1,0 +1,349 @@
+PART 5 — API Specification (Full Markdown, Clean Version)
+
+1. Overview
+이 문서는 Collaboom MVP의 모든 API Endpoint(REST 기반) 를 명확히 정의한다.
+ Replit Backend(Express.js 또는 Next.js API Routes) + Supabase SDK를 기준으로 한다.
+원칙:
+모든 Influencer 요청은 Influencer JWT 필요
+
+
+모든 Admin 요청은 Admin JWT 필요
+
+
+API는 서버 사이드에서 Supabase Service Role Key를 사용하여 DB에 접근
+
+
+Influencer가 자신의 계정 외 데이터를 조회하는 것은 금지
+
+
+Admin은 전체 DB 접근 가능
+
+
+
+2. Auth API
+2.1 POST /auth/influencer/login
+Google OAuth → Supabase Auth
+Response:
+200 OK  
+{
+  "user": { ... },
+  "session": { ... }
+}
+
+2.2 POST /auth/admin/login
+Email + Password 로그인
+ (관리자 전용)
+
+3. Influencer API
+3.1 GET /me
+Influencer 본인 프로필 조회.
+Response:
+200 OK
+{
+  id,
+  email,
+  name,
+  tiktok_handle,
+  instagram_handle,
+  score,
+  penalty,
+  restricted,
+  profile_completed
+}
+
+
+3.2 PUT /me
+Influencer 프로필 업데이트.
+Body:
+{
+  name,
+  phone,
+  address_line1,
+  address_line2,
+  city,
+  state,
+  zip_code,
+  paypal_email,
+  tiktok_handle,
+  instagram_handle
+}
+
+로직:
+프로필 완성 기준을 충족하면 profile_completed=true 자동 업데이트
+
+
+TikTok handle 변경 시 경고 문구 표시 (프론트)
+
+
+
+3.3 GET /campaigns
+공개 캠페인 리스트 조회.
+Query:
+category
+
+
+status=active
+
+
+pagination: offset, limit
+
+
+Response:
+[
+  {
+    id,
+    name,
+    brand_name,
+    image_url,
+    category,
+    reward_type,
+    approved_count,
+    inventory,
+    deadline
+  }
+]
+
+
+3.4 GET /campaigns/:campaign_id
+캠페인 상세 정보.
+
+3.5 POST /campaigns/:id/apply
+캠페인 신청.
+Checker:
+profile_completed == true
+
+
+restricted == false
+
+
+campaign.status == active
+
+
+approved_count < inventory
+
+
+application already exists → reject
+
+
+Body: 없음
+Response:
+201 Created  
+{ application_id }
+
+
+3.6 GET /applications
+Influencer 자신의 모든 캠페인 상태 조회.
+Response:
+[
+  {
+    application_id,
+    campaign_id,
+    status,
+    shipped_at,
+    delivered_at,
+    uploaded_at,
+    deadline_missed_at
+  }
+]
+
+
+3.7 POST /applications/:id/cancel
+조건:
+application.status == pending 상태에서만 가능
+
+
+Response:
+200 OK
+
+
+3.8 POST /applications/:id/report-shipping-issue
+Body:
+{
+  message: "package damaged" 
+}
+
+Admin에게 내부 알림 생성.
+
+4. Admin API
+Admin API는 모두 /admin/* prefix 사용.
+ admin JWT 필요.
+
+4.1 Campaigns
+GET /admin/campaigns
+조건: admin only
+ 필터:
+status
+
+
+category
+
+
+POST /admin/campaigns
+캠페인 생성
+PUT /admin/campaigns/:id
+캠페인 수정
+GET /admin/campaigns/:id
+캠페인 상세 관리용 조회
+
+5. Admin — Applicants
+5.1 GET /admin/campaigns/:id/applicants
+columns:
+name
+
+
+email
+
+
+tiktok
+
+
+score
+
+
+penalty
+
+
+applied_at
+
+
+status
+
+
+first_time
+
+
+
+5.2 POST /admin/applications/:id/approve
+로직:
+status = approved
+
+
+approved_at = now
+
+
+campaign.approved_count++
+
+
+email: approved
+
+
+
+5.3 POST /admin/applications/:id/reject
+로직:
+status = rejected
+
+
+rejection email 발송
+
+
+
+5.4 POST /admin/applications/bulk-approve
+Body:
+{
+  "application_ids": [ ... ]
+}
+
+
+6. Admin — Shipping
+6.1 POST /admin/campaigns/:id/shipping/upload-csv
+CSV -> JSON 변환 후
+ email 기준 매칭 → shipping row 생성/업데이트.
+Shipped email 발송.
+
+6.2 POST /admin/shipping/:id/mark-delivered
+Delivered email 발송.
+
+7. Admin — Upload Verification
+7.1 POST /admin/uploads/:application_id/mark-uploaded
+로직:
+uploads.status = uploaded
+
+
+uploaded_at = now
+
+
+
+7.2 POST /admin/uploads/:application_id/mark-missed
+로직:
+status = deadline_missed
+
+
+penalty +1
+
+
+email 발송
+
+
+
+7.3 POST /admin/uploads/:application_id/verify
+로직:
+status = verified
+
+
+score + (rule)
+
+
+completed 처리
+
+
+
+8. Admin — Score / Penalty
+8.1 POST /admin/influencers/:id/score
+Body:
+{
+  delta: 10,
+  reason: "admin_manual"
+}
+
+
+8.2 POST /admin/influencers/:id/penalty
+Body:
+{
+  delta: 2,
+  reason: "admin_manual"
+}
+
+자동 restricted:
+if penalty >= 5 → restricted=true
+
+
+8.3 POST /admin/influencers/:id/unlock
+Admin이 penalty를 4 등으로 조정 → restricted=false
+
+9. Notes
+9.1 POST /admin/notes
+Body:
+{
+  influencer_id,
+  campaign_id,
+  application_id,
+  note
+}
+
+
+10. Notifications
+(Part 6에서 상세 정의)
+Admin 또는 시스템 이벤트 발생 시:
+Approved → email
+
+
+Rejected → email
+
+
+Shipped → email
+
+
+Delivered → email
+
+
+Deadline 48h → email
+
+
+Deadline Missed → email
+
+
+Restricted → email
+
+
+API는 notification 기록을 notifications 테이블에 남긴다.
+

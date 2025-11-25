@@ -1,0 +1,103 @@
+Project name: Collaboom – Influencer Gifting Campaign Hub (MVP)
+
+Please read all the pasted PRD docs in this workspace (Collaboom PRD v1, PART-1~7) and use them as the product spec.
+
+Goal:
+Create the full project SKELETON for the Collaboom MVP as a web app. This version should NOT implement business logic yet – only the architecture, routing, layouts, and basic UI components so we can wire features later.
+
+Tech stack:
+- React 18
+- TypeScript
+- Vite
+- React Router
+- Tailwind CSS
+- shadcn/ui
+- Supabase (Auth + Postgres) – Google OAuth for influencers
+
+Main requirements:
+
+1) Folder structure (create these folders and placeholder files):
+
+src/
+  main.tsx
+  App.tsx
+
+  routes/
+    influencer/
+      LandingPage.tsx
+      CampaignListPage.tsx
+      CampaignDetailPage.tsx
+      InfluencerDashboardPage.tsx
+      ProfilePage.tsx
+
+    admin/
+      AdminDashboardPage.tsx
+      AdminCampaignListPage.tsx
+      AdminCampaignDetailPage.tsx
+      AdminApplicantsTab.tsx
+      AdminShippingTab.tsx
+      AdminUploadsTab.tsx
+      AdminNotesTab.tsx
+
+  components/
+    layout/
+      MainLayout.tsx
+      InfluencerLayout.tsx
+      AdminLayout.tsx
+
+    ui/
+      CampaignCard.tsx
+      Badge.tsx
+      Button.tsx
+      Tabs.tsx
+      Table.tsx
+      Modal.tsx
+      Toast.tsx
+
+  hooks/
+    useAuth.ts
+    useInfluencerProfile.ts
+    useCampaigns.ts
+    useAdminCampaigns.ts
+
+  lib/
+    supabaseClient.ts
+    auth.ts
+
+  styles/
+    globals.css
+
+  config/
+    routes.ts
+
+2) Tailwind + shadcn/ui:
+- Install and configure Tailwind.
+- Set brand color to #8a01ff.
+- Install and initialize shadcn/ui.
+- Prepare base UI components: Button, Card, Tabs, Table, Modal, Input, Badge, Toast.
+
+3) Supabase client:
+- Create supabaseClient.ts using VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+- Add a small auth helper for Google login (influencer side), but just as a placeholder function for now.
+
+4) Routing:
+- Use react-router-dom.
+- Wire routes:
+  - "/" → LandingPage
+  - "/campaigns" → CampaignListPage
+  - "/campaigns/:id" → CampaignDetailPage
+  - "/dashboard" → InfluencerDashboardPage
+  - "/profile" → ProfilePage
+  - "/admin" → AdminDashboardPage
+  - "/admin/campaigns" → AdminCampaignListPage
+  - "/admin/campaigns/:id" → AdminCampaignDetailPage
+
+5) Page content (for now):
+- Each page can return a simple layout with the page title (e.g. “Influencer Dashboard”), so we know routing works.
+- Layout components (MainLayout / InfluencerLayout / AdminLayout) should exist and wrap the pages with a basic header/nav.
+
+6) Important:
+- Do NOT implement database reads/writes or business logic yet.
+- Focus only on correct file structure, imports, routing, Tailwind + shadcn setup, and a clean modern layout skeleton using brand color #8a01ff.
+
+This project should run successfully after `npm install` and `npm run dev`, and be ready for me to ask you to implement the detailed Collaboom features from the PRD.

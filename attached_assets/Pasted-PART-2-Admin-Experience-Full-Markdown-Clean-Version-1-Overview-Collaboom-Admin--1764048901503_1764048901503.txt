@@ -1,0 +1,560 @@
+PART 2 — Admin Experience (Full Markdown, Clean Version)
+
+1. Overview
+이 섹션은 Collaboom 플랫폼의 Admin(TooMyung 내부 운영팀) 이 사용하는 모든 기능을 정의한다.
+ Admin의 핵심 목표는 다음과 같다:
+대규모 인플루언서(100~500명 이상)의 신청/승인을 효율적으로 처리
+
+
+배송 CSV 매칭을 정확히 처리
+
+
+업로드 검증을 명확하게 수행
+
+
+Score / Penalty를 운영 정책에 따라 부여
+
+
+각 인플루언서의 상세 기록을 남기고 관리
+
+
+전체 캠페인의 현황을 빠르게 모니터링
+
+
+
+2. Admin Authentication
+인증 방식
+Supabase Auth (Email/Password)
+
+
+Only role = "admin" users have access to /admin/* routes
+
+
+
+3. Admin Dashboard (Home)
+Admin 로그인 후 홈 화면에는 운영 현황을 요약한 지표가 나타난다.
+Summary Cards
+Active Campaign Count
+
+
+Pending Applicants Count
+
+
+Shipping Pending Count
+
+
+Upload Verification Pending Count
+
+
+검색창
+Global Search
+
+
+Name
+
+
+Email
+
+
+TikTok handle
+
+
+검색 시 Influencer Detail Drawer가 열릴 수 있음
+
+
+
+4. Campaign Management
+4.1 Campaign List Page
+Table Columns
+Campaign Name
+
+
+Status
+
+
+draft
+
+
+active
+
+
+full
+
+
+closed
+
+
+archived
+
+
+Approved / Inventory
+
+
+Deadline (PST)
+
+
+Applicants count
+
+
+Action buttons
+
+
+View
+
+
+Edit
+
+
+Duplicate
+
+
+Archive
+
+
+정렬 옵션
+Deadline 오름/내림차순
+
+
+Status
+
+
+Applicants count
+
+
+필터 옵션
+Active
+
+
+Draft
+
+
+Closed
+
+
+Archived
+
+
+
+4.2 Campaign Creation / Edit Page
+입력 필드 (모두 확정)
+Campaign Name
+
+
+Brand Name
+
+
+Category (Beauty / Food / Lifestyle)
+
+
+Reward Type (gift / 20usd / 50usd)
+
+
+Inventory (integer)
+
+
+Campaign Image URL
+
+
+Amazon Link
+
+
+Guidelines Summary (5~10줄 요약)
+
+
+Full Guidelines URL (Notion link)
+
+
+Required Hashtags (array/list)
+
+
+Required Mentions (array/list)
+
+
+Deadline (timestamp, PST)
+
+
+Status:
+
+
+draft
+
+
+active
+
+
+버튼
+Save As Draft
+
+
+Publish (status = active)
+
+
+Archive
+
+
+Validation Rules
+Name, Category, Reward, Inventory, Deadline, Guidelines summary must not be empty
+
+
+Inventory must be >= 0
+
+
+Deadline must be a future date
+
+
+
+5. Campaign Detail — Admin View
+Campaign Detail 페이지는 5개의 탭으로 구성된다.
+Overview
+Applicants
+Shipping
+Uploads
+Notes
+
+
+6. Applicants Tab (Core Functionality)
+목적
+인플루언서 신청자 확인
+
+
+승인 또는 거절 처리
+
+
+Bulk approve로 시간 절약
+
+
+Score 확인
+
+
+Table Columns
+Checkbox (bulk actions)
+
+
+Name
+
+
+Email
+
+
+TikTok handle
+
+
+Score
+
+
+Penalty count (optional 표시)
+
+
+First-time 여부
+
+
+Applied_at timestamp
+
+
+Status (pending / approved / rejected / cancelled)
+
+
+Approve button
+
+
+Reject button
+
+
+
+6.1 Actions
+Approve (Single)
+Row status → approved
+
+
+applications.approved_at timestamp 저장
+
+
+Influencer에게 승인 이메일 발송
+
+
+Approved count 증가 시 inventory와 비교
+
+
+approved_count >= inventory 이면 status = full
+
+
+Reject (Single)
+Row status → rejected
+
+
+Influencer에게 rejection email 발송
+
+
+Bulk Approve
+체크된 모든 pending row 승인
+
+
+Score를 보면서 빠르게 승인 가능
+
+
+inventory 초과될 경우 자동으로 full 상태로 전환
+
+
+Bulk Reject
+체크된 모든 pending row 거절
+
+
+
+7. Shipping Tab
+CSV 업로드를 통해 shipping 정보를 업데이트한다.
+7.1 CSV 규칙
+필수 컬럼
+email
+
+
+tracking_number
+
+
+courier
+
+
+shipped_date
+
+
+delivered_date (optional)
+
+
+매칭 규칙
+email 매칭을 우선
+
+
+매칭 실패 시 “unmatched list”를 Admin에게 보여줌
+
+
+Admin이 직접 수동 처리 가능
+
+
+
+7.2 Shipping Table (Admin UI)
+Columns:
+Name
+
+
+Email
+
+
+TikTok handle
+
+
+Status (pending / shipped / delivered)
+
+
+Tracking number
+
+
+Courier
+
+
+Shipped_at
+
+
+Delivered_at
+
+
+Actions
+
+
+Mark Delivered
+
+
+Edit Tracking
+
+
+
+8. Uploads Tab
+Admin은 인플루언서 업로드 상태를 수동 검증한다.
+Table Columns
+Name
+
+
+TikTok handle
+
+
+Delivered_at
+
+
+Deadline
+
+
+Upload status
+
+
+not_uploaded
+
+
+uploaded
+
+
+deadline_missed
+
+
+Video URL (if influencer provided, optional)
+
+
+Actions
+
+
+Mark Uploaded
+
+
+Mark Missed
+
+
+Manual Score Adjustment
+
+
+Manual Penalty Adjustment
+
+
+Rules
+Uploaded 시 Score 추가
+
+
+Deadline 지나고 miss 처리 시 Penalty 추가
+
+
+
+9. Notes Tab
+Admin이 특정 인플루언서에 대한 내부 기록을 남겨 관리한다.
+기능:
+Add new note
+
+
+Note list view
+
+
+date
+
+
+admin email
+
+
+note text
+
+
+이 필드는 인플루언서에게 공개되지 않는다.
+
+10. Influencer Detail Drawer
+Admin이 Applicants table 또는 global search에서 Name 클릭 시 drawer 오픈.
+표시 정보:
+Name
+
+
+Email
+
+
+TikTok handle
+
+
+Instagram (optional)
+
+
+Address
+
+
+PayPal email
+
+
+Score summary
+
+
+Penalty summary
+
+
+Current campaigns
+
+
+Past campaigns
+
+
+Notes 리스트
+
+
+Admin Tools:
+Adjust Score (1~10)
+
+
+Add Penalty (1~5)
+
+
+Remove Penalty
+
+
+Lock Account (restricted=true)
+
+
+Unlock Account
+
+
+Add Note
+
+
+
+11. Admin Edge Cases
+Inventory exceeded
+Bulk approve 시 자동 조정
+
+
+초과 승인 방지 로직 적용
+
+
+CSV mismatch
+Unmatched list UI 제공
+
+
+Admin이 직접 수동 입력 가능
+
+
+Duplicate Applications
+Unique constraint: campaign_id + influencer_id
+
+
+중복 신청 시 apply 버튼 숨김 처리됨
+
+
+Influencer restricted 상태
+Admin drawer에서 manual unlock 가능
+
+
+
+12. Admin-Influencer Communication
+Admin이 사용하는 자동화된 이메일 트리거:
+Application Approved
+
+
+Application Rejected
+
+
+Shipping Shipped
+
+
+Shipping Delivered
+
+
+Deadline 48h reminder
+
+
+이 부분은 Part 6 – Notification Logic에서 상세히 정의됨.
+
+13. Admin Workflow Summary
+1. Campaign 생성
+Admin → Create Campaign → Publish
+2. Influencer 지원
+Influencer → Pending 상태로 등록
+3. 승인
+Admin Approve → email send → row = approved
+4. 배송
+Admin uploads CSV → shipped/update delivered
+5. 업로드 검증
+Admin manually marks uploaded or missed
+6. Score/Penalty 반영
+Rules에 따라 자동 또는 manual 적용
+7. Notes
+Admin adds operational detail for future reference
+
+

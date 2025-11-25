@@ -1,0 +1,385 @@
+PART 4 — Database Schema (Supabase)
+이 섹션은 Collaboom MVP에서 사용할 Supabase(Postgres) 데이터베이스 스키마를 정의한다.
+ 모든 테이블/컬럼/관계는 앞에서 정의한 Influencer/Admin/State Machine 로직과 일치하도록 설계되었다.
+Replit에서 Supabase를 세팅할 때, 이 스키마를 기준으로 마이그레이션을 생성하면 된다.
+
+1. 설계 원칙
+Supabase auth.users 는 인증 전용으로 사용한다.
+
+
+비즈니스 로직은 별도 테이블(influencers, campaigns, applications 등)에 저장한다.
+
+
+Influencer의 현재 Score/Penalty는 influencers 테이블에 저장하고,
+ 이력은 score_events, penalty_events 에 기록한다.
+
+
+Application을 기준으로 Shipping, Upload, Score/Penalty가 모두 연결된다.
+
+
+모든 테이블에는 created_at, updated_at 을 포함한다 (MVP에서는 updated_at optional).
+
+
+
+2. Naming / 타입 컨벤션
+PK: id (uuid, default gen_random_uuid() or uuid_generate_v4())
+
+
+FK: {entity}_id (uuid)
+
+
+시간: timestamptz
+
+
+상태: text 또는 enum (Supabase에서는 text + check constraint로 시작해도 됨)
+
+
+boolean 컬럼은 is_, has_, *_completed 형태
+
+
+
+3. 테이블 정의
+아래는 핵심 테이블과 컬럼 정의이다.
+
+3.1 admins
+Admin 사용자 정보.
+Table: admins
+
+id                uuid PK
+auth_user_id      uuid UNIQUE NOT NULL  -- references auth.users(id)
+email             text UNIQUE NOT NULL
+name              text
+role              text DEFAULT 'admin'  -- e.g. 'admin', 'super_admin'
+created_at        timestamptz DEFAULT now()
+updated_at        timestamptz DEFAULT now()
+
+
+3.2 influencers
+Influencer 기본 계정 + 현재 프로필 정보.
+Table: influencers
+
+id                 uuid PK
+auth_user_id       uuid UNIQUE NOT NULL         -- references auth.users(id)
+email              text UNIQUE NOT NULL
+name               text
+tiktok_handle      text UNIQUE NOT NULL
+instagram_handle   text
+phone              text
+address_line1      text
+address_line2      text
+city               text
+state              text
+zip_code           text
+country            text DEFAULT 'United States'
+paypal_email       text
+profile_completed  boolean DEFAULT false
+
+score              integer DEFAULT 0            -- 0 ~ 100
+penalty            integer DEFAULT 0            -- 누적 penalty
+restricted         boolean DEFAULT false        -- penalty >= 5 또는 manual lock
+
+created_at         timestamptz DEFAULT now()
+updated_at         timestamptz DEFAULT now()
+
+인덱스:
+UNIQUE (tiktok_handle)
+
+
+INDEX (email)
+
+
+INDEX (restricted)
+
+
+
+3.3 campaigns
+캠페인 기본 정보.
+Table: campaigns
+
+id                   uuid PK
+name                 text NOT NULL
+brand_name           text NOT NULL
+
+category             text NOT NULL      -- 'beauty' | 'food' | 'lifestyle'
+reward_type          text NOT NULL      -- 'gift' | '20usd' | '50usd'
+
+inventory            integer NOT NULL   -- 모집 목표 인원 수
+approved_count       integer DEFAULT 0  -- 캐시용 (approved applications 수)
+
+image_url            text
+amazon_url           text
+
+guidelines_summary   text               -- 5~10줄 요약
+guidelines_url       text               -- Notion link
+
+required_hashtags    text[]             -- e.g. ['#kbeauty', '#brandname']
+required_mentions    text[]             -- e.g. ['@brand_official']
+
+deadline             timestamptz NOT NULL   -- PST 기준으로 해석
+status               text NOT NULL          -- 'draft' | 'active' | 'full' | 'closed' | 'archived'
+
+created_by_admin_id  uuid                  -- references admins(id)
+created_at           timestamptz DEFAULT now()
+updated_at           timestamptz DEFAULT now()
+
+인덱스:
+INDEX (status)
+
+
+INDEX (category)
+
+
+INDEX (deadline)
+
+
+
+3.4 applications
+인플루언서가 캠페인에 지원하면 생성되는 엔티티.
+Table: applications
+
+id                uuid PK
+campaign_id       uuid NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE
+influencer_id     uuid NOT NULL REFERENCES influencers(id) ON DELETE CASCADE
+
+status            text NOT NULL      -- 'pending' | 'approved' | 'rejected' | 'shipped' | 'delivered' | 'uploaded' | 'deadline_missed' | 'completed'
+
+applied_at        timestamptz DEFAULT now()
+approved_at       timestamptz
+rejected_at       timestamptz
+shipped_at        timestamptz
+delivered_at      timestamptz
+uploaded_at       timestamptz
+deadline_missed_at timestamptz
+
+first_time        boolean DEFAULT false  -- 첫 승인인지 여부 (Score Logic에 사용)
+notes_internal    text                   -- 간단한 메모용 (선택)
+
+created_at        timestamptz DEFAULT now()
+updated_at        timestamptz DEFAULT now()
+
+제약:
+UNIQUE (campaign_id, influencer_id)
+ → 같은 캠페인에 두 번 지원 불가.
+
+
+인덱스:
+INDEX (campaign_id, status)
+
+
+INDEX (influencer_id, status)
+
+
+
+3.5 shipping
+배송 관련 정보.
+ 각 application별 배송 정보 1개.
+Table: shipping
+
+id                uuid PK
+application_id    uuid UNIQUE NOT NULL REFERENCES applications(id) ON DELETE CASCADE
+
+status            text NOT NULL        -- 'pending' | 'shipped' | 'delivered'
+
+tracking_number   text
+courier           text                 -- 'UPS', 'USPS', 'FedEx', 'AMZN_US', etc
+
+shipped_at        timestamptz
+delivered_at      timestamptz
+
+raw_csv_row       jsonb                -- optional, CSV 원본 저장
+
+created_at        timestamptz DEFAULT now()
+updated_at        timestamptz DEFAULT now()
+
+인덱스:
+INDEX (status)
+
+
+INDEX (tracking_number)
+
+
+
+3.6 uploads
+업로드 검증 정보.
+ Application당 최대 1개 row.
+Table: uploads
+
+id                 uuid PK
+application_id     uuid UNIQUE NOT NULL REFERENCES applications(id) ON DELETE CASCADE
+
+status             text NOT NULL        -- 'not_uploaded' | 'uploaded' | 'verified' | 'missed'
+
+tiktok_video_url   text
+detected_at        timestamptz          -- (추후 자동 감지 시 사용)
+verified_at        timestamptz          -- Admin이 승인한 시점
+
+created_at         timestamptz DEFAULT now()
+updated_at         timestamptz DEFAULT now()
+
+인덱스:
+INDEX (status)
+
+
+INDEX (application_id)
+
+
+
+3.7 score_events
+Score 변경 이력 기록용.
+ 현재 Score는 influencers.score 에 저장, 이 테이블은 어떻게 변했는지 추적.
+Table: score_events
+
+id                uuid PK
+influencer_id     uuid NOT NULL REFERENCES influencers(id) ON DELETE CASCADE
+campaign_id       uuid REFERENCES campaigns(id)
+application_id    uuid REFERENCES applications(id)
+
+delta             integer NOT NULL          -- 예: +10, +5
+reason            text NOT NULL            -- 'first_upload', 'upload_success', 'streak_3', 'brand_feedback', 'admin_manual'
+
+created_by_admin_id uuid                   -- admin이 수동으로 조정했을 경우
+created_at          timestamptz DEFAULT now()
+
+인덱스:
+INDEX (influencer_id)
+
+
+INDEX (campaign_id)
+
+
+
+3.8 penalty_events
+Penalty 변경 이력.
+Table: penalty_events
+
+id                uuid PK
+influencer_id     uuid NOT NULL REFERENCES influencers(id) ON DELETE CASCADE
+campaign_id       uuid REFERENCES campaigns(id)
+application_id    uuid REFERENCES applications(id)
+
+delta             integer NOT NULL          -- 예: +1, +5, -1
+reason            text NOT NULL            -- 'deadline_missed', 'first_ghosting', 'admin_manual', 'rollback'
+
+created_by_admin_id uuid
+created_at          timestamptz DEFAULT now()
+
+인덱스:
+INDEX (influencer_id)
+
+
+INDEX (campaign_id)
+
+
+
+3.9 admin_notes
+Admin이 남기는 내부 메모.
+Table: admin_notes
+
+id                uuid PK
+influencer_id     uuid NOT NULL REFERENCES influencers(id) ON DELETE CASCADE
+campaign_id       uuid REFERENCES campaigns(id)
+application_id    uuid REFERENCES applications(id)
+
+admin_id          uuid NOT NULL REFERENCES admins(id) ON DELETE SET NULL
+note              text NOT NULL
+
+created_at        timestamptz DEFAULT now()
+
+인덱스:
+INDEX (influencer_id)
+
+
+INDEX (campaign_id)
+
+
+
+3.10 notifications
+발송된(또는 발송 예정인) Notification 내역을 저장한다.
+ 초기에는 Email만 사용.
+Table: notifications
+
+id                uuid PK
+influencer_id     uuid NOT NULL REFERENCES influencers(id) ON DELETE CASCADE
+campaign_id       uuid REFERENCES campaigns(id)
+application_id    uuid REFERENCES applications(id)
+
+type              text NOT NULL         -- 'welcome', 'approved', 'rejected', 'shipping_shipped', 'shipping_delivered', 'deadline_48h', 'deadline_missed', 'account_restricted'
+channel           text NOT NULL         -- 'email'
+
+payload           jsonb                 -- subject, body, variables 등
+status            text NOT NULL DEFAULT 'sent'  -- 'queued' | 'sent' | 'failed'
+error_message     text
+
+sent_at           timestamptz DEFAULT now()
+created_at        timestamptz DEFAULT now()
+
+인덱스:
+INDEX (influencer_id, type)
+
+
+INDEX (campaign_id, type)
+
+
+
+4. 관계 요약 (ER 구조)
+텍스트 기반 ER 요약:
+auth.users (Supabase)
+ ↕ 1:1
+
+
+influencers (auth_user_id)
+
+
+influencers
+ 1:N applications
+ 1:N score_events
+ 1:N penalty_events
+ 1:N admin_notes
+ 1:N notifications
+
+
+campaigns
+ 1:N applications
+ 1:N score_events
+ 1:N penalty_events
+ 1:N admin_notes
+ 1:N notifications
+
+
+applications
+ 1:1 shipping
+ 1:1 uploads
+ 1:N score_events
+ 1:N penalty_events
+ 1:N admin_notes
+ 1:N notifications
+
+
+admins
+ 1:N admin_notes
+ 1:N score_events (created_by_admin_id)
+ 1:N penalty_events (created_by_admin_id)
+
+
+
+5. Supabase 설정 시 참고 사항
+auth.users 와 influencers 는 auth_user_id로 1:1 매핑한다.
+
+
+Row Level Security(RLS)는 MVP 초기에는 비활성화하거나,
+ 우선 admin에서 관리 + 서버 API에서만 접근하는 구조로 시작해도 된다.
+
+
+추후 RLS를 강화할 때:
+
+
+Influencer는 자신의 row + 자신의 applications만 조회 가능
+
+
+Admin은 모든 row 접근 가능
+
+
+
+여기까지가 Supabase 기반 Collaboom DB Schema의 확정 버전이다.
+ 이 스키마를 기준으로 Replit에서 마이그레이션 스크립트나 Supabase SQL 에디터에 그대로 입력하면 된다.
+

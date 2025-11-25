@@ -1,0 +1,407 @@
+Collaboom MVP – 전체 서머리 & 방향성 메모
+1. 우리가 만들고 싶은 것 (방향성)
+1) 본질적인 목적
+Collaboom은 “무가/유가 시딩 + UGC”를 한 곳에서 관리하는 인플루언서 전용 허브가 최종 목표인데,
+
+
+이번 MVP는 그중에서도 **“무가 시딩 캠페인 관리 + 인플루언서 캠페인 현황 대시보드”**에 집중한다.
+
+
+특히 지금 가장 큰 Pain Point인:
+
+
+인플루언서가 여러 캠페인을 동시에 진행하면서, 어떤 브랜드/캠페인이 어디까지 진행됐는지 관리 안 되는 문제
+
+
+계속 반복해서 주소·전화번호·PayPal 같은 정보를 구글폼에 써야 하는 비효율
+ 를 Collaboom이 한 번에 해결해 주는 게 목표다.
+
+
+정리하면:
+“인플루언서들이 여러 시딩 캠페인을 ‘한 계정, 한 대시보드’에서 관리할 수 있게 해주고,
+ Toomyung(우리)은 그 뒤에서 전체 캠페인을 안정적으로 운영·검수·기록할 수 있는 내부 툴을 가진다.”
+
+2) 사용자 관점 방향 (Influencer)
+이 서비스는 브랜드용 SaaS가 아니라 인플루언서 중심이다.
+
+
+인플루언서 입장에서 Collaboom은:
+
+
+내가 어떤 캠페인에 지원했고,
+
+
+어느 캠페인은 승인됐고,
+
+
+배송은 어디까지 왔고,
+
+
+업로드를 했는지/안 했는지,
+
+
+앞으로 어떤 캠페인이 열려 있는지
+ 를 한 번에 관리할 수 있는 “캠페인 허브”다.
+
+
+초기에는 푸시 알림, 인앱 노티 같은 건 최소화하고,
+
+
+“이메일 + 인플루언서 대시보드” 조합으로만 운영한다.
+
+
+가입도 복잡하게 안 간다:
+
+
+오직 Google 로그인만 허용
+
+
+가입 후 프로필을 완성하지 않으면 캠페인 지원 불가
+
+
+한 번 프로필을 채워 두면, 그 다음부터는 폼 반복 작성 없이 캠페인만 골라서 지원
+
+
+
+3) 운영 관점 방향 (Admin / Toomyung)
+Admin(=우리 팀)은:
+
+
+구글폼 + 스프레드시트 + 수동 메모 형태로 관리하던 것을,
+
+
+Collaboom Admin 대시보드에서 한 번에 관리하는 방향.
+
+
+기본 원칙:
+
+
+브랜드는 이 시스템에 직접 들어오지 않는다
+ (캠페인 생성은 Admin이 직접 입력)
+
+
+인플루언서의 미국 거주 여부, 팔로워 수 1,000 이상 여부, 콘텐츠 핏 등은
+ 항상 Admin이 수동 검수한다.
+
+
+자동화는 보조 도구일 뿐, “마지막 판단은 사람(Admin)”이라는 구조를 유지.
+
+
+
+2. 시스템 구조 요약
+1) Influencer 측 핵심 플로우
+Google 로그인
+
+
+Onboarding/Profile 완성 (주소, PayPal, TikTok handle 등)
+
+
+Campaign 리스트 탐색 (카테고리 필터: 뷰티·푸드·라이프스타일)
+
+
+Campaign 상세 → Apply (주소 더블체크 팝업)
+
+
+각 캠페인별 진행 상황은 Dashboard에서 탭별로 확인:
+
+
+Pending / Approved / Shipping / Delivered / Uploaded / Deadline Missed / Rejected
+
+
+Score(0~100) / Penalty(내부적으로 누적) 구조로 “좋은 행동”은 보상, “노쇼/고스팅”은 제한.
+
+
+포인트:
+Profile이 완성되기 전에는 절대 Apply 못 한다.
+
+
+한 캠페인에 한 번만 지원 가능 (campaign_id + influencer_id unique).
+
+
+첫 번째 캠페인에서 고스팅하면 바로 강하게 걸린다(Abuse prevention).
+
+
+
+2) Admin 측 핵심 플로우
+Admin 로그인
+
+
+Campaign 생성 (카테고리, Reward, Inventory, 데드라인, 요약 가이드 등 입력)
+
+
+Influencer 지원 접수 → Applicants 탭에서 카드가 아닌 **테이블(엑셀 스타일)**로 관리
+
+
+개별 또는 Bulk Approve/Reject
+
+
+배송 CSV 업로드로 Shipping 상태 일괄 업데이트 (email 기준 매칭)
+
+
+배송 완료 후, Admin이 업로드 여부 직접 확인
+ (Apify 등 자동감지는 내부적으로 써도, 인플루언서에겐 “우리가 직접 확인한다”는 톤 유지)
+
+
+Deadline Miss / 업로드 완료 여부에 따라 Score / Penalty 조정
+
+
+필요시 Influencer Detail Drawer에서
+
+
+Score 수동 조정
+
+
+Penalty 수동 조정
+
+
+Account lock/unlock
+
+
+내부 메모(admin_notes) 기록
+
+
+
+3) State / DB / API 요약
+State Machine:
+
+
+Influencer: uninitialized → active → restricted
+
+
+Campaign: draft → active → full → closed → archived
+
+
+Application: pending → approved → shipped → delivered → uploaded → completed / deadline_missed / rejected
+
+
+DB (Supabase):
+
+
+influencers / campaigns / applications / shipping / uploads /
+ score_events / penalty_events / admin_notes / notifications
+
+
+API:
+
+
+Influencer:
+
+
+/me, /campaigns, /campaigns/:id, /campaigns/:id/apply, /applications, /applications/:id/cancel, /applications/:id/report-shipping-issue
+
+
+Admin:
+
+
+/admin/campaigns, /admin/campaigns/:id, /admin/applications/:id/approve, /admin/.../reject, /admin/.../bulk-approve, /admin/.../shipping/upload-csv, /admin/uploads/:application_id/*, /admin/influencers/:id/score, /admin/influencers/:id/penalty, /admin/influencers/:id/unlock, /admin/notes
+
+
+
+3. 하고 싶은 방향 (철학/톤)
+인플루언서를 ‘관리 대상’이 아니라 ‘파트너’로 본다.
+
+
+Score / Penalty는 인플루언서를 떨어뜨리기 위한 도구가 아니라,
+ “제대로 해준 사람을 더 잘 챙기기 위한 구조”로 설계해야 한다.
+
+
+메일/대시보드 문구는 항상 부드럽고 투명하게, “이유 + 선택지”를 함께 준다.
+
+
+최초 버전에서는 ‘자동화 욕심’을 최대한 참는다.
+
+
+Apify/스크래핑 기반 100% 자동 판정은 나중 문제.
+
+
+일단은:
+
+
+배송 CSV 업로드
+
+
+Admin이 실제 계정 들어가서 업로드 체크
+
+
+Score/Penalty 반영
+ 구조로 가되,
+
+
+나중에 자동 도구를 붙여도 PRD/DB 구조를 바꿀 필요 없도록 설계.
+
+
+모든 중요한 판단에는 “사유(explanation)”가 따라야 한다.
+
+
+Penalty를 줬다면: 어떤 캠페인 때문에, 무엇 때문에인지 이벤트 로그에 남기고,
+
+
+Restricted 상태라면: 대시보드와 이메일에서 이유와 해제 방법을 안내한다.
+
+
+브랜드/광고주를 위해서 결국 중요한 건 “신뢰할 수 있는 운영 기록”이다.
+
+
+누가 언제 지원했는지,
+
+
+언제 승인했는지,
+
+
+언제 제품이 나갔고, 도착했고,
+
+
+언제까지 업로드하기로 했는지,
+
+
+실제로 했는지/안 했는지,
+
+
+안 했다면 어떤 조치를 했는지
+ 를 DB와 Admin UI에 명확히 남기는 것이 나중에 100억 매출로 가는 핵심 기반이다.
+
+
+
+4. 주의해야 할 점(리스크 / 함정 포인트)
+1) Penalty / Restriction 관련
+첫 캠페인에서 고스팅 시 바로 Penalty +5, 계정 Lock → 이건 아주 강한 정책이다.
+
+
+장점: 악성 유저를 초기에 걸러낼 수 있다.
+
+
+단점: 의사소통 실수/오해가 생기면 꽤 크게 반발할 수 있다.
+
+
+그래서 반드시 지켜야 할 것:
+
+
+데드라인 전 리마인더(최소 48시간 전) 한 번은 보내기
+
+
+데드라인 Miss 후 Penalty 적용 시,
+
+
+“어떤 캠페인 때문인지”
+
+
+“이의제기가 가능한지”
+ 를 이메일과 Dashboard에서 명확히 알려줘야 한다.
+
+
+2) Score 노출 방식
+Admin 쪽에서는 Score / Penalty 모두 숫자 그대로 관리해도 되지만,
+
+
+Influencer에게는:
+
+
+Score(0~100)는 보여줘도 OK
+
+
+Penalty “개수”를 그대로 노출하면 방어적이 될 수 있으니,
+ 표현을 조심해야 한다.
+
+
+Score/Penalty는 “네가 잘하면 더 좋은 기회를 줄게”를 전달하는 용도로 쓰되,
+ “우리가 널 평가하고 있다”는 느낌이 너무 강해지지 않게 주의.
+
+
+3) TikTok handle unique 정책
+TikTok handle이 Unique라서:
+
+
+같은 핸들을 여러 Google 계정으로 등록 시도하면 “이미 등록된 계정” 오류 노출.
+
+
+장점: 가짜 계정/버너 계정 남발 방지.
+
+
+단점: 인플루언서가 로그인 이메일을 바꾸고 싶을 때 막힌다는 느낌이 들 수 있음.
+
+
+앞으로:
+
+
+“핸들 변경 시, 꼭 여기서도 같이 바꿔줘야 한다”는 안내를 Profile/FAQ에 강조.
+
+
+하나의 핸들은 하나의 Collaboom 계정과만 연결된다는 정책을 PRD/서비스 정책으로 명확히 해 두기.
+
+
+4) CSV 배송 매칭
+이메일 기준 매칭은 가장 현실적이고 자동화에 유리하지만,
+
+
+표기 오류, 스펠링 차이, 대소문자 차이 등으로 인한 미매칭이 발생할 수 있다.
+
+
+그래서 꼭 필요한 것:
+
+
+Unmatched 리스트 UI (Admin이 직접 확인/수정할 수 있어야 함).
+
+
+“CSV 업로드를 믿고 그대로 간다”가 아니라,
+
+
+항상 눈으로 최종 sanity check를 할 수 있는 구조.
+
+
+5) 타임존
+모든 데드라인은 PST 기준으로 정한다.
+
+
+한국/미국/캐나다 등 여러 시간대가 섞여 있어서,
+
+
+“날짜만 적어놓으면 사고 난다” → PRD에 이미 PST 표기 명시.
+
+
+인플루언서에게 나가는 모든 메일/페이지에도:
+
+
+“Deadline: November 23, 11:59 PM (PST)” 식으로 항상 타임존을 같이 표시해야 한다.
+
+
+6) 이메일 남발 / 스팸 이슈
+인플루언서가 가장 싫어하는 것 중 하나가 스팸성 리마인더다.
+
+
+그래서:
+
+
+Apply 직후 “신청 접수 메일”은 일부러 생략
+
+
+Approved / Rejected / Shipped / Delivered / 48h Reminder 정도로 최소화
+
+
+나중에 스팸 필터 이슈가 생기면:
+
+
+제목/본문의 스팸 키워드,
+
+
+너무 과한 이모지/링크
+ 를 피하는 방향으로 조정해야 한다.
+
+
+7) “우리가 스캔한다”는 표현 주의
+내부적으로 Apify/스크래핑을 쓰더라도,
+
+
+인플루언서에게는 “우리가 계정을 매일 크롤링해서 감시한다”는 느낌을 주면 안 된다.
+
+
+플랫폼 톤:
+
+
+“우리가 실제로 영상을 하나씩 보고 확인한다”
+
+
+“혹시 시스템이 놓칠 수 있으니, 문제가 있으면 링크를 보내달라”
+
+
+기술 구현은 자동화지만, 외부 커뮤니케이션은 “사람이 직접 확인한다” 쪽에 가깝게 두는 게 신뢰에 좋다.
+

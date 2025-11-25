@@ -1,0 +1,109 @@
+Project Title: Collaboom MVP
+
+Goal:
+Build the full project skeleton for the Collaboom MVP using the following stack:
+- React 18
+- TypeScript
+- Vite
+- React Router
+- Tailwind CSS
+- shadcn/ui
+- Supabase (Auth + Postgres)
+- Modern, mobile-first layout
+- Brand color: #8a01ff
+
+Deliverables:
+Create the complete project starter architecture according to this specification:
+
+1) Folder Structure (must create all folders and placeholder files):
+src/
+  main.tsx
+  App.tsx
+
+  routes/
+    influencer/
+      LandingPage.tsx
+      CampaignListPage.tsx
+      CampaignDetailPage.tsx
+      InfluencerDashboardPage.tsx
+      ProfilePage.tsx
+
+    admin/
+      AdminDashboardPage.tsx
+      AdminCampaignListPage.tsx
+      AdminCampaignDetailPage.tsx
+      AdminApplicantsTab.tsx
+      AdminShippingTab.tsx
+      AdminUploadsTab.tsx
+      AdminNotesTab.tsx
+
+  components/
+    layout/
+      MainLayout.tsx
+      InfluencerLayout.tsx
+      AdminLayout.tsx
+
+    ui/
+      CampaignCard.tsx
+      Badge.tsx
+      Button.tsx
+      Tabs.tsx
+      Table.tsx
+      Modal.tsx
+      Toast.tsx
+
+  hooks/
+    useAuth.ts
+    useInfluencerProfile.ts
+    useCampaigns.ts
+    useAdminCampaigns.ts
+
+  lib/
+    supabaseClient.ts
+    auth.ts
+
+  styles/
+    globals.css
+
+  config/
+    routes.ts
+
+2) Tailwind Setup:
+Install Tailwind and configure tailwind.config.js with:
+- content scanning for src/**/*.{ts,tsx}
+- brand color: #8a01ff
+- modern rounded corners + soft shadows
+
+3) shadcn/ui Setup:
+Initialize shadcn/ui and prepare components (Button, Card, Tabs, Table, Modal, Input, Badge, Toast).
+
+4) Supabase Setup:
+Create a supabaseClient.ts using VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+Include example auth helper for Google login.
+
+5) Routing Setup:
+Use react-router-dom.
+Add routes for:
+- Influencer landing
+- Campaign list
+- Campaign detail
+- Dashboard
+- Profile
+- Admin dashboard
+- Admin campaign list + detail
+
+6) All pages can be basic skeletons:
+Return simple <div> with the page name, but all file structures must be created correctly.
+
+7) DO NOT implement business logic yet.
+Only create:
+- folders
+- files
+- imports
+- skeleton components
+- routing
+- styles
+- supabase client
+- Tailwind + shadcn setup
+
+This should result in a fully bootstrapped project ready for step-by-step feature implementation.

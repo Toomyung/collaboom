@@ -1,0 +1,535 @@
+PART 6 — Email & Notification Logic (Full Markdown, Clean Version)
+이 섹션은 Collaboom MVP에서 사용될 이메일/알림 트리거, 데이터 구조, 발송 타이밍, 템플릿 구조를 정의한다.
+ MVP 단계에서는 이메일 채널만 사용하며, 인플루언서는 북미 기반이므로 이메일 본문은 영어를 기준으로 한다.
+
+1. Notification Overview
+1.1 채널
+Email (Gmail / Google Apps Script 기반)
+
+
+향후 확장: SMTP 서비스(Resend, Mailgun 등)로 대체 가능
+
+
+1.2 MVP에서 사용하는 이벤트
+MVP에서 실제로 구현/사용하는 이메일 이벤트는 다음과 같다:
+Welcome Email (회원가입/첫 로그인 시)
+
+
+Application Approved
+
+
+Application Rejected
+
+
+Shipping Shipped
+
+
+Shipping Delivered
+
+
+48h Deadline Reminder
+
+
+다음은 현재 MVP에서 발송하지 않지만, 추후 확장이 용이하도록 DB 구조 상으로는 고려해두는 이벤트이다:
+Missed Deadline + Penalty Notice (미래 확장)
+
+
+Account Restricted (미래 확장)
+
+
+Admin: Shipping Issue Reported (내부 알림용, 미래 확장)
+
+
+
+2. Notification Data Model 연동
+모든 이메일 발송은 notifications 테이블에 기록된다.
+ (Part 4 – DB Schema 참고)
+필드 사용 방법:
+influencer_id : 수신자
+
+
+campaign_id : 연관 캠페인
+
+
+application_id : 연관 신청
+
+
+type : 이메일 종류 (예: 'welcome', 'approved', 'shipping_shipped', ...)
+
+
+channel : 'email'
+
+
+payload : subject/body에 사용된 변수들(json)
+
+
+status : 'sent' (MVP 기준)
+
+
+sent_at : 실제 발송 시각
+
+
+
+3. Event → Email Trigger 매핑
+아래 표는 시스템 상태 변화(이벤트)와 이메일 트리거를 매핑한 것이다.
+ Replit 백엔드에서 이 표를 기준으로 이메일 발송 로직을 구현하면 된다.
+Event
+설명
+상태 변화
+Email Type
+User signs up / first login
+Google OAuth로 첫 가입
+influencers.row 생성, profile_completed=false
+welcome
+Admin approves application
+캠페인 승인
+applications: pending → approved
+approved
+Admin rejects application
+캠페인 거절
+applications: pending → rejected
+rejected
+Shipping CSV upload or manual update to shipped
+배송 시작
+shipping: pending → shipped
+shipping_shipped
+Shipping marked delivered
+배송 완료
+shipping: shipped → delivered
+shipping_delivered
+Deadline - 48h cron
+마감 48시간 전
+delivered & not uploaded 인 application 대상으로
+deadline_48h
+
+(미래 확장용 Event는 표 하단에서 별도 정의)
+
+4. 공통 Template 구조
+모든 이메일은 공통적인 메타 구조를 따른다.
+Subject
+
+
+Greeting
+
+
+Context (which campaign, what happened)
+
+
+Key Action / Next Steps
+
+
+Soft CTA 또는 Reminder
+
+
+Sign-off (TooMyung People / Collaboom 팀명)
+
+
+각 템플릿은 Supabase 또는 Google Sheet에서 변수로 채워질 수 있는 형태로 설계한다.
+
+5. Email Templates (MVP에서 실제 사용)
+아래는 각 이메일 타입별로 필수 포함 정보와 구조만 정의한다.
+ 실제 문구는 운영 과정에서 조금씩 다듬을 수 있다.
+
+5.1 Welcome Email (welcome)
+Trigger
+Influencer가 Google OAuth로 첫 로그인 후 influencers row가 생성될 때
+
+
+Recipients
+influencer.email
+
+
+Subject (예시)
+Welcome to Collaboom – Your Campaign Hub is Ready
+
+
+Body 구조
+인사말
+
+
+Collaboom이 무엇을 하는 곳인지 간단 설명
+
+
+Profile을 먼저 완성해야 지원이 가능하다는 안내
+
+
+Profile 페이지 링크
+
+
+향후 다양한 K-Beauty / Food / Lifestyle 캠페인이 올라올 예정이라는 안내
+
+
+필수 포함 정보
+Influencer 이름
+
+
+Profile completion 안내
+
+
+Support contact 이메일
+
+
+
+5.2 Application Approved (approved)
+Trigger
+Admin이 applications.status를 pending → approved 로 변경
+
+
+Recipients
+influencer.email
+
+
+Subject (예시)
+You’re Approved for the [Campaign Name] Collaboration
+
+
+Body 구조
+인사말 (이름 포함)
+
+
+어떤 캠페인에 승인되었는지 명시
+
+
+앞으로 진행될 프로세스 요약:
+
+
+배송 준비 및 예상 일정
+
+
+Shipping email이 곧 발송될 것이라는 안내
+
+
+Guideline를 다시 한 번 확인해 달라는 안내
+
+
+스팸함도 꼭 확인해 달라고 안내 (tracking 안내 메일이 스팸으로 갈 수 있음)
+
+
+필수 포함 정보
+Campaign name
+
+
+Brand name
+
+
+Deadline (PST 기준 날짜만)
+
+
+Guidelines summary & 링크
+
+
+“Shipping email will follow soon” 문구
+
+
+
+5.3 Application Rejected (rejected)
+Trigger
+Admin이 applications.status를 pending → rejected 로 변경
+
+
+Recipients
+influencer.email
+
+
+Subject (예시)
+Update on Your [Campaign Name] Application
+
+
+Body 구조
+인사말
+
+
+이번 캠페인에 선정되지 못했음을 부드럽게 안내
+
+
+이유는 “brand fit / limited slots / internal selection” 등의 일반적인 표현 사용
+
+
+다른 캠페인들도 계속 열릴 예정이며, 추후 기회가 있을 수 있다고 안내
+
+
+플랫폼에서 다른 캠페인 페이지를 둘러보라는 안내
+
+
+필수 포함 정보
+Campaign name
+
+
+Generic reason (상세 비판은 피함)
+
+
+향후 다른 캠페인 참여 유도
+
+
+
+5.4 Shipping Shipped (shipping_shipped)
+Trigger
+CSV 업로드 또는 Admin 입력으로 shipping.status가 pending → shipped 로 변경
+
+
+Recipients
+influencer.email
+
+
+Subject (예시)
+Your [Campaign Name] Package is on the Way
+
+
+Body 구조
+인사말
+
+
+제품이 발송되었음을 안내
+
+
+아래 정보를 표 형식 또는 리스트로 제공:
+
+
+Courier
+
+
+Tracking number
+
+
+Tracking link (가능한 경우)
+
+
+배송을 받으면 제품을 확인하고, guideline에 맞게 콘텐츠를 준비해 달라는 안내
+
+
+마감일을 다시 명시
+
+
+필수 포함 정보
+Campaign name
+
+
+Courier
+
+
+Tracking number
+
+
+Deadline (업로드 마감일)
+
+
+
+5.5 Shipping Delivered (shipping_delivered)
+Trigger
+shipping.status를 shipped → delivered 로 변경
+
+
+Recipients
+influencer.email
+
+
+Subject (예시)
+Your [Campaign Name] Package Has Been Delivered
+
+
+Body 구조
+인사말
+
+
+시스템 상 배송 완료로 확인되었음을 안내
+
+
+제품을 잘 받았는지, 혹시 문제(파손/누락)가 있다면 연락 또는 “Report issue” 기능 사용 요청
+
+
+업로드 마감일과 요구사항 재안내
+
+
+업로드 전 필수 해시태그/멘션을 확인하라는 문구
+
+
+필수 포함 정보
+Campaign name
+
+
+Delivered date (시스템 기준)
+
+
+Deadline
+
+
+Required hashtags / mentions 핵심 정리
+
+
+
+5.6 48h Deadline Reminder (deadline_48h)
+Trigger
+Cron Job 또는 스케줄러가 deadline - 48시간 기준으로 실행
+
+
+조건:
+
+
+application.status ∈ {delivered, approved, shipped}
+
+
+uploads.status = 'not_uploaded'
+
+
+Recipients
+influencer.email
+
+
+Subject (예시)
+48 Hours Left to Upload Your [Campaign Name] Video
+
+
+Body 구조
+인사말
+
+
+마감일까지 48시간 남았음을 알림
+
+
+이미 제품을 받았을 것으로 예상되며, 아직 업로드가 확인되지 않았음을 부드럽게 안내
+
+
+만약 이미 업로드한 경우:
+
+
+Hashtag / tag / spelling을 다시 한번 확인해 달라는 안내
+
+
+시스템이 자동으로 확인을 못했을 수 있으므로, 문제가 있으면 support로 알려달라고 안내
+
+
+업로드 가이드라인 핵심 1~3줄 정리
+
+
+업로드 후에도 최소 일정 기간 동안 콘텐츠를 유지해 달라는 안내(선택)
+
+
+필수 포함 정보
+Campaign name
+
+
+Deadline (날짜 및 PST 기준 문구)
+
+
+Required hashtags / mentions
+
+
+
+6. 미래 확장용 Email Types (MVP 이후)
+MVP에서는 실제 발송하지 않지만, 시스템 설계 상 명확히 정의해두는 이벤트들이다.
+
+6.1 Missed Deadline + Penalty Notice (deadline_missed)
+Trigger
+application.status 또는 uploads.status 가 deadline_missed 로 변경되고
+
+
+penalty_events에 delta=+1, reason='deadline_missed' 가 기록될 때
+
+
+Voice & UX
+비난이 아닌, 정책 안내 + 재발 방지를 유도하는 톤
+
+
+향후 크리에이터와의 관계를 유지하는 것을 목표로 함
+
+
+
+6.2 Account Restricted (account_restricted)
+Trigger
+influencer.penalty >= 5
+
+
+또는 first ghosting 발생 시 penalty = 5로 설정할 때
+
+
+Body 핵심 요소
+현재 계정이 새로운 캠페인 신청에서 일시적으로 제한되어 있음을 안내
+
+
+과거 업로드 미완료 건들이 누적된 것임을 투명하게 설명
+
+
+본인이 억울한 부분이나 추가 설명이 있다면 이메일로 연락하라고 안내
+
+
+운영팀이 케이스별로 검토하고, 경우에 따라 penalty를 조정할 수 있다는 안내
+
+
+
+6.3 Admin: Shipping Issue Reported (shipping_issue_reported)
+Trigger
+Influencer가 Dashboard에서 "Report shipping issue" 제출
+
+
+Recipients
+내부 운영팀 이메일 (예: project@toomyungcompany.com)
+
+
+내용:
+influencer 정보 (이름, 이메일, tiktok handle)
+
+
+campaign 정보
+
+
+application_id
+
+
+issue 내용
+
+
+이를 통해 Admin이 supabase/admin UI에서 해당 application을 확인하고
+ penalty 부여 여부, 재발송 여부(또는 미발송 인정), 기타 조치를 판단한다.
+
+7. Notification 구현 방식 (MVP 기준)
+7.1 Backend → Notification Record → Apps Script
+특정 이벤트 발생 (예: approved)
+
+
+서버에서 notifications 테이블에 row 생성:
+
+
+type = 'approved'
+
+
+influencer_id, campaign_id, application_id
+
+
+payload = { subject, variables... }
+
+
+Google Apps Script 또는 별도 worker가 notifications 테이블을 폴링 또는 Webhook으로 감지
+
+
+상태가 queued인 row를 가져와 Gmail API를 통해 이메일 발송
+
+
+발송 성공 시 status='sent', sent_at=now() 업데이트
+
+
+MVP에서는 단순화를 위해:
+Replit 서버에서 직접 Gmail API 호출 또는 Apps Script의 Webhook URL에 POST 요청
+
+
+성공/실패 여부를 notifications.status에 반영
+
+
+
+8. Jade / 운영팀과의 연동 (설명용)
+추후 PRD 마지막 부분(Implementation Guide)에서
+ 운영자 Jade에게 다음과 같이 안내할 수 있다:
+기존 Google Sheet + Apps Script 방식과 유사하게
+
+
+notifications 테이블을 새로운 “메일 큐”처럼 사용할 수 있음
+
+
+특정 타입(approved/shipped/delivered/48h reminder)에 대해
+ 기존 템플릿 로직을 Apps Script에서 재활용 가능
+
+
+단, Collaboom에서 내려주는 payload(subject/body 변수)를 기준으로 메일을 구성하면 됨
+
+
+(이 부분은 Part 7 – Replit Implementation Guide에서 “To Jade” 섹션으로 별도 정리 가능)
+

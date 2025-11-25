@@ -1,0 +1,336 @@
+PART 3 — State Machines (Full Markdown, Clean Version)
+
+1. Overview
+Collaboom 서비스의 모든 기능은 “상태(state)” 기반으로 동작한다.
+ 각 상태는 Supabase DB의 status 필드와 직접 연결되며,
+ 각 버튼, 이메일 트리거, UI 표시, 로직 조건이 모두 상태를 기반으로 결정된다.
+최소 단위 State Machine:
+Influencer Account State Machine
+
+
+Campaign State Machine
+
+
+Application State Machine
+
+
+Shipping State Machine
+
+
+Upload Verification State Machine
+
+
+Score/Penalty State Machine
+
+
+각 State Machine을 독립적으로 정의하면서도 서로 연동되는 로직을 명확히 정리한다.
+
+2. Influencer Account State Machine
+Influencer 계정의 상태는 다음 4가지로 정의된다.
+uninitialized → active → restricted → active (manual unlock)
+
+2.1 States
+상태
+설명
+uninitialized
+Google 로그인은 했지만 온보딩 미완료
+active
+정상적으로 캠페인 지원 가능
+restricted
+penalty >= 5 또는 첫 ghosting 발생
+deleted (optional)
+Admin이 비활성화한 계정
+
+2.2 Transitions
+uninitialized → active  
+조건: profile_completed = true
+
+active → restricted  
+조건 A: penalty >= 5  
+조건 B: first ghosting 발생 시 즉시 restricted (penalty=5)
+
+restricted → active  
+조건: Admin manual unlock (penalty=4로 조정)
+
+active → deleted  
+조건: Admin 삭제
+
+2.3 Influencer UI Behavior by State
+State
+Apply 버튼
+Dashboard
+uninitialized
+disabled
+온보딩 필요 배너
+active
+enabled (조건 충족 시)
+정상 표시
+restricted
+disabled
+상단에 restriction banner
+deleted
+로그인 차단
+없음
+
+
+3. Campaign State Machine
+Admin이 생성하는 캠페인의 상태.
+draft → active → full → closed → archived
+
+3.1 States
+상태
+설명
+draft
+작성 중, 공개되지 않음
+active
+인플루언서 지원 가능
+full
+inventory가 가득 찼음. apply disabled
+closed
+deadline 지난 상태
+archived
+관리자가 숨긴 상태
+
+3.2 Transitions
+draft → active  
+조건: Admin이 Publish 클릭
+
+active → full  
+조건: approved_count >= inventory
+
+active → closed  
+조건: now > deadline
+
+full → closed  
+조건: now > deadline
+
+closed → archived  
+조건: Admin manual archive
+
+active → archived  
+조건: Admin manual archive
+
+
+4. Application State Machine
+Influencer가 캠페인에 지원할 때 생성되는 개별 application의 상태.
+pending → approved → shipped → delivered → uploaded → completed
+pending → rejected
+delivered → deadline_missed
+
+4.1 States
+상태
+설명
+pending
+지원 완료 (Admin 검토 대기)
+approved
+Admin 승인됨
+rejected
+Admin 거절
+shipped
+트래킹 번호 입력됨
+delivered
+배송 완료됨
+uploaded
+업로드 확인됨
+completed
+최종 완료
+deadline_missed
+업로드 기한 초과
+
+4.2 Transitions
+pending → approved  
+조건: Admin Approve
+
+pending → rejected  
+조건: Admin Reject
+
+approved → shipped  
+조건: CSV 매칭 혹은 tracking manual 입력
+
+shipped → delivered  
+조건: CSV delivered_date 입력 또는 Admin manual mark delivered
+
+delivered → uploaded  
+조건: Admin manual “Mark Uploaded”
+
+uploaded → completed  
+조건: 업로드 승인 + Score 반영
+
+delivered → deadline_missed  
+조건: now > deadline AND uploaded == false  
+추가 효과: penalty +1
+
+approved → deadline_missed  
+조건: 배송 중/알림 없이 미업로드 + deadline 지나감 (rare case)
+
+
+5. Shipping State Machine
+none → shipped → delivered
+
+5.1 States
+상태
+설명
+none
+승인됐지만 아직 배송 정보 없음
+shipped
+트래킹 번호 있음
+delivered
+배송 완료
+
+5.2 Transitions
+none → shipped  
+조건: tracking_number 등록됨
+
+shipped → delivered  
+조건: delivered_date 등록됨 (CSV or manual)
+
+
+6. Upload Verification State Machine
+not_uploaded → uploaded → verified
+not_uploaded → missed
+
+6.1 States
+상태
+설명
+not_uploaded
+배송은 되었으나 업로드 없음
+uploaded
+인플루언서가 업로드했고 Admin 확인해야 함
+verified
+Admin이 업로드 승인함
+missed
+deadline 지나 업로드 누락
+
+6.2 Transitions
+not_uploaded → uploaded  
+조건: Admin manual "Mark Uploaded"
+
+uploaded → verified  
+조건: Admin final approval
+
+not_uploaded → missed  
+조건: deadline 지나감 AND uploaded=false
+
+
+7. Score/Penalty State Machine
+Score는 누적 증가 형태, Penalty는 누적 증가 형태이며
+ account restriction을 결정한다.
+7.1 Score Rules
+이벤트
+점수
+첫 업로드 성공
++10
+이후 업로드 성공
++10
+연속 3회 업로드
++10
+브랜드 positive feedback
++10
+Admin manual
++1~10
+
+Score 상태:
+0 → 10 → 20 → 30 → ... → 100
+
+7.2 Penalty Rules
+이벤트
+Penalty
+Deadline Miss
++1
+First Ghosting
++5 (즉시 restricted)
+Admin manual
++1~5
+
+Penalty 상태:
+0 → 1 → 2 → ... → 5 → restricted
+
+7.3 Account Restriction Trigger
+If penalty >= 5 → restricted = true
+If first_ghosting = true → penalty = 5 → restricted = true
+
+Admin은 penalty를 4로 낮춰 unlock할 수 있다.
+
+8. Composite State Matrix
+Influencer가 어떤 상태에 있느냐에 따라
+ Dashboard UI, Apply 버튼 상태, Notification trigger가 결정된다.
+8.1 Composite Table
+Account
+Application
+Shipping
+Upload
+Apply Button
+uninitialized
+-
+-
+-
+disabled
+active
+pending
+none
+not_uploaded
+disabled (already applied)
+active
+approved
+none
+not_uploaded
+disabled
+active
+approved
+shipped
+not_uploaded
+disabled
+active
+delivered
+not_uploaded
+not_uploaded
+active (for other campaigns)
+active
+delivered
+not_uploaded
+missed
+active / restricted based on penalty
+restricted
+any
+any
+any
+disabled
+
+
+9. Notification Trigger Map
+Part 6에서 구현 상세를 정의하지만,
+ State Machine 기준으로 notify 트리거는 아래와 같다.
+Transition
+Email
+pending → approved
+Approved Email
+pending → rejected
+Rejected Email
+approved → shipped
+Shipping Shipped Email
+shipped → delivered
+Delivery Confirmation Email
+deadline approaching (-48h)
+Reminder Email
+delivered → missed
+Missed Deadline + Penalty Email
+restricted=true
+Account Restricted Email
+
+
+10. State Machine Summary (ASCII Diagram)
+Application Flow
+pending
+  ├── approved ─── shipped ─── delivered ─── uploaded ─── completed
+  └── rejected
+                          └── deadline_missed
+
+Influencer Account Flow
+uninitialized → active → restricted → active
+
+Campaign Flow
+draft → active → full → closed → archived
+
+
+
+
