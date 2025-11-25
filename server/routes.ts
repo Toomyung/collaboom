@@ -303,6 +303,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get influencer's own score events (transparency feature)
+  app.get("/api/me/score-events", requireAuth("influencer"), async (req, res) => {
+    try {
+      const events = await storage.getScoreEventsByInfluencer(req.session.userId!);
+      return res.json(events);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get influencer's own penalty events (transparency feature)
+  app.get("/api/me/penalty-events", requireAuth("influencer"), async (req, res) => {
+    try {
+      const events = await storage.getPenaltyEventsByInfluencer(req.session.userId!);
+      return res.json(events);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get campaigns (public)
   app.get("/api/campaigns", async (req, res) => {
     const campaigns = await storage.getActiveCampaigns();

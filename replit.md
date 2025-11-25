@@ -188,3 +188,11 @@ Preferred communication style: Simple, everyday language.
 - Pagination support via limit (max 100) and offset query parameters
 - Notification types: approved, rejected, shipping_shipped, shipping_delivered, deadline_missed, account_restricted
 - Storage method: `getNotificationsByInfluencer(influencerId, { limit, offset })`
+
+**Influencer Score/Penalty History API (Transparency Feature)**
+- API: GET `/api/me/score-events` - Returns influencer's own score event history
+- API: GET `/api/me/penalty-events` - Returns influencer's own penalty event history
+- Both require influencer authentication (requireAuth("influencer"))
+- Returns events sorted by createdAt DESC
+- Reuses existing storage methods: `getScoreEventsByInfluencer`, `getPenaltyEventsByInfluencer`
+- Supports PRD's "transparent reputation system" philosophy
