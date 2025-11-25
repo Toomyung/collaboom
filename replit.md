@@ -205,6 +205,16 @@ Preferred communication style: Simple, everyday language.
 - Legacy support maintained for existing campaigns with "20usd" or "50usd" reward types
 - Frontend displays: "Gift Only" for gift type, "Gift + $X Reward" for paid type with amount
 
+**Admin Campaigns Pagination**
+- Server-side pagination with configurable items per page (default: 20)
+- API: GET `/api/admin/campaigns?page=1&pageSize=20&search=&status=`
+- Response includes: items (Campaign[]), totalCount, page, pageSize
+- Page navigation with numbered buttons and prev/next controls
+- "Showing X to Y of Z" info display
+- Debounced search (300ms delay) for efficient server-side filtering
+- Status filter support via status query parameter (draft, active, closed, archived)
+- Storage method: `getCampaignsPaginated(options: GetCampaignsOptions)`
+
 **Bug Fixes (November 2025)**
 - Fixed admin login navigation: Added small delay to ensure auth state updates before redirecting
 - Fixed campaign deadline parsing: Backend now parses deadline string to Date object on both create and update routes

@@ -75,8 +75,22 @@ export default function AdminCampaignListPage() {
     setPage(1);
   }, [statusFilter]);
 
+  const buildQueryUrl = () => {
+    const params = new URLSearchParams();
+    params.set("page", page.toString());
+    params.set("pageSize", pageSize.toString());
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    return `/api/admin/campaigns?${params.toString()}`;
+  };
+
   const { data, isLoading } = useQuery<PaginatedCampaignsResponse>({
-    queryKey: ["/api/admin/campaigns", { page, pageSize, search: debouncedSearch, status: statusFilter !== "all" ? statusFilter : undefined }],
+    queryKey: ["/api/admin/campaigns", page, pageSize, debouncedSearch, statusFilter],
+    queryFn: async () => {
+      const res = await fetch(buildQueryUrl(), { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch campaigns");
+      return res.json();
+    },
     enabled: isAuthenticated && isAdmin,
   });
 
