@@ -519,8 +519,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Reward amount is required for paid campaigns" });
       }
       
+      // Parse deadline string to Date if provided
+      let deadline = req.body.deadline;
+      if (deadline && typeof deadline === 'string') {
+        deadline = new Date(deadline);
+      }
+      
       const data = insertCampaignSchema.parse({
         ...req.body,
+        deadline,
         // Clear rewardAmount if gift type
         rewardAmount: req.body.rewardType === 'gift' ? null : req.body.rewardAmount,
         createdByAdminId: req.session.userId,

@@ -207,4 +207,6 @@ Preferred communication style: Simple, everyday language.
 
 **Bug Fixes (November 2025)**
 - Fixed admin login navigation: Added small delay to ensure auth state updates before redirecting
-- Fixed campaign update toISOString error: Backend now parses deadline string back to Date object
+- Fixed campaign deadline parsing: Backend now parses deadline string to Date object on both create and update routes
+- Added legacy reward type normalization: When editing campaigns with "20usd" or "50usd", form automatically converts to paid type with appropriate amount
+- Added reward amount validation: Both frontend (Zod refinement) and backend enforce rewardAmount > 0 for paid campaigns
