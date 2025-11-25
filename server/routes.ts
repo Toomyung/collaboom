@@ -401,31 +401,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
-      if (application.status !== "pending") {
-        return res.status(400).json({ message: "Application is not pending" });
+      // Guard against duplicate approval calls
+      if (application.status === "approved" || application.status === "shipped" || 
+          application.status === "delivered" || application.status === "uploaded" || 
+          application.status === "completed") {
+        return res.status(400).json({ message: "Application is already approved" });
       }
 
-      // Get campaign to check inventory
+      if (application.status !== "pending") {
+        return res.status(400).json({ message: "Application cannot be approved from current status" });
+      }
+
+      // Get campaign to check inventory (re-fetch to get latest count)
       const campaign = await storage.getCampaign(application.campaignId);
       if (!campaign) {
         return res.status(404).json({ message: "Campaign not found" });
       }
 
+      // Strict inventory check
       if ((campaign.approvedCount ?? 0) >= campaign.inventory) {
-        return res.status(400).json({ message: "Campaign is full" });
+        return res.status(400).json({ message: "Campaign is full - no more inventory available" });
       }
 
-      // Update application
-      await storage.updateApplication(application.id, {
+      // Update application status first
+      const updatedApp = await storage.updateApplication(application.id, {
         status: "approved",
         approvedAt: new Date(),
       });
+      
+      if (!updatedApp) {
+        return res.status(500).json({ message: "Failed to update application" });
+      }
 
       // Increment campaign count
       await storage.incrementCampaignApprovedCount(campaign.id);
 
-      // Create shipping record
-      await storage.createShipping({ applicationId: application.id });
+      // Create shipping record (only if doesn't exist)
+      const existingShipping = await storage.getShippingByApplication(application.id);
+      if (!existingShipping) {
+        await storage.createShipping({ applicationId: application.id });
+      }
 
       return res.json({ success: true });
     } catch (error: any) {
@@ -441,13 +456,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
+      // Guard against rejecting already processed applications
+      if (application.status === "rejected") {
+        return res.status(400).json({ message: "Application is already rejected" });
+      }
+
+      // Can only reject pending applications
       if (application.status !== "pending") {
-        return res.status(400).json({ message: "Application is not pending" });
+        return res.status(400).json({ message: "Only pending applications can be rejected" });
       }
 
       await storage.updateApplication(application.id, {
         status: "rejected",
         rejectedAt: new Date(),
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Revoke approval (admin can undo an approval)
+  app.post("/api/admin/applications/:id/revoke", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Can only revoke approved applications that haven't shipped yet
+      if (application.status !== "approved") {
+        return res.status(400).json({ message: "Can only revoke approved applications before shipping" });
+      }
+
+      // Get campaign and decrement count
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (campaign) {
+        await storage.decrementCampaignApprovedCount(campaign.id);
+      }
+
+      // Reset application to pending
+      await storage.updateApplication(application.id, {
+        status: "pending",
+        approvedAt: null,
       });
 
       return res.json({ success: true });
@@ -464,22 +516,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "applicationIds must be an array" });
       }
 
-      for (const id of applicationIds) {
+      let approved = 0;
+      let skipped = 0;
+      
+      // Use Set to ensure no duplicate IDs are processed
+      const uniqueIds = [...new Set(applicationIds)];
+
+      for (const id of uniqueIds) {
         const application = await storage.getApplication(id);
-        if (application && application.status === "pending") {
-          const campaign = await storage.getCampaign(application.campaignId);
-          if (campaign && (campaign.approvedCount ?? 0) < campaign.inventory) {
-            await storage.updateApplication(id, {
-              status: "approved",
-              approvedAt: new Date(),
-            });
-            await storage.incrementCampaignApprovedCount(campaign.id);
-            await storage.createShipping({ applicationId: id });
-          }
+        
+        // Skip if not found or not pending
+        if (!application || application.status !== "pending") {
+          skipped++;
+          continue;
         }
+        
+        // Re-fetch campaign for latest count
+        const campaign = await storage.getCampaign(application.campaignId);
+        if (!campaign || (campaign.approvedCount ?? 0) >= campaign.inventory) {
+          skipped++;
+          continue;
+        }
+        
+        // Update application
+        await storage.updateApplication(id, {
+          status: "approved",
+          approvedAt: new Date(),
+        });
+        
+        // Increment campaign count
+        await storage.incrementCampaignApprovedCount(campaign.id);
+        
+        // Create shipping record only if doesn't exist
+        const existingShipping = await storage.getShippingByApplication(id);
+        if (!existingShipping) {
+          await storage.createShipping({ applicationId: id });
+        }
+        
+        approved++;
       }
 
-      return res.json({ success: true });
+      return res.json({ success: true, approved, skipped });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

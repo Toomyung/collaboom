@@ -1,0 +1,117 @@
+# Collaboom MVP
+
+## Overview
+
+Collaboom is an influencer campaign management platform focused on free product seeding campaigns (UGC gifting). The platform connects US-based TikTok influencers (1,000+ followers) with K-Beauty, Food, and Lifestyle brands. Influencers can browse campaigns, apply, track shipments, upload content, and build their reputation score in one centralized dashboard.
+
+The MVP prioritizes the influencer experience with a clean, modern interface while providing admins with efficient tools to manage hundreds of applications, verify uploads, and track campaign performance.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+
+**Framework & Build System**
+- React 18 with TypeScript for type safety
+- Vite as the build tool for fast development and optimized production builds
+- Wouter for lightweight client-side routing
+- React Query (@tanstack/react-query) for server state management with automatic caching and refetching
+
+**UI Component Strategy**
+- shadcn/ui component library built on Radix UI primitives for accessibility
+- Tailwind CSS for utility-first styling with custom design tokens
+- Dual design approach: Marketing-focused interface for influencers (inspired by Linear/Notion) and data-dense admin interface (Fluent Design principles)
+- Custom CSS variables for theming with brand color (#8a01ff) used sparingly as accent
+- Inter font family via Google Fonts for clean, modern typography
+
+**State Management Pattern**
+- React Query handles all server state (campaigns, applications, user data)
+- Session-based authentication state cached via React Query
+- Local component state with React hooks for UI interactions
+- Form state managed by react-hook-form with Zod schema validation
+
+**Routing Structure**
+- Public routes: Landing page, login, register, campaign browsing
+- Influencer routes: Dashboard, profile, campaign details (protected)
+- Admin routes: Dashboard, campaign management, influencer management, application processing (protected)
+- Route protection handled via useAuth hook checking session state
+
+### Backend Architecture
+
+**Server Framework**
+- Express.js for REST API with session-based authentication
+- Separate dev/prod server entry points (index-dev.ts, index-prod.ts)
+- Development mode integrates Vite middleware for HMR
+- Production serves pre-built static assets from dist/public
+
+**API Design Pattern**
+- RESTful endpoints organized by resource type (auth, campaigns, applications, etc.)
+- Session middleware using express-session for stateful authentication
+- Role-based access control: influencer vs admin user types
+- Middleware functions enforce authentication and authorization per route
+
+**Data Access Layer**
+- In-memory storage implementation (IStorage interface) for MVP
+- Ready for migration to PostgreSQL via Drizzle ORM (config already present)
+- Storage abstraction allows swapping implementations without changing business logic
+- All database interactions go through storage layer methods
+
+**Authentication Flow**
+- Email/password authentication with bcrypt password hashing
+- Separate login flows for influencers and admins
+- Session data stores userId and userType (influencer|admin)
+- Sessions persist 7 days with httpOnly cookies
+
+### Database Design (Drizzle Schema)
+
+**Core Entities**
+- `admins`: Internal staff with email/password auth
+- `influencers`: User accounts with profile data, social handles, shipping addresses, score/penalty tracking
+- `campaigns`: Brand campaigns with inventory limits, deadlines, reward types, and status
+- `applications`: Junction table linking influencers to campaigns with approval workflow states
+- `shipping`: Tracking information linked to approved applications
+- `uploads`: Content verification for influencer submissions
+- `score_events`: Positive reputation tracking (successful completions)
+- `penalty_events`: Negative reputation tracking (missed deadlines, guideline violations)
+- `admin_notes`: Internal communication log per influencer
+- `notifications`: Email notification history
+
+**State Machine Architecture**
+- Application states: pending → approved/rejected → shipped → delivered → uploaded → verified/deadline_missed
+- Influencer account states: uninitialized → active ↔ restricted
+- Campaign states: draft → active → closed → archived
+- State transitions trigger business logic (inventory updates, notifications, score changes)
+
+**Key Relationships**
+- Applications reference both influencer and campaign (many-to-many with state)
+- Shipping, uploads, score events, penalty events all reference applications
+- Admin notes reference influencers for historical tracking
+
+### External Dependencies
+
+**PostgreSQL Database**
+- Primary data store configured via Drizzle ORM
+- Connection via @neondatabase/serverless for serverless PostgreSQL
+- Migrations managed through drizzle-kit
+- Database URL configured via environment variable
+
+**Email Notifications (Planned)**
+- Gmail/Google Apps Script for MVP notification delivery
+- Future migration path to SMTP services (Resend, Mailgun)
+- Triggered on key state transitions (application approved, shipped, deadline reminders)
+- Tracked in notifications table for audit trail
+
+**Third-Party UI Components**
+- Radix UI primitives (@radix-ui/*) for accessible components
+- shadcn/ui pre-built components configured via components.json
+- Tailwind CSS for styling with custom configuration
+- Google Fonts CDN for Inter font family
+
+**Development Tools (Replit-specific)**
+- @replit/vite-plugin-runtime-error-modal for development error overlay
+- @replit/vite-plugin-cartographer for code mapping
+- @replit/vite-plugin-dev-banner for development indicators
+- Conditional loading based on REPL_ID environment variable
