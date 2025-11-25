@@ -133,10 +133,17 @@ export default function CampaignDetailPage() {
     );
   }
 
-  const daysLeft = Math.max(
+  // Application deadline - when users can apply (fallback to upload deadline if not set)
+  const applicationDeadlineDate = campaign.applicationDeadline 
+    ? new Date(campaign.applicationDeadline) 
+    : new Date(campaign.deadline);
+  const uploadDeadlineDate = new Date(campaign.deadline);
+  
+  const daysLeftToApply = Math.max(
     0,
-    Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    Math.ceil((applicationDeadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
   );
+  const isApplicationClosed = applicationDeadlineDate.getTime() < Date.now();
   const isFull = (campaign.approvedCount ?? 0) >= campaign.inventory;
   const isClosed = campaign.status === "closed" || campaign.status === "archived";
   const canApply =
@@ -145,7 +152,8 @@ export default function CampaignDetailPage() {
     !influencer?.restricted &&
     !isFull &&
     !isClosed &&
-    !isApplied;
+    !isApplied &&
+    !isApplicationClosed;
 
   const getRewardDisplay = () => {
     // Handle new 'paid' type with custom amount
@@ -209,8 +217,9 @@ export default function CampaignDetailPage() {
             <Badge variant="outline" className="capitalize">
               {campaign.category}
             </Badge>
-            {isFull && <Badge variant="secondary">Full</Badge>}
             {isClosed && <Badge variant="secondary">Closed</Badge>}
+            {!isClosed && isApplicationClosed && <Badge variant="secondary">Applications Closed</Badge>}
+            {isFull && <Badge variant="secondary">Full</Badge>}
           </div>
           <p className="text-muted-foreground mb-1">{campaign.brandName}</p>
           <h1 className="text-3xl font-bold mb-4">{campaign.name}</h1>
@@ -226,13 +235,26 @@ export default function CampaignDetailPage() {
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>
-                <strong>{daysLeft}</strong> days left
+                {isApplicationClosed 
+                  ? <span className="text-muted-foreground">Applications closed</span>
+                  : <><strong>{daysLeftToApply}</strong> days left to apply</>
+                }
+              </span>
+            </div>
+          </div>
+          
+          {/* Deadlines */}
+          <div className="flex flex-wrap gap-6 text-sm mt-4 pt-4 border-t">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span>
+                Application Deadline: <strong>{format(applicationDeadlineDate, "MMM d, yyyy")}</strong>
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>
-                Deadline: <strong>{format(new Date(campaign.deadline), "MMM d, yyyy")}</strong> (PST)
+                Upload Deadline: <strong>{format(uploadDeadlineDate, "MMM d, yyyy")}</strong>
               </span>
             </div>
           </div>
@@ -329,6 +351,8 @@ export default function CampaignDetailPage() {
                     ? "This campaign has reached its capacity."
                     : isClosed
                     ? "This campaign is no longer accepting applications."
+                    : isApplicationClosed
+                    ? "The application deadline has passed."
                     : "Submit your application to receive free products!"}
                 </p>
               </div>

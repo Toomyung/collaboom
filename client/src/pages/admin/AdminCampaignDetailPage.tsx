@@ -342,7 +342,15 @@ export default function AdminCampaignDetailPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Deadline</p>
+                    <p className="text-sm text-muted-foreground">Application Deadline</p>
+                    <p className="font-medium">
+                      {campaign.applicationDeadline 
+                        ? format(new Date(campaign.applicationDeadline), "MMMM d, yyyy")
+                        : format(new Date(campaign.deadline), "MMMM d, yyyy")} (PST)
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Upload Deadline</p>
                     <p className="font-medium">
                       {format(new Date(campaign.deadline), "MMMM d, yyyy")} (PST)
                     </p>
