@@ -70,7 +70,7 @@ export const updateProfileSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   zipCode: z.string().min(1, "ZIP code is required"),
-  paypalEmail: z.string().email("Valid PayPal email is required"),
+  paypalEmail: z.string().email("Valid PayPal email is required").optional().or(z.literal("")),
 });
 
 export type InsertInfluencer = z.infer<typeof insertInfluencerSchema>;

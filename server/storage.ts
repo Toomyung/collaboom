@@ -345,7 +345,7 @@ export class MemStorage implements IStorage {
     const updated = { ...influencer, ...data };
     
     // Check if profile is complete
-    const requiredFields = ['name', 'tiktokHandle', 'phone', 'addressLine1', 'city', 'state', 'zipCode', 'paypalEmail'];
+    const requiredFields = ['name', 'tiktokHandle', 'phone', 'addressLine1', 'city', 'state', 'zipCode'];
     const isComplete = requiredFields.every(field => updated[field as keyof Influencer]);
     updated.profileCompleted = isComplete;
     

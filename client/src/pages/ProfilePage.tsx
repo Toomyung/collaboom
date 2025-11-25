@@ -8,6 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -26,12 +33,65 @@ import {
   MapPin,
   Phone,
   CreditCard,
-  AtSign,
   AlertTriangle,
   CheckCircle,
   Loader2,
 } from "lucide-react";
-import { SiTiktok, SiInstagram } from "react-icons/si";
+import { SiTiktok, SiInstagram, SiPaypal } from "react-icons/si";
+
+const US_STATES = [
+  { value: "AL", label: "AL - Alabama" },
+  { value: "AK", label: "AK - Alaska" },
+  { value: "AZ", label: "AZ - Arizona" },
+  { value: "AR", label: "AR - Arkansas" },
+  { value: "CA", label: "CA - California" },
+  { value: "CO", label: "CO - Colorado" },
+  { value: "CT", label: "CT - Connecticut" },
+  { value: "DE", label: "DE - Delaware" },
+  { value: "FL", label: "FL - Florida" },
+  { value: "GA", label: "GA - Georgia" },
+  { value: "HI", label: "HI - Hawaii" },
+  { value: "ID", label: "ID - Idaho" },
+  { value: "IL", label: "IL - Illinois" },
+  { value: "IN", label: "IN - Indiana" },
+  { value: "IA", label: "IA - Iowa" },
+  { value: "KS", label: "KS - Kansas" },
+  { value: "KY", label: "KY - Kentucky" },
+  { value: "LA", label: "LA - Louisiana" },
+  { value: "ME", label: "ME - Maine" },
+  { value: "MD", label: "MD - Maryland" },
+  { value: "MA", label: "MA - Massachusetts" },
+  { value: "MI", label: "MI - Michigan" },
+  { value: "MN", label: "MN - Minnesota" },
+  { value: "MS", label: "MS - Mississippi" },
+  { value: "MO", label: "MO - Missouri" },
+  { value: "MT", label: "MT - Montana" },
+  { value: "NE", label: "NE - Nebraska" },
+  { value: "NV", label: "NV - Nevada" },
+  { value: "NH", label: "NH - New Hampshire" },
+  { value: "NJ", label: "NJ - New Jersey" },
+  { value: "NM", label: "NM - New Mexico" },
+  { value: "NY", label: "NY - New York" },
+  { value: "NC", label: "NC - North Carolina" },
+  { value: "ND", label: "ND - North Dakota" },
+  { value: "OH", label: "OH - Ohio" },
+  { value: "OK", label: "OK - Oklahoma" },
+  { value: "OR", label: "OR - Oregon" },
+  { value: "PA", label: "PA - Pennsylvania" },
+  { value: "RI", label: "RI - Rhode Island" },
+  { value: "SC", label: "SC - South Carolina" },
+  { value: "SD", label: "SD - South Dakota" },
+  { value: "TN", label: "TN - Tennessee" },
+  { value: "TX", label: "TX - Texas" },
+  { value: "UT", label: "UT - Utah" },
+  { value: "VT", label: "VT - Vermont" },
+  { value: "VA", label: "VA - Virginia" },
+  { value: "WA", label: "WA - Washington" },
+  { value: "WV", label: "WV - West Virginia" },
+  { value: "WI", label: "WI - Wisconsin" },
+  { value: "WY", label: "WY - Wyoming" },
+  { value: "DC", label: "DC - Washington D.C." },
+];
 
 export default function ProfilePage() {
   const { isAuthenticated, influencer, isLoading: authLoading } = useAuth();
@@ -116,7 +176,6 @@ export default function ProfilePage() {
     "city",
     "state",
     "zipCode",
-    "paypalEmail",
   ];
   const completedFields = requiredFields.filter(
     (field) => influencer?.[field as keyof typeof influencer]
@@ -226,6 +285,9 @@ export default function ProfilePage() {
                             data-testid="input-instagram"
                           />
                         </FormControl>
+                        <FormDescription className="text-xs">
+                          Optional, but helps brands understand your reach. Add it if you have one!
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -319,9 +381,20 @@ export default function ProfilePage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>State *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="State" {...field} data-testid="input-state" />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-state">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {US_STATES.map((state) => (
+                              <SelectItem key={state.value} value={state.value}>
+                                {state.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -358,15 +431,30 @@ export default function ProfilePage() {
                   <CreditCard className="h-5 w-5" />
                   Payment Information
                 </CardTitle>
-                <CardDescription>For campaigns with monetary rewards</CardDescription>
+                <CardDescription>For paid campaigns (optional for now)</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-muted-foreground bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <SiPaypal className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-foreground">About Paid Campaigns</span>
+                  </div>
+                  <p className="text-xs leading-relaxed">
+                    Some campaigns offer cash rewards in addition to free products. Payments are processed via PayPal. 
+                    You can skip this for now, but you'll need to add your PayPal email to receive paid campaign rewards.
+                    Don't have PayPal? You can easily create a free account at paypal.com.
+                  </p>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="paypalEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>PayPal Email *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <SiPaypal className="h-4 w-4" />
+                        PayPal Email
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="email"
@@ -376,7 +464,7 @@ export default function ProfilePage() {
                         />
                       </FormControl>
                       <FormDescription className="text-xs">
-                        We use PayPal to send campaign rewards
+                        The email address linked to your PayPal account
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
