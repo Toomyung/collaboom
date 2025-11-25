@@ -93,7 +93,8 @@ export const campaigns = pgTable("campaigns", {
   guidelinesUrl: text("guidelines_url"),
   requiredHashtags: text("required_hashtags").array(),
   requiredMentions: text("required_mentions").array(),
-  deadline: timestamp("deadline").notNull(),
+  applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
+  deadline: timestamp("deadline").notNull(), // Upload deadline (content submission deadline)
   status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'
   createdByAdminId: varchar("created_by_admin_id"),
   createdAt: timestamp("created_at").defaultNow(),
