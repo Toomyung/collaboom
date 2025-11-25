@@ -9,8 +9,8 @@ import {
   LogOut,
   Sparkles,
   Menu,
-  X,
-  Settings,
+  ExternalLink,
+  Home,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -45,11 +45,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="h-16 flex items-center gap-2 px-6 border-b border-sidebar-border">
+          {/* Logo - Links to Home */}
+          <Link href="/" className="h-16 flex items-center gap-2 px-6 border-b border-sidebar-border hover:bg-sidebar-accent/50 transition-colors" data-testid="admin-link-home">
             <Sparkles className="h-6 w-6 text-primary" />
             <span className="font-bold text-lg">Collaboom Admin</span>
-          </div>
+          </Link>
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
@@ -120,9 +120,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex-1" />
-          <Button variant="ghost" size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
+          <Link href="/">
+            <Button variant="outline" size="sm" data-testid="admin-view-site">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Site
+            </Button>
+          </Link>
         </header>
 
         {/* Page content */}
