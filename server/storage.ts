@@ -89,6 +89,10 @@ export interface IStorage {
     uploadPending: number;
     openIssues: number;
   }>;
+  
+  // Auth
+  verifyAdminPassword(id: string, password: string): Promise<boolean>;
+  verifyInfluencerPassword(id: string, password: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -777,4 +781,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { DatabaseStorage } from "./databaseStorage";
+
+export const storage: IStorage = new DatabaseStorage();

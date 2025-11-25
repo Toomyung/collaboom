@@ -1,0 +1,485 @@
+import { eq, and, sql, desc } from "drizzle-orm";
+import { db } from "./db";
+import * as bcrypt from 'bcryptjs';
+import {
+  admins, influencers, campaigns, applications, shipping, uploads,
+  scoreEvents, penaltyEvents, adminNotes, notifications, shippingIssues,
+  type Admin, type InsertAdmin,
+  type Influencer, type InsertInfluencer,
+  type Campaign, type InsertCampaign,
+  type Application, type InsertApplication, type ApplicationWithDetails,
+  type Shipping, type InsertShipping,
+  type Upload, type InsertUpload,
+  type ScoreEvent, type InsertScoreEvent,
+  type PenaltyEvent, type InsertPenaltyEvent,
+  type AdminNote, type InsertAdminNote,
+  type Notification, type InsertNotification,
+  type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
+} from "@shared/schema";
+import { IStorage } from "./storage";
+
+export class DatabaseStorage implements IStorage {
+  async getAdmin(id: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.id, id));
+    return admin;
+  }
+
+  async getAdminByEmail(email: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.email, email));
+    return admin;
+  }
+
+  async createAdmin(admin: InsertAdmin): Promise<Admin> {
+    const passwordHash = await bcrypt.hash(admin.password, 10);
+    const [newAdmin] = await db.insert(admins).values({
+      email: admin.email,
+      password: passwordHash,
+      name: admin.name || null,
+      role: 'admin',
+    }).returning();
+    return newAdmin;
+  }
+
+  async getInfluencer(id: string): Promise<Influencer | undefined> {
+    const [influencer] = await db.select().from(influencers).where(eq(influencers.id, id));
+    return influencer;
+  }
+
+  async getInfluencerByEmail(email: string): Promise<Influencer | undefined> {
+    const [influencer] = await db.select().from(influencers).where(eq(influencers.email, email));
+    return influencer;
+  }
+
+  async getInfluencerByTiktokHandle(handle: string): Promise<Influencer | undefined> {
+    const [influencer] = await db.select().from(influencers).where(eq(influencers.tiktokHandle, handle));
+    return influencer;
+  }
+
+  async createInfluencer(email: string, passwordHash: string): Promise<Influencer> {
+    const [newInfluencer] = await db.insert(influencers).values({
+      email,
+      profileCompleted: false,
+      score: 0,
+      penalty: 0,
+      restricted: false,
+      country: 'United States',
+    }).returning();
+    return newInfluencer;
+  }
+
+  async createInfluencerFromSupabase(data: {
+    email: string;
+    supabaseId: string;
+    name?: string | null;
+    profileImageUrl?: string | null;
+  }): Promise<Influencer> {
+    const [newInfluencer] = await db.insert(influencers).values({
+      email: data.email,
+      supabaseId: data.supabaseId,
+      name: data.name || null,
+      profileImageUrl: data.profileImageUrl || null,
+      profileCompleted: false,
+      score: 0,
+      penalty: 0,
+      restricted: false,
+      country: 'United States',
+    }).returning();
+    return newInfluencer;
+  }
+
+  async updateInfluencer(id: string, data: Partial<Influencer>): Promise<Influencer | undefined> {
+    const influencer = await this.getInfluencer(id);
+    if (!influencer) return undefined;
+
+    const merged = { ...influencer, ...data };
+    const requiredFields = ['name', 'tiktokHandle', 'phone', 'addressLine1', 'city', 'state', 'zipCode'];
+    const isComplete = requiredFields.every(field => merged[field as keyof Influencer]);
+    
+    const updateData = {
+      ...data,
+      profileCompleted: isComplete,
+      restricted: (merged.penalty ?? 0) >= 5 ? true : merged.restricted,
+    };
+
+    const [updated] = await db.update(influencers)
+      .set(updateData)
+      .where(eq(influencers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getAllInfluencers(): Promise<Influencer[]> {
+    return await db.select().from(influencers).orderBy(desc(influencers.createdAt));
+  }
+
+  async getCampaign(id: string): Promise<Campaign | undefined> {
+    const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, id));
+    return campaign;
+  }
+
+  async getAllCampaigns(): Promise<Campaign[]> {
+    return await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
+  }
+
+  async getActiveCampaigns(): Promise<Campaign[]> {
+    return await db.select().from(campaigns).where(
+      sql`${campaigns.status} IN ('active', 'full')`
+    ).orderBy(desc(campaigns.createdAt));
+  }
+
+  async createCampaign(campaign: InsertCampaign): Promise<Campaign> {
+    const [newCampaign] = await db.insert(campaigns).values({
+      name: campaign.name,
+      brandName: campaign.brandName,
+      category: campaign.category,
+      rewardType: campaign.rewardType,
+      inventory: campaign.inventory,
+      approvedCount: 0,
+      imageUrl: campaign.imageUrl || null,
+      amazonUrl: campaign.amazonUrl || null,
+      guidelinesSummary: campaign.guidelinesSummary || null,
+      guidelinesUrl: campaign.guidelinesUrl || null,
+      requiredHashtags: campaign.requiredHashtags || null,
+      requiredMentions: campaign.requiredMentions || null,
+      deadline: new Date(campaign.deadline),
+      status: campaign.status || 'draft',
+      createdByAdminId: campaign.createdByAdminId || null,
+    }).returning();
+    return newCampaign;
+  }
+
+  async updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign | undefined> {
+    const campaign = await this.getCampaign(id);
+    if (!campaign) return undefined;
+
+    const merged = { ...campaign, ...data };
+    if ((merged.approvedCount ?? 0) >= merged.inventory && merged.status === 'active') {
+      data.status = 'full';
+    }
+
+    const [updated] = await db.update(campaigns)
+      .set(data)
+      .where(eq(campaigns.id, id))
+      .returning();
+    return updated;
+  }
+
+  async incrementCampaignApprovedCount(id: string): Promise<void> {
+    const campaign = await this.getCampaign(id);
+    if (campaign) {
+      const newCount = (campaign.approvedCount ?? 0) + 1;
+      const newStatus = newCount >= campaign.inventory && campaign.status === 'active' ? 'full' : campaign.status;
+      await db.update(campaigns)
+        .set({ approvedCount: newCount, status: newStatus })
+        .where(eq(campaigns.id, id));
+    }
+  }
+
+  async decrementCampaignApprovedCount(id: string): Promise<void> {
+    const campaign = await this.getCampaign(id);
+    if (campaign && (campaign.approvedCount ?? 0) > 0) {
+      await db.update(campaigns)
+        .set({ approvedCount: (campaign.approvedCount ?? 1) - 1 })
+        .where(eq(campaigns.id, id));
+    }
+  }
+
+  async getApplication(id: string): Promise<Application | undefined> {
+    const [application] = await db.select().from(applications).where(eq(applications.id, id));
+    return application;
+  }
+
+  async getApplicationByInfluencerAndCampaign(influencerId: string, campaignId: string): Promise<Application | undefined> {
+    const [application] = await db.select().from(applications)
+      .where(and(eq(applications.influencerId, influencerId), eq(applications.campaignId, campaignId)));
+    return application;
+  }
+
+  async getApplicationsByInfluencer(influencerId: string): Promise<Application[]> {
+    return await db.select().from(applications).where(eq(applications.influencerId, influencerId));
+  }
+
+  async getApplicationsByCampaign(campaignId: string): Promise<Application[]> {
+    return await db.select().from(applications).where(eq(applications.campaignId, campaignId));
+  }
+
+  async getApplicationsWithDetails(influencerId: string): Promise<ApplicationWithDetails[]> {
+    const apps = await this.getApplicationsByInfluencer(influencerId);
+    const detailed: ApplicationWithDetails[] = [];
+
+    for (const app of apps) {
+      const campaign = await this.getCampaign(app.campaignId);
+      if (campaign) {
+        const shippingData = await this.getShippingByApplication(app.id);
+        const upload = await this.getUploadByApplication(app.id);
+        detailed.push({
+          ...app,
+          campaign,
+          shipping: shippingData || undefined,
+          upload: upload || undefined,
+        });
+      }
+    }
+
+    return detailed;
+  }
+
+  async getApplicationsWithDetailsByCampaign(campaignId: string): Promise<ApplicationWithDetails[]> {
+    const apps = await this.getApplicationsByCampaign(campaignId);
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign) return [];
+
+    const detailed: ApplicationWithDetails[] = [];
+
+    for (const app of apps) {
+      const influencer = await this.getInfluencer(app.influencerId);
+      const shippingData = await this.getShippingByApplication(app.id);
+      const upload = await this.getUploadByApplication(app.id);
+      detailed.push({
+        ...app,
+        campaign,
+        influencer: influencer || undefined,
+        shipping: shippingData || undefined,
+        upload: upload || undefined,
+      });
+    }
+
+    return detailed;
+  }
+
+  async createApplication(application: InsertApplication): Promise<Application> {
+    const previousApps = await this.getApplicationsByInfluencer(application.influencerId);
+    const hasCompletedBefore = previousApps.some(a => a.status === 'completed');
+
+    const [newApplication] = await db.insert(applications).values({
+      campaignId: application.campaignId,
+      influencerId: application.influencerId,
+      status: 'pending',
+      firstTime: !hasCompletedBefore,
+    }).returning();
+    return newApplication;
+  }
+
+  async updateApplication(id: string, data: Partial<Application>): Promise<Application | undefined> {
+    const [updated] = await db.update(applications)
+      .set(data)
+      .where(eq(applications.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getShippingByApplication(applicationId: string): Promise<Shipping | undefined> {
+    const [shippingData] = await db.select().from(shipping).where(eq(shipping.applicationId, applicationId));
+    return shippingData;
+  }
+
+  async createShipping(shippingData: InsertShipping): Promise<Shipping> {
+    const [newShipping] = await db.insert(shipping).values({
+      applicationId: shippingData.applicationId,
+      status: 'pending',
+      trackingNumber: shippingData.trackingNumber || null,
+      courier: shippingData.courier || null,
+    }).returning();
+    return newShipping;
+  }
+
+  async updateShipping(id: string, data: Partial<Shipping>): Promise<Shipping | undefined> {
+    const [updated] = await db.update(shipping)
+      .set(data)
+      .where(eq(shipping.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateShippingByApplication(applicationId: string, data: Partial<Shipping>): Promise<Shipping | undefined> {
+    const shippingData = await this.getShippingByApplication(applicationId);
+    if (!shippingData) return undefined;
+    return this.updateShipping(shippingData.id, data);
+  }
+
+  async getUploadByApplication(applicationId: string): Promise<Upload | undefined> {
+    const [upload] = await db.select().from(uploads).where(eq(uploads.applicationId, applicationId));
+    return upload;
+  }
+
+  async createUpload(uploadData: InsertUpload): Promise<Upload> {
+    const [newUpload] = await db.insert(uploads).values({
+      applicationId: uploadData.applicationId,
+      status: 'not_uploaded',
+      tiktokVideoUrl: uploadData.tiktokVideoUrl || null,
+    }).returning();
+    return newUpload;
+  }
+
+  async updateUpload(id: string, data: Partial<Upload>): Promise<Upload | undefined> {
+    const [updated] = await db.update(uploads)
+      .set(data)
+      .where(eq(uploads.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateUploadByApplication(applicationId: string, data: Partial<Upload>): Promise<Upload | undefined> {
+    const upload = await this.getUploadByApplication(applicationId);
+    if (!upload) return undefined;
+    return this.updateUpload(upload.id, data);
+  }
+
+  async addScoreEvent(event: InsertScoreEvent): Promise<ScoreEvent> {
+    const [newEvent] = await db.insert(scoreEvents).values({
+      influencerId: event.influencerId,
+      campaignId: event.campaignId || null,
+      applicationId: event.applicationId || null,
+      delta: event.delta,
+      reason: event.reason,
+      createdByAdminId: event.createdByAdminId || null,
+    }).returning();
+
+    const influencer = await this.getInfluencer(event.influencerId);
+    if (influencer) {
+      const newScore = Math.max(0, Math.min(100, (influencer.score ?? 0) + event.delta));
+      await this.updateInfluencer(event.influencerId, { score: newScore });
+    }
+
+    return newEvent;
+  }
+
+  async getScoreEventsByInfluencer(influencerId: string): Promise<ScoreEvent[]> {
+    return await db.select().from(scoreEvents)
+      .where(eq(scoreEvents.influencerId, influencerId))
+      .orderBy(desc(scoreEvents.createdAt));
+  }
+
+  async addPenaltyEvent(event: InsertPenaltyEvent): Promise<PenaltyEvent> {
+    const [newEvent] = await db.insert(penaltyEvents).values({
+      influencerId: event.influencerId,
+      campaignId: event.campaignId || null,
+      applicationId: event.applicationId || null,
+      delta: event.delta,
+      reason: event.reason,
+      createdByAdminId: event.createdByAdminId || null,
+    }).returning();
+
+    const influencer = await this.getInfluencer(event.influencerId);
+    if (influencer) {
+      const newPenalty = Math.max(0, (influencer.penalty ?? 0) + event.delta);
+      await this.updateInfluencer(event.influencerId, {
+        penalty: newPenalty,
+        restricted: newPenalty >= 5,
+      });
+    }
+
+    return newEvent;
+  }
+
+  async getPenaltyEventsByInfluencer(influencerId: string): Promise<PenaltyEvent[]> {
+    return await db.select().from(penaltyEvents)
+      .where(eq(penaltyEvents.influencerId, influencerId))
+      .orderBy(desc(penaltyEvents.createdAt));
+  }
+
+  async addAdminNote(note: InsertAdminNote): Promise<AdminNote> {
+    const [newNote] = await db.insert(adminNotes).values({
+      influencerId: note.influencerId,
+      campaignId: note.campaignId || null,
+      applicationId: note.applicationId || null,
+      adminId: note.adminId,
+      note: note.note,
+    }).returning();
+    return newNote;
+  }
+
+  async getNotesByInfluencer(influencerId: string): Promise<AdminNote[]> {
+    return await db.select().from(adminNotes)
+      .where(eq(adminNotes.influencerId, influencerId))
+      .orderBy(desc(adminNotes.createdAt));
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values({
+      influencerId: notification.influencerId,
+      campaignId: notification.campaignId || null,
+      applicationId: notification.applicationId || null,
+      type: notification.type,
+      channel: notification.channel || 'email',
+      status: 'sent',
+    }).returning();
+    return newNotification;
+  }
+
+  async createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue> {
+    const [newIssue] = await db.insert(shippingIssues).values({
+      applicationId: issue.applicationId,
+      influencerId: issue.influencerId,
+      campaignId: issue.campaignId,
+      message: issue.message,
+      status: 'open',
+    }).returning();
+    return newIssue;
+  }
+
+  async getShippingIssuesByApplication(applicationId: string): Promise<ShippingIssue[]> {
+    return await db.select().from(shippingIssues)
+      .where(eq(shippingIssues.applicationId, applicationId));
+  }
+
+  async getAllOpenShippingIssues(): Promise<ShippingIssueWithDetails[]> {
+    const openIssues = await db.select().from(shippingIssues)
+      .where(eq(shippingIssues.status, 'open'));
+    
+    return Promise.all(openIssues.map(async (issue) => {
+      const influencer = await this.getInfluencer(issue.influencerId);
+      const campaign = await this.getCampaign(issue.campaignId);
+      return { ...issue, influencer, campaign };
+    }));
+  }
+
+  async updateShippingIssue(id: string, data: Partial<ShippingIssue>): Promise<ShippingIssue | undefined> {
+    const [updated] = await db.update(shippingIssues)
+      .set(data)
+      .where(eq(shippingIssues.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getAdminStats(): Promise<{
+    activeCampaigns: number;
+    pendingApplicants: number;
+    shippingPending: number;
+    uploadPending: number;
+    openIssues: number;
+  }> {
+    const [activeCampaignsResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(campaigns).where(eq(campaigns.status, 'active'));
+    
+    const [pendingApplicantsResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(applications).where(eq(applications.status, 'pending'));
+    
+    const [shippingPendingResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(applications).where(eq(applications.status, 'approved'));
+    
+    const [uploadPendingResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(applications).where(eq(applications.status, 'delivered'));
+    
+    const [openIssuesResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(shippingIssues).where(eq(shippingIssues.status, 'open'));
+
+    return {
+      activeCampaigns: activeCampaignsResult?.count ?? 0,
+      pendingApplicants: pendingApplicantsResult?.count ?? 0,
+      shippingPending: shippingPendingResult?.count ?? 0,
+      uploadPending: uploadPendingResult?.count ?? 0,
+      openIssues: openIssuesResult?.count ?? 0,
+    };
+  }
+
+  async verifyAdminPassword(id: string, password: string): Promise<boolean> {
+    const admin = await this.getAdmin(id);
+    if (!admin) return false;
+    return bcrypt.compare(password, admin.password);
+  }
+
+  async verifyInfluencerPassword(id: string, password: string): Promise<boolean> {
+    return false;
+  }
+}
