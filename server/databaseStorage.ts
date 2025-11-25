@@ -16,7 +16,7 @@ import {
   type Notification, type InsertNotification,
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
 } from "@shared/schema";
-import { IStorage } from "./storage";
+import { IStorage, GetCampaignsOptions, PaginatedCampaignsResult } from "./storage";
 
 export class DatabaseStorage implements IStorage {
   async getAdmin(id: string): Promise<Admin | undefined> {
@@ -231,6 +231,45 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(campaigns).where(
       sql`${campaigns.status} IN ('active', 'full')`
     ).orderBy(desc(campaigns.createdAt));
+  }
+
+  async getCampaignsPaginated(options: GetCampaignsOptions): Promise<PaginatedCampaignsResult> {
+    const page = Math.max(1, options.page || 1);
+    const pageSize = Math.min(50, Math.max(1, options.pageSize || 20));
+    const offset = (page - 1) * pageSize;
+    const search = options.search;
+    const status = options.status;
+
+    // Build conditions
+    const conditions = [];
+    if (search) {
+      conditions.push(sql`LOWER(${campaigns.name}) LIKE LOWER(${'%' + search + '%'})`);
+    }
+    if (status && status !== 'all') {
+      conditions.push(eq(campaigns.status, status));
+    }
+
+    // Get total count
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const countResult = await db.select({ count: sql<number>`count(*)` })
+      .from(campaigns)
+      .where(whereClause);
+    const totalCount = Number(countResult[0]?.count || 0);
+
+    // Get paginated items
+    const items = await db.select()
+      .from(campaigns)
+      .where(whereClause)
+      .orderBy(desc(campaigns.createdAt))
+      .limit(pageSize)
+      .offset(offset);
+
+    return {
+      items,
+      totalCount,
+      page,
+      pageSize,
+    };
   }
 
   async createCampaign(campaign: InsertCampaign): Promise<Campaign> {
