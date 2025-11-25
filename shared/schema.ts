@@ -266,6 +266,30 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 
+// Shipping Issues (reported by influencers)
+export const shippingIssues = pgTable("shipping_issues", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  applicationId: varchar("application_id").notNull(),
+  influencerId: varchar("influencer_id").notNull(),
+  campaignId: varchar("campaign_id").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("open"), // 'open' | 'resolved' | 'dismissed'
+  resolvedByAdminId: varchar("resolved_by_admin_id"),
+  resolvedAt: timestamp("resolved_at"),
+  adminResponse: text("admin_response"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertShippingIssueSchema = createInsertSchema(shippingIssues).pick({
+  applicationId: true,
+  influencerId: true,
+  campaignId: true,
+  message: true,
+});
+
+export type InsertShippingIssue = z.infer<typeof insertShippingIssueSchema>;
+export type ShippingIssue = typeof shippingIssues.$inferSelect;
+
 // Extended types for frontend with joined data
 export type ApplicationWithDetails = Application & {
   campaign: Campaign;
@@ -277,4 +301,9 @@ export type ApplicationWithDetails = Application & {
 export type CampaignWithStats = Campaign & {
   applicationCount?: number;
   pendingCount?: number;
+};
+
+export type ShippingIssueWithDetails = ShippingIssue & {
+  influencer?: Influencer;
+  campaign?: Campaign;
 };

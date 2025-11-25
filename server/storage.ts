@@ -9,6 +9,7 @@ import {
   type PenaltyEvent, type InsertPenaltyEvent,
   type AdminNote, type InsertAdminNote,
   type Notification, type InsertNotification,
+  type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as bcrypt from 'bcryptjs';
@@ -73,12 +74,19 @@ export interface IStorage {
   // Notifications
   createNotification(notification: InsertNotification): Promise<Notification>;
   
+  // Shipping Issues
+  createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue>;
+  getShippingIssuesByApplication(applicationId: string): Promise<ShippingIssue[]>;
+  getAllOpenShippingIssues(): Promise<ShippingIssueWithDetails[]>;
+  updateShippingIssue(id: string, data: Partial<ShippingIssue>): Promise<ShippingIssue | undefined>;
+  
   // Stats
   getAdminStats(): Promise<{
     activeCampaigns: number;
     pendingApplicants: number;
     shippingPending: number;
     uploadPending: number;
+    openIssues: number;
   }>;
 }
 
@@ -93,6 +101,7 @@ export class MemStorage implements IStorage {
   private penaltyEvents: Map<string, PenaltyEvent>;
   private adminNotes: Map<string, AdminNote>;
   private notifications: Map<string, Notification>;
+  private shippingIssues: Map<string, ShippingIssue>;
   private influencerPasswords: Map<string, string>;
   private adminPasswords: Map<string, string>;
 
@@ -107,6 +116,7 @@ export class MemStorage implements IStorage {
     this.penaltyEvents = new Map();
     this.adminNotes = new Map();
     this.notifications = new Map();
+    this.shippingIssues = new Map();
     this.influencerPasswords = new Map();
     this.adminPasswords = new Map();
     
@@ -656,21 +666,64 @@ export class MemStorage implements IStorage {
     return newNotification;
   }
 
+  // Shipping Issues
+  async createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue> {
+    const id = randomUUID();
+    const newIssue: ShippingIssue = {
+      id,
+      applicationId: issue.applicationId,
+      influencerId: issue.influencerId,
+      campaignId: issue.campaignId,
+      message: issue.message,
+      status: 'open',
+      resolvedByAdminId: null,
+      resolvedAt: null,
+      adminResponse: null,
+      createdAt: new Date(),
+    };
+    this.shippingIssues.set(id, newIssue);
+    return newIssue;
+  }
+
+  async getShippingIssuesByApplication(applicationId: string): Promise<ShippingIssue[]> {
+    return Array.from(this.shippingIssues.values()).filter(i => i.applicationId === applicationId);
+  }
+
+  async getAllOpenShippingIssues(): Promise<ShippingIssueWithDetails[]> {
+    const openIssues = Array.from(this.shippingIssues.values()).filter(i => i.status === 'open');
+    return Promise.all(openIssues.map(async (issue) => {
+      const influencer = await this.getInfluencer(issue.influencerId);
+      const campaign = await this.getCampaign(issue.campaignId);
+      return { ...issue, influencer, campaign };
+    }));
+  }
+
+  async updateShippingIssue(id: string, data: Partial<ShippingIssue>): Promise<ShippingIssue | undefined> {
+    const issue = this.shippingIssues.get(id);
+    if (!issue) return undefined;
+    const updated = { ...issue, ...data };
+    this.shippingIssues.set(id, updated);
+    return updated;
+  }
+
   // Stats
   async getAdminStats(): Promise<{
     activeCampaigns: number;
     pendingApplicants: number;
     shippingPending: number;
     uploadPending: number;
+    openIssues: number;
   }> {
     const campaigns = Array.from(this.campaigns.values());
     const applications = Array.from(this.applications.values());
+    const issues = Array.from(this.shippingIssues.values());
     
     return {
       activeCampaigns: campaigns.filter(c => c.status === 'active').length,
       pendingApplicants: applications.filter(a => a.status === 'pending').length,
       shippingPending: applications.filter(a => a.status === 'approved').length,
       uploadPending: applications.filter(a => a.status === 'delivered').length,
+      openIssues: issues.filter(i => i.status === 'open').length,
     };
   }
 

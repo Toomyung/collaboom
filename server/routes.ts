@@ -315,13 +315,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { message } = req.body;
-      if (!message) {
+      if (!message || typeof message !== "string" || message.trim().length === 0) {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      // In a real app, this would create a support ticket
-      // For now, we just acknowledge it
-      return res.json({ success: true });
+      // Create shipping issue in storage
+      const issue = await storage.createShippingIssue({
+        applicationId: application.id,
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        message: message.trim(),
+      });
+
+      return res.json({ success: true, issue });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get issues for an application (influencer)
+  app.get("/api/applications/:id/issues", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const issues = await storage.getShippingIssuesByApplication(req.params.id);
+      return res.json(issues);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -442,6 +467,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createShipping({ applicationId: application.id });
       }
 
+      // Log notification for approval
+      await storage.createNotification({
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        type: "approved",
+      });
+
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -469,6 +502,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateApplication(application.id, {
         status: "rejected",
         rejectedAt: new Date(),
+      });
+
+      // Log notification for rejection
+      await storage.createNotification({
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        type: "rejected",
       });
 
       return res.json({ success: true });
@@ -520,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let skipped = 0;
       
       // Use Set to ensure no duplicate IDs are processed
-      const uniqueIds = [...new Set(applicationIds)];
+      const uniqueIds = Array.from(new Set<string>(applicationIds));
 
       for (const id of uniqueIds) {
         const application = await storage.getApplication(id);
@@ -580,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const parts = line.split(",");
         if (parts.length < 4) continue;
         
-        const [email, trackingNumber, courier, shippedDate, deliveredDate] = parts.map(p => p.trim());
+        const [email, trackingNumber, courier, shippedDate, deliveredDate] = parts.map((p: string) => p.trim());
         
         // Find influencer by email
         const influencer = await storage.getInfluencerByEmail(email);
@@ -610,6 +651,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: deliveredAt ? "delivered" : "shipped",
           shippedAt,
           deliveredAt,
+        });
+
+        // Log shipping notification
+        await storage.createNotification({
+          influencerId: influencer.id,
+          campaignId: req.params.id,
+          applicationId: application.id,
+          type: deliveredAt ? "shipping_delivered" : "shipping_shipped",
         });
       }
 
@@ -698,16 +747,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "missed",
       });
 
-      // Add penalty
+      // Check if this is first-time ghosting (influencer has no completed campaigns)
       const influencer = await storage.getInfluencer(application.influencerId);
       if (influencer) {
-        const penaltyAmount = application.firstTime ? 2 : 1;
+        // Check for previous completed applications to detect first-time ghosting
+        const allApplications = await storage.getApplicationsByInfluencer(influencer.id);
+        const hasCompletedBefore = allApplications.some(app => 
+          app.id !== application.id && app.status === "completed"
+        );
+        
+        // First-time ghosting: penalty +5 and immediate restriction
+        // Subsequent misses: penalty +1
+        const isFirstTimeGhosting = !hasCompletedBefore && (influencer.penalty ?? 0) === 0;
+        const penaltyAmount = isFirstTimeGhosting ? 5 : 1;
+        
         await storage.addPenaltyEvent({
           influencerId: influencer.id,
           campaignId: application.campaignId,
           applicationId: application.id,
           delta: penaltyAmount,
-          reason: application.firstTime ? "first_ghosting" : "deadline_missed",
+          reason: isFirstTimeGhosting ? "first_ghosting" : "deadline_missed",
+        });
+
+        // Log notification for tracking
+        await storage.createNotification({
+          influencerId: influencer.id,
+          campaignId: application.campaignId,
+          applicationId: application.id,
+          type: isFirstTimeGhosting ? "account_restricted" : "deadline_missed",
         });
       }
 
@@ -787,6 +854,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // =====================
+  // ADMIN NOTES
+  // =====================
+
+  // Get admin notes for an influencer
+  app.get("/api/admin/influencers/:id/notes", requireAuth("admin"), async (req, res) => {
+    try {
+      const notes = await storage.getNotesByInfluencer(req.params.id);
+      return res.json(notes);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Add admin note for an influencer
+  app.post("/api/admin/influencers/:id/notes", requireAuth("admin"), async (req, res) => {
+    try {
+      const { note, campaignId, applicationId } = req.body;
+      if (!note || typeof note !== "string" || note.trim().length === 0) {
+        return res.status(400).json({ message: "Note content is required" });
+      }
+
+      const newNote = await storage.addAdminNote({
+        influencerId: req.params.id,
+        adminId: req.session.userId!,
+        note: note.trim(),
+        campaignId: campaignId || undefined,
+        applicationId: applicationId || undefined,
+      });
+
+      return res.json(newNote);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // =====================
+  // SCORE/PENALTY HISTORY
+  // =====================
+
+  // Get score events for an influencer
+  app.get("/api/admin/influencers/:id/score-events", requireAuth("admin"), async (req, res) => {
+    try {
+      const events = await storage.getScoreEventsByInfluencer(req.params.id);
+      return res.json(events);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get penalty events for an influencer
+  app.get("/api/admin/influencers/:id/penalty-events", requireAuth("admin"), async (req, res) => {
+    try {
+      const events = await storage.getPenaltyEventsByInfluencer(req.params.id);
+      return res.json(events);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get applications for an influencer (for history view)
+  app.get("/api/admin/influencers/:id/applications", requireAuth("admin"), async (req, res) => {
+    try {
+      const applications = await storage.getApplicationsByInfluencer(req.params.id);
+      // Enrich with campaign data
+      const enriched = await Promise.all(
+        applications.map(async (app) => {
+          const campaign = await storage.getCampaign(app.campaignId);
+          return { ...app, campaign };
+        })
+      );
+      return res.json(enriched);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // =====================
+  // SHIPPING ISSUES (ADMIN)
+  // =====================
+
+  // Get all open shipping issues
+  app.get("/api/admin/issues", requireAuth("admin"), async (req, res) => {
+    try {
+      const issues = await storage.getAllOpenShippingIssues();
+      return res.json(issues);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Resolve a shipping issue
+  app.post("/api/admin/issues/:id/resolve", requireAuth("admin"), async (req, res) => {
+    try {
+      const { response } = req.body;
+      
+      const issue = await storage.updateShippingIssue(req.params.id, {
+        status: "resolved",
+        resolvedByAdminId: req.session.userId,
+        resolvedAt: new Date(),
+        adminResponse: response || null,
+      });
+
+      if (!issue) {
+        return res.status(404).json({ message: "Issue not found" });
+      }
+
+      return res.json({ success: true, issue });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Dismiss a shipping issue
+  app.post("/api/admin/issues/:id/dismiss", requireAuth("admin"), async (req, res) => {
+    try {
+      const { response } = req.body;
+      
+      const issue = await storage.updateShippingIssue(req.params.id, {
+        status: "dismissed",
+        resolvedByAdminId: req.session.userId,
+        resolvedAt: new Date(),
+        adminResponse: response || null,
+      });
+
+      if (!issue) {
+        return res.status(404).json({ message: "Issue not found" });
+      }
+
+      return res.json({ success: true, issue });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
