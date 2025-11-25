@@ -35,13 +35,14 @@ import { useState } from "react";
 const formSchema = insertCampaignSchema.extend({
   requiredHashtags: z.array(z.string()).optional(),
   requiredMentions: z.array(z.string()).optional(),
+  deadline: z.string().min(1, "Deadline is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export default function AdminCampaignFormPage() {
   const { id } = useParams<{ id: string }>();
-  const isEditing = id && id !== "new";
+  const isEditing = Boolean(id && id !== "new");
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -83,7 +84,9 @@ export default function AdminCampaignFormPage() {
           guidelinesUrl: campaign.guidelinesUrl || "",
           requiredHashtags: campaign.requiredHashtags || [],
           requiredMentions: campaign.requiredMentions || [],
-          deadline: new Date(campaign.deadline).toISOString().slice(0, 16),
+          deadline: campaign.deadline 
+            ? new Date(campaign.deadline).toISOString().slice(0, 16)
+            : new Date().toISOString().split("T")[0] + "T23:59",
           status: campaign.status,
         }
       : undefined,
@@ -91,7 +94,8 @@ export default function AdminCampaignFormPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const res = await apiRequest("POST", "/api/admin/campaigns", data);
+      const payload = { ...data, deadline: new Date(data.deadline) };
+      const res = await apiRequest("POST", "/api/admin/campaigns", payload);
       return res.json();
     },
     onSuccess: (data) => {
@@ -106,7 +110,8 @@ export default function AdminCampaignFormPage() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const res = await apiRequest("PUT", `/api/admin/campaigns/${id}`, data);
+      const payload = { ...data, deadline: new Date(data.deadline) };
+      const res = await apiRequest("PUT", `/api/admin/campaigns/${id}`, payload);
       return res.json();
     },
     onSuccess: () => {
