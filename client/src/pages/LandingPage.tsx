@@ -78,8 +78,9 @@ const faqs = [
 ];
 
 export default function LandingPage() {
-  const { user, isAuthenticated, influencer, logout, isLoading } = useAuth();
+  const { user, isAuthenticated, isAdmin, influencer, logout, isLoading } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const isInfluencer = isAuthenticated && !isAdmin;
 
   return (
     <div className="min-h-screen">
@@ -99,18 +100,29 @@ export default function LandingPage() {
                 <div className="h-9 w-20 bg-muted animate-pulse rounded-md" />
               ) : isAuthenticated ? (
                 <div className="flex items-center gap-3">
-                  <Link href="/dashboard">
-                    <Button variant="ghost" size="sm" data-testid="header-link-dashboard">
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Link href="/profile">
-                    <Button variant="ghost" size="sm" data-testid="header-link-profile">
-                      <User className="h-4 w-4 mr-2" />
-                      Profile
-                    </Button>
-                  </Link>
+                  {isInfluencer ? (
+                    <>
+                      <Link href="/dashboard">
+                        <Button variant="ghost" size="sm" data-testid="header-link-dashboard">
+                          <LayoutDashboard className="h-4 w-4 mr-2" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="/profile">
+                        <Button variant="ghost" size="sm" data-testid="header-link-profile">
+                          <User className="h-4 w-4 mr-2" />
+                          Profile
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <Link href="/admin">
+                      <Button variant="ghost" size="sm" data-testid="header-link-admin-dashboard">
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{user?.name || user?.email}</span>
                   </div>
@@ -170,28 +182,37 @@ export default function LandingPage() {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 {isAuthenticated ? (
-                  <>
-                    {influencer?.profileCompleted ? (
-                      <Link href="/campaigns">
-                        <Button size="lg" className="w-full sm:w-auto" data-testid="button-browse-campaigns">
-                          Browse Campaigns
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Link href="/profile">
-                        <Button size="lg" className="w-full sm:w-auto" data-testid="button-complete-profile">
-                          Complete Your Profile
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    )}
-                    <Link href="/dashboard">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-go-dashboard">
-                        Go to Dashboard
+                  isAdmin ? (
+                    <Link href="/admin">
+                      <Button size="lg" className="w-full sm:w-auto" data-testid="button-go-admin">
+                        Go to Admin Dashboard
+                        <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
-                  </>
+                  ) : (
+                    <>
+                      {influencer?.profileCompleted ? (
+                        <Link href="/campaigns">
+                          <Button size="lg" className="w-full sm:w-auto" data-testid="button-browse-campaigns">
+                            Browse Campaigns
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link href="/profile">
+                          <Button size="lg" className="w-full sm:w-auto" data-testid="button-complete-profile">
+                            Complete Your Profile
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </Link>
+                      )}
+                      <Link href="/dashboard">
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-go-dashboard">
+                          Go to Dashboard
+                        </Button>
+                      </Link>
+                    </>
+                  )
                 ) : (
                   <>
                     <Link href="/register">

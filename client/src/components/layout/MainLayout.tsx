@@ -10,11 +10,12 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const { user, isAuthenticated, influencer, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, influencer, logout } = useAuth();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isLanding = location === "/";
+  const isInfluencer = isAuthenticated && !isAdmin;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -40,7 +41,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   Campaigns
                 </Button>
               </Link>
-              {isAuthenticated && (
+              {isInfluencer && (
                 <>
                   <Link href="/dashboard">
                     <Button
@@ -62,6 +63,17 @@ export function MainLayout({ children }: MainLayoutProps) {
                   </Link>
                 </>
               )}
+              {isAdmin && (
+                <Link href="/admin">
+                  <Button
+                    variant={location.startsWith("/admin") ? "secondary" : "ghost"}
+                    data-testid="link-admin-dashboard"
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Admin Dashboard
+                  </Button>
+                </Link>
+              )}
             </nav>
 
             <div className="hidden md:flex items-center gap-3">
@@ -70,7 +82,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <div className="text-sm">
                     <span className="text-muted-foreground">Welcome,</span>{" "}
                     <span className="font-medium">{user?.name || user?.email}</span>
-                    {influencer && !influencer.profileCompleted && (
+                    {isInfluencer && influencer && !influencer.profileCompleted && (
                       <span className="ml-2 text-xs text-amber-500 font-medium">
                         (Profile incomplete)
                       </span>
@@ -127,26 +139,42 @@ export function MainLayout({ children }: MainLayoutProps) {
               </Link>
               {isAuthenticated ? (
                 <>
-                  <Link href="/dashboard">
-                    <Button
-                      variant={location === "/dashboard" ? "secondary" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Link href="/profile">
-                    <Button
-                      variant={location === "/profile" ? "secondary" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Profile
-                    </Button>
-                  </Link>
+                  {isInfluencer && (
+                    <>
+                      <Link href="/dashboard">
+                        <Button
+                          variant={location === "/dashboard" ? "secondary" : "ghost"}
+                          className="w-full justify-start"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <LayoutDashboard className="h-4 w-4 mr-2" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="/profile">
+                        <Button
+                          variant={location === "/profile" ? "secondary" : "ghost"}
+                          className="w-full justify-start"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Profile
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                  {isAdmin && (
+                    <Link href="/admin">
+                      <Button
+                        variant={location.startsWith("/admin") ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-destructive"
