@@ -95,11 +95,12 @@ export class DatabaseStorage implements IStorage {
     const requiredFields = ['name', 'tiktokHandle', 'phone', 'addressLine1', 'city', 'state', 'zipCode'];
     const isComplete = requiredFields.every(field => merged[field as keyof Influencer]);
     
-    const updateData = {
-      ...data,
-      profileCompleted: isComplete,
-      restricted: (merged.penalty ?? 0) >= 5 ? true : merged.restricted,
-    };
+    const updateData: Partial<Influencer> = { ...data };
+    updateData.profileCompleted = isComplete;
+    
+    if ((merged.penalty ?? 0) >= 5 && !merged.restricted) {
+      updateData.restricted = true;
+    }
 
     const [updated] = await db.update(influencers)
       .set(updateData)

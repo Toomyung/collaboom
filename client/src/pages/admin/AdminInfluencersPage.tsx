@@ -9,6 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -44,12 +51,16 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 
 type ApplicationWithCampaign = Application & { campaign?: Campaign };
+
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 export default function AdminInfluencersPage() {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
@@ -58,6 +69,8 @@ export default function AdminInfluencersPage() {
   const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [newNote, setNewNote] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const { data: influencers, isLoading } = useQuery<Influencer[]>({
     queryKey: ["/api/admin/influencers"],
@@ -165,6 +178,26 @@ export default function AdminInfluencersPage() {
     );
   });
 
+  const totalItems = filteredInfluencers?.length || 0;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedInfluencers = filteredInfluencers?.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
   const handleOpenDrawer = (inf: Influencer) => {
     setSelectedInfluencer(inf);
     setActiveTab("profile");
@@ -194,15 +227,33 @@ export default function AdminInfluencersPage() {
           <p className="text-muted-foreground">Manage creator accounts and scores</p>
         </div>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, or TikTok..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-            data-testid="input-search"
-          />
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, email, or TikTok..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="pl-10"
+              data-testid="input-search"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Show</span>
+            <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+              <SelectTrigger className="w-20" data-testid="select-items-per-page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>per page</span>
+          </div>
         </div>
 
         <Card>
@@ -213,7 +264,7 @@ export default function AdminInfluencersPage() {
                   <Skeleton key={i} className="h-12" />
                 ))}
               </div>
-            ) : filteredInfluencers && filteredInfluencers.length > 0 ? (
+            ) : paginatedInfluencers && paginatedInfluencers.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -226,7 +277,7 @@ export default function AdminInfluencersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInfluencers.map((inf) => (
+                  {paginatedInfluencers.map((inf) => (
                     <TableRow
                       key={inf.id}
                       className="cursor-pointer"
@@ -284,6 +335,62 @@ export default function AdminInfluencersPage() {
             )}
           </CardContent>
         </Card>
+
+        {totalItems > 0 && (
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <p data-testid="text-pagination-info">
+              Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} influencers
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                data-testid="button-prev-page"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      className="w-8 h-8 p-0"
+                      onClick={() => handlePageChange(pageNum)}
+                      data-testid={`button-page-${pageNum}`}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                data-testid="button-next-page"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Sheet open={!!selectedInfluencer} onOpenChange={(open) => !open && handleCloseDrawer()}>

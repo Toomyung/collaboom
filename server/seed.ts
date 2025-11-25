@@ -9,7 +9,8 @@ export async function seedDatabase() {
     
     if (!existingAdmin) {
       console.log('Seeding admin user...');
-      const passwordHash = await bcrypt.hash('admin123', 10);
+      const defaultPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'admin123';
+      const passwordHash = await bcrypt.hash(defaultPassword, 10);
       await db.insert(admins).values({
         email: 'admin@collaboom.com',
         password: passwordHash,
