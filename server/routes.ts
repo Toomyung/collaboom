@@ -394,6 +394,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Campaign is not accepting applications" });
       }
 
+      // Check application deadline
+      const applicationDeadline = campaign.applicationDeadline 
+        ? new Date(campaign.applicationDeadline) 
+        : new Date(campaign.deadline);
+      if (applicationDeadline.getTime() < Date.now()) {
+        return res.status(400).json({ message: "The application deadline has passed" });
+      }
+
       // Check if already applied
       const existing = await storage.getApplicationByInfluencerAndCampaign(influencerId, campaignId);
       if (existing) {
