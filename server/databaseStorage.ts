@@ -50,6 +50,11 @@ export class DatabaseStorage implements IStorage {
     return influencer;
   }
 
+  async getInfluencerBySupabaseId(supabaseId: string): Promise<Influencer | undefined> {
+    const [influencer] = await db.select().from(influencers).where(eq(influencers.supabaseId, supabaseId));
+    return influencer;
+  }
+
   async getInfluencerByTiktokHandle(handle: string): Promise<Influencer | undefined> {
     const [influencer] = await db.select().from(influencers).where(eq(influencers.tiktokHandle, handle));
     return influencer;

@@ -70,28 +70,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { user, accessToken } = req.body;
       
-      if (!user || !user.email) {
+      if (!user || !user.email || !user.id) {
         return res.status(400).json({ message: "Invalid user data" });
       }
 
-      // Check if influencer exists
-      let influencer = await storage.getInfluencerByEmail(user.email);
+      // First try to find influencer by Supabase ID (most reliable)
+      let influencer = await storage.getInfluencerBySupabaseId(user.id);
       
       if (!influencer) {
-        // Create new influencer from Google auth
-        influencer = await storage.createInfluencerFromSupabase({
-          email: user.email,
-          supabaseId: user.id,
-          name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-          profileImageUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-        });
-      } else {
-        // Update existing influencer with Supabase info if needed
-        if (!influencer.supabaseId) {
+        // Fallback: Check by email (for legacy accounts or email changes)
+        influencer = await storage.getInfluencerByEmail(user.email);
+        
+        if (!influencer) {
+          // Create new influencer from Google auth
+          influencer = await storage.createInfluencerFromSupabase({
+            email: user.email,
+            supabaseId: user.id,
+            name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+            profileImageUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+          });
+        } else {
+          // Update existing influencer with Supabase info
           await storage.updateInfluencer(influencer.id, {
             supabaseId: user.id,
             name: influencer.name || user.user_metadata?.full_name || user.user_metadata?.name || null,
             profileImageUrl: influencer.profileImageUrl || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+          });
+          influencer = await storage.getInfluencer(influencer.id);
+        }
+      } else {
+        // Influencer found by supabaseId - update profile image if changed
+        if (user.user_metadata?.avatar_url && influencer.profileImageUrl !== user.user_metadata.avatar_url) {
+          await storage.updateInfluencer(influencer.id, {
+            profileImageUrl: user.user_metadata.avatar_url,
           });
           influencer = await storage.getInfluencer(influencer.id);
         }

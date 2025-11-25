@@ -57,6 +57,7 @@ export interface IStorage {
   // Influencer
   getInfluencer(id: string): Promise<Influencer | undefined>;
   getInfluencerByEmail(email: string): Promise<Influencer | undefined>;
+  getInfluencerBySupabaseId(supabaseId: string): Promise<Influencer | undefined>;
   getInfluencerByTiktokHandle(handle: string): Promise<Influencer | undefined>;
   createInfluencer(email: string, passwordHash: string): Promise<Influencer>;
   createInfluencerFromSupabase(data: { email: string; supabaseId: string; name?: string | null; profileImageUrl?: string | null }): Promise<Influencer>;
@@ -186,7 +187,8 @@ export class MemStorage implements IStorage {
         name: 'Hydrating Serum Collection',
         brandName: 'GlowLab Korea',
         category: 'beauty',
-        rewardType: '20usd',
+        rewardType: 'paid',
+        rewardAmount: 20,
         inventory: 50,
         approvedCount: 23,
         imageUrl: 'https://images.unsplash.com/photo-1570194065650-d99fb4b38b15?w=600&h=400&fit=crop',
@@ -204,6 +206,7 @@ export class MemStorage implements IStorage {
         brandName: 'NatureBite',
         category: 'food',
         rewardType: 'gift',
+        rewardAmount: null,
         inventory: 100,
         approvedCount: 67,
         imageUrl: 'https://images.unsplash.com/photo-1604908177522-27d7bbafebef?w=600&h=400&fit=crop',
@@ -220,7 +223,8 @@ export class MemStorage implements IStorage {
         name: 'Cozy Home Candle Set',
         brandName: 'CozyLife Home',
         category: 'lifestyle',
-        rewardType: '50usd',
+        rewardType: 'paid',
+        rewardAmount: 50,
         inventory: 30,
         approvedCount: 28,
         imageUrl: 'https://images.unsplash.com/photo-1602607403925-3d0b3c3b3b3d?w=600&h=400&fit=crop',
@@ -237,7 +241,8 @@ export class MemStorage implements IStorage {
         name: 'Vitamin C Brightening Kit',
         brandName: 'SkinGlow',
         category: 'beauty',
-        rewardType: '20usd',
+        rewardType: 'paid',
+        rewardAmount: 20,
         inventory: 40,
         approvedCount: 15,
         imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&h=400&fit=crop',
@@ -255,6 +260,7 @@ export class MemStorage implements IStorage {
         brandName: 'FitFuel',
         category: 'food',
         rewardType: 'gift',
+        rewardAmount: null,
         inventory: 80,
         approvedCount: 45,
         imageUrl: 'https://images.unsplash.com/photo-1622484211148-c45b64e8a228?w=600&h=400&fit=crop',
@@ -311,6 +317,10 @@ export class MemStorage implements IStorage {
 
   async getInfluencerByEmail(email: string): Promise<Influencer | undefined> {
     return Array.from(this.influencers.values()).find(i => i.email === email);
+  }
+
+  async getInfluencerBySupabaseId(supabaseId: string): Promise<Influencer | undefined> {
+    return Array.from(this.influencers.values()).find(i => i.supabaseId === supabaseId);
   }
 
   async getInfluencerByTiktokHandle(handle: string): Promise<Influencer | undefined> {
@@ -506,6 +516,7 @@ export class MemStorage implements IStorage {
       brandName: campaign.brandName,
       category: campaign.category,
       rewardType: campaign.rewardType,
+      rewardAmount: campaign.rewardAmount ?? null,
       inventory: campaign.inventory,
       approvedCount: 0,
       imageUrl: campaign.imageUrl || null,
