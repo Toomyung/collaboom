@@ -95,6 +95,7 @@ export interface IStorage {
   
   // Notifications
   createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number }): Promise<Notification[]>;
   
   // Shipping Issues
   createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue>;
@@ -772,6 +773,21 @@ export class MemStorage implements IStorage {
     };
     this.notifications.set(id, newNotification);
     return newNotification;
+  }
+
+  async getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number }): Promise<Notification[]> {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+    
+    const notifications = Array.from(this.notifications.values())
+      .filter(n => n.influencerId === influencerId)
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    
+    return notifications.slice(offset, offset + limit);
   }
 
   // Shipping Issues

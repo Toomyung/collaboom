@@ -513,6 +513,17 @@ export class DatabaseStorage implements IStorage {
     return newNotification;
   }
 
+  async getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number }): Promise<Notification[]> {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+    
+    return await db.select().from(notifications)
+      .where(eq(notifications.influencerId, influencerId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
   async createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue> {
     const [newIssue] = await db.insert(shippingIssues).values({
       applicationId: issue.applicationId,

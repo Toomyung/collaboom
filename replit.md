@@ -180,3 +180,11 @@ Preferred communication style: Simple, everyday language.
 - Each influencer row shows campaign participation: "X applied · Y accepted · Z completed"
 - Stats calculated via SQL aggregation (COUNT with case expressions)
 - InfluencerWithStats type: Influencer + appliedCount, acceptedCount, completedCount
+
+**Influencer Notifications API**
+- API: GET `/api/me/notifications?limit=50&offset=0`
+- Returns notifications for the logged-in influencer, sorted by createdAt DESC
+- Requires influencer authentication (requireAuth("influencer"))
+- Pagination support via limit (max 100) and offset query parameters
+- Notification types: approved, rejected, shipping_shipped, shipping_delivered, deadline_missed, account_restricted
+- Storage method: `getNotificationsByInfluencer(influencerId, { limit, offset })`

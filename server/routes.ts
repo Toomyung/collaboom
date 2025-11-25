@@ -286,6 +286,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get influencer notifications
+  app.get("/api/me/notifications", requireAuth("influencer"), async (req, res) => {
+    try {
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+      const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+      
+      const notifications = await storage.getNotificationsByInfluencer(
+        req.session.userId!,
+        { limit, offset }
+      );
+      
+      return res.json(notifications);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get campaigns (public)
   app.get("/api/campaigns", async (req, res) => {
     const campaigns = await storage.getActiveCampaigns();
