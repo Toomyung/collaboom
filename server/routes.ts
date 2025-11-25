@@ -492,8 +492,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get all campaigns (admin)
   app.get("/api/admin/campaigns", requireAuth("admin"), async (req, res) => {
-    const campaigns = await storage.getAllCampaigns();
-    return res.json(campaigns);
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 20;
+    const search = req.query.search as string | undefined;
+    const status = req.query.status as string | undefined;
+
+    const result = await storage.getCampaignsPaginated({
+      page,
+      pageSize,
+      search,
+      status,
+    });
+    return res.json(result);
   });
 
   // Get single campaign (admin)
