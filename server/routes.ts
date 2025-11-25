@@ -540,15 +540,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Reward amount is required for paid campaigns" });
       }
       
-      // Parse deadline string to Date if provided
+      // Parse deadline strings to Date if provided
       let deadline = req.body.deadline;
       if (deadline && typeof deadline === 'string') {
         deadline = new Date(deadline);
       }
       
+      let applicationDeadline = req.body.applicationDeadline;
+      if (applicationDeadline && typeof applicationDeadline === 'string') {
+        applicationDeadline = new Date(applicationDeadline);
+      }
+      
       const data = insertCampaignSchema.parse({
         ...req.body,
         deadline,
+        applicationDeadline,
         // Clear rewardAmount if gift type
         rewardAmount: req.body.rewardType === 'gift' ? null : req.body.rewardAmount,
         createdByAdminId: req.session.userId,
@@ -566,10 +572,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update campaign
   app.put("/api/admin/campaigns/:id", requireAuth("admin"), async (req, res) => {
     try {
-      // Parse deadline string back to Date if provided
+      // Parse deadline strings back to Date if provided
       const data = { ...req.body };
       if (data.deadline && typeof data.deadline === 'string') {
         data.deadline = new Date(data.deadline);
+      }
+      if (data.applicationDeadline && typeof data.applicationDeadline === 'string') {
+        data.applicationDeadline = new Date(data.applicationDeadline);
       }
       
       // Validate that paid campaigns have a reward amount

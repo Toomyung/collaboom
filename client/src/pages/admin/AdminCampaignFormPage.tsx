@@ -35,7 +35,8 @@ import { useState } from "react";
 const formSchema = insertCampaignSchema.extend({
   requiredHashtags: z.array(z.string()).optional(),
   requiredMentions: z.array(z.string()).optional(),
-  deadline: z.string().min(1, "Deadline is required"),
+  applicationDeadline: z.string().min(1, "Application deadline is required"),
+  deadline: z.string().min(1, "Upload deadline is required"),
   rewardAmount: z.number().optional().nullable(),
 }).refine(
   (data) => {
@@ -47,6 +48,16 @@ const formSchema = insertCampaignSchema.extend({
   {
     message: "Reward amount is required for paid campaigns",
     path: ["rewardAmount"],
+  }
+).refine(
+  (data) => {
+    const appDeadline = new Date(data.applicationDeadline);
+    const uploadDeadline = new Date(data.deadline);
+    return appDeadline <= uploadDeadline;
+  },
+  {
+    message: "Application deadline must be before or equal to upload deadline",
+    path: ["applicationDeadline"],
   }
 );
 
@@ -92,7 +103,8 @@ export default function AdminCampaignFormPage() {
       guidelinesUrl: "",
       requiredHashtags: [],
       requiredMentions: [],
-      deadline: new Date().toISOString().split("T")[0] + "T23:59:00",
+      applicationDeadline: new Date().toISOString().split("T")[0] + "T23:59:00",
+      deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] + "T23:59:00",
       status: "draft",
     },
     values: campaign
@@ -111,6 +123,9 @@ export default function AdminCampaignFormPage() {
             guidelinesUrl: campaign.guidelinesUrl || "",
             requiredHashtags: campaign.requiredHashtags || [],
             requiredMentions: campaign.requiredMentions || [],
+            applicationDeadline: campaign.applicationDeadline 
+              ? new Date(campaign.applicationDeadline).toISOString().slice(0, 16)
+              : new Date().toISOString().split("T")[0] + "T23:59",
             deadline: campaign.deadline 
               ? new Date(campaign.deadline).toISOString().slice(0, 16)
               : new Date().toISOString().split("T")[0] + "T23:59",
@@ -124,7 +139,11 @@ export default function AdminCampaignFormPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const payload = { ...data, deadline: new Date(data.deadline) };
+      const payload = { 
+        ...data, 
+        applicationDeadline: new Date(data.applicationDeadline),
+        deadline: new Date(data.deadline) 
+      };
       const res = await apiRequest("POST", "/api/admin/campaigns", payload);
       return res.json();
     },
@@ -140,7 +159,11 @@ export default function AdminCampaignFormPage() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const payload = { ...data, deadline: new Date(data.deadline) };
+      const payload = { 
+        ...data, 
+        applicationDeadline: new Date(data.applicationDeadline),
+        deadline: new Date(data.deadline) 
+      };
       const res = await apiRequest("PUT", `/api/admin/campaigns/${id}`, payload);
       return res.json();
     },
@@ -348,22 +371,39 @@ export default function AdminCampaignFormPage() {
                   />
                 )}
 
+                <FormField
+                  control={form.control}
+                  name="inventory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Inventory (Slots) *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          data-testid="input-inventory"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="inventory"
+                    name="applicationDeadline"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Inventory (Slots) *</FormLabel>
+                        <FormLabel>Application Deadline *</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min="1"
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            data-testid="input-inventory"
-                          />
+                          <Input type="datetime-local" {...field} data-testid="input-application-deadline" />
                         </FormControl>
+                        <FormDescription>
+                          Last date to apply for this campaign
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -374,10 +414,13 @@ export default function AdminCampaignFormPage() {
                     name="deadline"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Deadline (PST) *</FormLabel>
+                        <FormLabel>Upload Deadline *</FormLabel>
                         <FormControl>
                           <Input type="datetime-local" {...field} data-testid="input-deadline" />
                         </FormControl>
+                        <FormDescription>
+                          Content submission deadline
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
