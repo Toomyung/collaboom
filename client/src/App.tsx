@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import AuthCallbackPage from "@/pages/AuthCallbackPage";
 import CampaignListPage from "@/pages/CampaignListPage";
 import CampaignDetailPage from "@/pages/CampaignDetailPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
+      <Route path="/auth/callback" component={AuthCallbackPage} />
       <Route path="/campaigns" component={CampaignListPage} />
       <Route path="/campaigns/:id" component={CampaignDetailPage} />
       

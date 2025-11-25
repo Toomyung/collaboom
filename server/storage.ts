@@ -25,6 +25,7 @@ export interface IStorage {
   getInfluencerByEmail(email: string): Promise<Influencer | undefined>;
   getInfluencerByTiktokHandle(handle: string): Promise<Influencer | undefined>;
   createInfluencer(email: string, passwordHash: string): Promise<Influencer>;
+  createInfluencerFromSupabase(data: { email: string; supabaseId: string; name?: string | null; profileImageUrl?: string | null }): Promise<Influencer>;
   updateInfluencer(id: string, data: Partial<Influencer>): Promise<Influencer | undefined>;
   getAllInfluencers(): Promise<Influencer[]>;
   
@@ -279,8 +280,10 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const newInfluencer: Influencer = {
       id,
+      supabaseId: null,
       email,
       name: null,
+      profileImageUrl: null,
       tiktokHandle: null,
       instagramHandle: null,
       phone: null,
@@ -299,6 +302,39 @@ export class MemStorage implements IStorage {
     };
     this.influencers.set(id, newInfluencer);
     this.influencerPasswords.set(id, passwordHash);
+    return newInfluencer;
+  }
+
+  async createInfluencerFromSupabase(data: { 
+    email: string; 
+    supabaseId: string;
+    name?: string | null;
+    profileImageUrl?: string | null;
+  }): Promise<Influencer> {
+    const id = randomUUID();
+    const newInfluencer: Influencer = {
+      id,
+      supabaseId: data.supabaseId,
+      email: data.email,
+      name: data.name || null,
+      profileImageUrl: data.profileImageUrl || null,
+      tiktokHandle: null,
+      instagramHandle: null,
+      phone: null,
+      addressLine1: null,
+      addressLine2: null,
+      city: null,
+      state: null,
+      zipCode: null,
+      country: 'United States',
+      paypalEmail: null,
+      profileCompleted: false,
+      score: 0,
+      penalty: 0,
+      restricted: false,
+      createdAt: new Date(),
+    };
+    this.influencers.set(id, newInfluencer);
     return newInfluencer;
   }
 

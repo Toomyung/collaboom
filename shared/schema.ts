@@ -25,8 +25,10 @@ export type Admin = typeof admins.$inferSelect;
 // Influencers
 export const influencers = pgTable("influencers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  supabaseId: text("supabase_id").unique(),
   email: text("email").notNull().unique(),
   name: text("name"),
+  profileImageUrl: text("profile_image_url"),
   tiktokHandle: text("tiktok_handle").unique(),
   instagramHandle: text("instagram_handle"),
   phone: text("phone"),

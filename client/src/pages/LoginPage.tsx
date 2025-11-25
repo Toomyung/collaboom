@@ -2,45 +2,43 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, ArrowLeft, Loader2 } from "lucide-react";
+import { Sparkles, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { loginInfluencer, loginInfluencerPending } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { signInWithGoogle, isAuthenticated, supabaseReady, supabaseError, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
+  if (isAuthenticated) {
+    setLocation("/dashboard");
+    return null;
+  }
+
+  const handleGoogleSignIn = async () => {
+    if (!supabaseReady) {
       toast({
-        title: "Missing fields",
-        description: "Please enter both email and password",
+        title: "Authentication unavailable",
+        description: "Please try again in a moment.",
         variant: "destructive",
       });
       return;
     }
-
-    const result = await loginInfluencer({ email, password });
     
-    if (result.success) {
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
-      setLocation("/dashboard");
-    } else {
+    setIsLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error) {
       toast({
         title: "Sign in failed",
-        description: result.error || "Invalid email or password",
+        description: "Could not connect to Google. Please try again.",
         variant: "destructive",
       });
+      setIsLoading(false);
     }
   };
 
@@ -63,60 +61,61 @@ export default function LoginPage() {
                 <Sparkles className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
+            <CardTitle className="text-2xl">Welcome to Collaboom</CardTitle>
             <CardDescription>
-              Sign in to your Collaboom account
+              Sign in with Google to start collaborating with top brands
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  data-testid="input-email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  data-testid="input-password"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loginInfluencerPending}
-                data-testid="button-signin"
-              >
-                {loginInfluencerPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </form>
+          <CardContent className="space-y-6">
+            {supabaseError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Authentication service is temporarily unavailable. Please try again later.
+                </AlertDescription>
+              </Alert>
+            )}
             
-            <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link href="/register">
-                <a className="text-primary hover:underline" data-testid="link-register">
-                  Create one
-                </a>
-              </Link>
+            <div className="bg-primary/5 rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-primary">✓</span>
+                <span>Access to exclusive brand campaigns</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-primary">✓</span>
+                <span>Free products shipped to your door</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-primary">✓</span>
+                <span>Build your creator score</span>
+              </div>
             </div>
+
+            <Button
+              onClick={handleGoogleSignIn}
+              className="w-full h-12 text-base"
+              disabled={isLoading || authLoading || !supabaseReady}
+              data-testid="button-google-signin"
+            >
+              {isLoading || authLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <SiGoogle className="h-5 w-5 mr-2" />
+                  Continue with Google
+                </>
+              )}
+            </Button>
+            
+            <p className="text-xs text-center text-muted-foreground">
+              By signing in, you agree to our{" "}
+              <a href="#" className="text-primary hover:underline">Terms of Service</a>
+              {" "}and{" "}
+              <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+            </p>
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

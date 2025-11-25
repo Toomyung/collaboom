@@ -43,8 +43,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // =====================
+  // CONFIG ROUTES
+  // =====================
+
+  // Get Supabase config (safe to expose anon key)
+  app.get("/api/config/supabase", (req, res) => {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return res.status(500).json({ message: "Supabase configuration missing" });
+    }
+    
+    return res.json({
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    });
+  });
+
+  // =====================
   // AUTH ROUTES
   // =====================
+
+  // Supabase auth callback - sync Google login with backend session
+  app.post("/api/auth/supabase/callback", async (req, res) => {
+    try {
+      const { user, accessToken } = req.body;
+      
+      if (!user || !user.email) {
+        return res.status(400).json({ message: "Invalid user data" });
+      }
+
+      // Check if influencer exists
+      let influencer = await storage.getInfluencerByEmail(user.email);
+      
+      if (!influencer) {
+        // Create new influencer from Google auth
+        influencer = await storage.createInfluencerFromSupabase({
+          email: user.email,
+          supabaseId: user.id,
+          name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+          profileImageUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        });
+      } else {
+        // Update existing influencer with Supabase info if needed
+        if (!influencer.supabaseId) {
+          await storage.updateInfluencer(influencer.id, {
+            supabaseId: user.id,
+            name: influencer.name || user.user_metadata?.full_name || user.user_metadata?.name || null,
+            profileImageUrl: influencer.profileImageUrl || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+          });
+          influencer = await storage.getInfluencer(influencer.id);
+        }
+      }
+
+      if (!influencer) {
+        return res.status(500).json({ message: "Failed to create or find influencer" });
+      }
+
+      // Set session
+      req.session.userId = influencer.id;
+      req.session.userType = "influencer";
+
+      return res.json({ 
+        success: true, 
+        influencer: {
+          id: influencer.id,
+          email: influencer.email,
+          name: influencer.name,
+        }
+      });
+    } catch (error: any) {
+      console.error("Supabase callback error:", error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
 
   // Get current user
   app.get("/api/auth/me", async (req, res) => {
