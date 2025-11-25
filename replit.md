@@ -168,7 +168,15 @@ Preferred communication style: Simple, everyday language.
 - Database seeding creates default admin (admin@collaboom.com) and sample campaigns
 
 **Admin Influencers Pagination**
-- Client-side pagination with configurable items per page (10, 25, 50)
+- Server-side pagination with configurable items per page (10, 25, 50, default: 20)
+- API: GET `/api/admin/influencers?page=1&pageSize=20&search=&campaignId=`
+- Response includes: items (InfluencerWithStats[]), totalCount, page, pageSize
 - Page navigation with numbered buttons and prev/next controls
 - "Showing X to Y of Z" info display
-- Search resets to page 1 when query changes
+- Debounced search (300ms delay) for efficient server-side filtering
+- Campaign filter support via campaignId query parameter
+
+**Influencer Campaign Stats**
+- Each influencer row shows campaign participation: "X applied · Y accepted · Z completed"
+- Stats calculated via SQL aggregation (COUNT with case expressions)
+- InfluencerWithStats type: Influencer + appliedCount, acceptedCount, completedCount
