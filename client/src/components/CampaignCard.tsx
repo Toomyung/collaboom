@@ -108,12 +108,20 @@ export function CampaignCard({
     );
   };
 
+  const isDisabled = isClosed || isApplicationClosed || isFull;
+
   return (
     <Card
-      className="group overflow-hidden transition-all duration-200 hover:shadow-md"
+      className={cn(
+        "group overflow-hidden transition-all duration-200",
+        isDisabled ? "opacity-60" : "hover:shadow-md"
+      )}
       data-testid={`card-campaign-${campaign.id}`}
     >
-      <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+      <div className={cn(
+        "relative aspect-[16/9] overflow-hidden bg-muted",
+        isDisabled && "grayscale-[30%]"
+      )}>
         {campaign.imageUrl ? (
           <img
             src={campaign.imageUrl}

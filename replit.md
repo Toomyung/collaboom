@@ -215,6 +215,16 @@ Preferred communication style: Simple, everyday language.
 - Status filter support via status query parameter (draft, active, closed, archived)
 - Storage method: `getCampaignsPaginated(options: GetCampaignsOptions)`
 
+**Dual Deadline System (November 2025)**
+- Added `applicationDeadline` field to campaigns table (distinct from upload `deadline`)
+- `applicationDeadline`: When applications close (users can no longer apply)
+- `deadline`: When content uploads are due (for approved influencers)
+- Admin campaign form includes both deadline inputs with validation (applicationDeadline ≤ deadline)
+- Campaign cards grey out and disable Apply button when applicationDeadline passes
+- Campaign detail pages display both deadlines in a clear format
+- API route `/api/campaigns/:id/apply` validates applicationDeadline before accepting applications
+- Existing campaigns migrated to use upload deadline as default applicationDeadline
+
 **Bug Fixes (November 2025)**
 - Fixed admin login navigation: Added small delay to ensure auth state updates before redirecting
 - Fixed campaign deadline parsing: Backend now parses deadline string to Date object on both create and update routes
