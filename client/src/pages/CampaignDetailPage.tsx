@@ -148,16 +148,25 @@ export default function CampaignDetailPage() {
     !isApplied;
 
   const getRewardDisplay = () => {
-    switch (campaign.rewardType) {
-      case "gift":
-        return { label: "Free Product", icon: Gift, color: "from-purple-500 to-pink-500" };
-      case "20usd":
-        return { label: "Free Product + $20", icon: DollarSign, color: "from-emerald-500 to-teal-500" };
-      case "50usd":
-        return { label: "Free Product + $50", icon: DollarSign, color: "from-amber-500 to-orange-500" };
-      default:
-        return { label: "Free Product", icon: Gift, color: "from-purple-500 to-pink-500" };
+    // Handle new 'paid' type with custom amount
+    if (campaign.rewardType === "paid" && campaign.rewardAmount) {
+      return { label: `Free Product + $${campaign.rewardAmount}`, icon: DollarSign, color: "from-emerald-500 to-teal-500" };
     }
+    
+    // Handle gift type
+    if (campaign.rewardType === "gift") {
+      return { label: "Free Product", icon: Gift, color: "from-purple-500 to-pink-500" };
+    }
+    
+    // Legacy support for old reward types
+    if (campaign.rewardType === "20usd") {
+      return { label: "Free Product + $20", icon: DollarSign, color: "from-emerald-500 to-teal-500" };
+    }
+    if (campaign.rewardType === "50usd") {
+      return { label: "Free Product + $50", icon: DollarSign, color: "from-amber-500 to-orange-500" };
+    }
+    
+    return { label: "Free Product", icon: Gift, color: "from-purple-500 to-pink-500" };
   };
 
   const reward = getRewardDisplay();

@@ -83,7 +83,8 @@ export const campaigns = pgTable("campaigns", {
   name: text("name").notNull(),
   brandName: text("brand_name").notNull(),
   category: text("category").notNull(), // 'beauty' | 'food' | 'lifestyle'
-  rewardType: text("reward_type").notNull(), // 'gift' | '20usd' | '50usd'
+  rewardType: text("reward_type").notNull(), // 'gift' | 'paid'
+  rewardAmount: integer("reward_amount"), // Amount in USD for 'paid' type (e.g., 20, 50, 100)
   inventory: integer("inventory").notNull(),
   approvedCount: integer("approved_count").default(0),
   imageUrl: text("image_url"),

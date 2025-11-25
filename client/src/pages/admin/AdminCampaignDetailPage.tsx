@@ -323,7 +323,13 @@ export default function AdminCampaignDetailPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Reward</p>
-                    <p className="font-medium capitalize">{campaign.rewardType.replace("usd", " USD")}</p>
+                    <p className="font-medium">
+                      {campaign.rewardType === "paid" && campaign.rewardAmount
+                        ? `Gift + $${campaign.rewardAmount} Reward`
+                        : campaign.rewardType === "gift"
+                        ? "Gift Only"
+                        : campaign.rewardType.replace("usd", " USD")}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Deadline</p>

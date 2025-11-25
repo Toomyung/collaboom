@@ -1,0 +1,94 @@
+[상황 설명]
+Collaboom 프로젝트의 어드민 캠페인 리스트에서 페이지네이션을 추가하고 싶습니다.
+
+현재 구조는 다음과 같습니다.
+
+1) 서버(server/routes.ts)
+- GET /api/admin/influencers
+  → storage.getInfluencersPaginated(...)를 호출하여 페이지네이션된 결과를 반환하고 있음.
+- GET /api/admin/campaigns
+  → storage.getAllCampaigns()로 전체 캠페인 목록을 한 번에 반환하고 있음 (페이지네이션 없음).
+
+2) 스토리지(server/storage.ts, server/databaseStorage.ts)
+- IStorage 인터페이스 내부에 getInfluencersPaginated(...)가 정의되어 있고,
+- DatabaseStorage에 실제 구현이 있습니다.
+- 캠페인 관련 메서드는 getCampaign(id), getAllCampaigns(), getActiveCampaigns() 정도만 있습니다 (캠페인용 페이지네이션 메서드 없음).
+
+3) 클라이언트(client/src/pages/admin/AdminCampaignListPage.tsx)
+- GET /api/admin/campaigns를 호출하여 전체 캠페인 목록을 받아와 리스트를 렌더링하고 있습니다.
+- 페이지네이션 UI는 아직 없습니다.
+
+[요청 내용]
+위 구조를 유지하면서, 어드민 캠페인 리스트에 인플루언서 리스트와 동일한 방식의 서버 사이드 페이지네이션을 추가해 주세요.
+
+구체적인 작업은 다음과 같습니다.
+
+1. IStorage 인터페이스(server/storage.ts) 수정
+- 아래 시그니처의 메서드를 새로 추가해 주세요.
+
+  getCampaignsPaginated(options: {
+    page?: number;
+    pageSize?: number;
+    search?: string;        // 캠페인명 검색용 (선택)
+    status?: string;        // 캠페인 상태 필터용 (선택, "draft" | "active" | "archived" 등)
+  }): Promise<{
+    items: Campaign[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+  }>;
+
+2. DatabaseStorage 구현(server/databaseStorage.ts) 추가
+- 위에서 정의한 getCampaignsPaginated를 실제로 구현해주세요.
+- 기본 동작은 다음과 같습니다.
+  - page 기본값: 1
+  - pageSize 기본값: 20, 최대 50
+  - OFFSET / LIMIT를 사용하여 페이지네이션 처리
+  - search 파라미터가 있을 경우, 캠페인 이름(name)에 대해 ILIKE %search% 조건 추가
+  - status 파라미터가 있을 경우, campaigns.status = status 조건 추가
+  - totalCount는 동일한 조건으로 count(*) 쿼리 수행
+  - 반환 값은 { items, totalCount, page, pageSize } 형태
+
+3. 라우터(server/routes.ts) 수정
+- 기존 GET /api/admin/campaigns 엔드포인트를 수정하여,
+  다음 쿼리 파라미터를 받도록 해주세요.
+  - page: number
+  - pageSize: number
+  - search: string (optional)
+  - status: string (optional)
+
+- 이 값들을 파싱한 뒤, storage.getCampaignsPaginated(...)를 호출하여 그 결과 전체를 JSON으로 반환해주세요.
+- 기존 getAllCampaigns()는 다른 곳에서 사용할 수 있으므로 삭제하지 말고 그대로 둡니다.
+  단순히 /api/admin/campaigns 엔드포인트만 paginated 버전으로 교체하는 형태로 작업해주세요.
+
+4. 어드민 캠페인 리스트 페이지(client/src/pages/admin/AdminCampaignListPage.tsx) 수정
+- 기존에는 /api/admin/campaigns에서 전체 캠페인을 한 번에 가져오고 있습니다.
+- 이 부분을 다음 형태로 변경해주세요.
+  - React Query(useQuery)를 사용하여
+    - queryKey에 page, pageSize, search, status를 포함
+    - GET /api/admin/campaigns?page=...&pageSize=...&search=...&status=... 형태로 호출
+  - API 응답 타입은 { items: Campaign[]; totalCount: number; page: number; pageSize: number } 으로 맞춰주세요.
+
+- UI 요구사항:
+  1) 리스트 하단에 간단한 페이지네이션 컴포넌트 추가
+     - "Previous" / "Next" 버튼
+     - 현재 페이지 / 전체 페이지 수 표시
+       (전체 페이지 수 = Math.ceil(totalCount / pageSize))
+     - page 변경 시 useQuery가 다시 호출되도록 상태 관리
+  2) 기본 pageSize는 20으로 고정해도 좋습니다.
+     추후 변경을 고려해서 상단 const나 상태로 분리만 해주세요.
+  3) 검색(search)와 상태(status) 필터가 이미 구현되어 있다면, 그 값들을 쿼리 파라미터로 함께 전달되도록 연결해주세요.
+     없다면, 이번 작업에서는 page / pageSize만 먼저 처리해도 괜찮습니다.
+
+[기술적 요구사항]
+- 기존 코드 스타일(React Query, shadcn/ui, Tailwind 클래스 네이밍 등)을 그대로 유지해주세요.
+- 새로 추가되는 타입 정의는 가능하면 @shared/schema의 Campaign 타입을 그대로 활용해주세요.
+- DRY 원칙을 지키되, 현재 프로젝트의 복잡도를 고려해서 과도한 추상화는 피해주세요.
+- 테스트를 위해 더미 캠페인을 30개 이상 넣었을 때, /api/admin/campaigns 응답과 어드민 UI가 정상적으로 작동하는지 확인할 수 있도록 구현해주세요.
+
+[예상 결과]
+- 어드민이 캠페인 리스트 페이지에 들어갔을 때,
+  - 한 페이지당 최대 20개의 캠페인만 표시되고,
+  - 하단 페이지네이션 버튼으로 다음/이전 페이지로 이동할 수 있으며,
+  - 총 개수(totalCount) 기반으로 전체 페이지 수가 올바르게 계산됩니다.
+- 이 변경으로 인해 향후 캠페인 수가 수백 개 이상으로 늘어나도, /api/admin/campaigns API와 화면이 무거워지지 않습니다.

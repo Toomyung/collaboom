@@ -36,9 +36,32 @@ const formSchema = insertCampaignSchema.extend({
   requiredHashtags: z.array(z.string()).optional(),
   requiredMentions: z.array(z.string()).optional(),
   deadline: z.string().min(1, "Deadline is required"),
-});
+  rewardAmount: z.number().optional().nullable(),
+}).refine(
+  (data) => {
+    if (data.rewardType === "paid") {
+      return data.rewardAmount != null && data.rewardAmount > 0;
+    }
+    return true;
+  },
+  {
+    message: "Reward amount is required for paid campaigns",
+    path: ["rewardAmount"],
+  }
+);
 
 type FormData = z.infer<typeof formSchema>;
+
+// Helper to normalize legacy reward types (20usd, 50usd) to new format
+function normalizeLegacyRewardType(rewardType: string, rewardAmount: number | null | undefined): { rewardType: string; rewardAmount: number | null } {
+  if (rewardType === "20usd") {
+    return { rewardType: "paid", rewardAmount: 20 };
+  }
+  if (rewardType === "50usd") {
+    return { rewardType: "paid", rewardAmount: 50 };
+  }
+  return { rewardType, rewardAmount: rewardAmount ?? null };
+}
 
 export default function AdminCampaignFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -61,6 +84,7 @@ export default function AdminCampaignFormPage() {
       brandName: "",
       category: "beauty",
       rewardType: "gift",
+      rewardAmount: null,
       inventory: 50,
       imageUrl: "",
       amazonUrl: "",
@@ -72,25 +96,31 @@ export default function AdminCampaignFormPage() {
       status: "draft",
     },
     values: campaign
-      ? {
-          name: campaign.name,
-          brandName: campaign.brandName,
-          category: campaign.category,
-          rewardType: campaign.rewardType,
-          inventory: campaign.inventory,
-          imageUrl: campaign.imageUrl || "",
-          amazonUrl: campaign.amazonUrl || "",
-          guidelinesSummary: campaign.guidelinesSummary || "",
-          guidelinesUrl: campaign.guidelinesUrl || "",
-          requiredHashtags: campaign.requiredHashtags || [],
-          requiredMentions: campaign.requiredMentions || [],
-          deadline: campaign.deadline 
-            ? new Date(campaign.deadline).toISOString().slice(0, 16)
-            : new Date().toISOString().split("T")[0] + "T23:59",
-          status: campaign.status,
-        }
+      ? (() => {
+          const normalizedReward = normalizeLegacyRewardType(campaign.rewardType, campaign.rewardAmount);
+          return {
+            name: campaign.name,
+            brandName: campaign.brandName,
+            category: campaign.category,
+            rewardType: normalizedReward.rewardType,
+            rewardAmount: normalizedReward.rewardAmount,
+            inventory: campaign.inventory,
+            imageUrl: campaign.imageUrl || "",
+            amazonUrl: campaign.amazonUrl || "",
+            guidelinesSummary: campaign.guidelinesSummary || "",
+            guidelinesUrl: campaign.guidelinesUrl || "",
+            requiredHashtags: campaign.requiredHashtags || [],
+            requiredMentions: campaign.requiredMentions || [],
+            deadline: campaign.deadline 
+              ? new Date(campaign.deadline).toISOString().slice(0, 16)
+              : new Date().toISOString().split("T")[0] + "T23:59",
+            status: campaign.status,
+          };
+        })()
       : undefined,
   });
+
+  const watchRewardType = form.watch("rewardType");
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -267,7 +297,15 @@ export default function AdminCampaignFormPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Reward Type *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            if (value === "gift") {
+                              form.setValue("rewardAmount", null);
+                            }
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-reward">
                               <SelectValue placeholder="Select reward" />
@@ -275,8 +313,7 @@ export default function AdminCampaignFormPage() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="gift">Gift Only</SelectItem>
-                            <SelectItem value="20usd">Gift + $20</SelectItem>
-                            <SelectItem value="50usd">Gift + $50</SelectItem>
+                            <SelectItem value="paid">Gift + Cash Reward</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -284,6 +321,32 @@ export default function AdminCampaignFormPage() {
                     )}
                   />
                 </div>
+
+                {watchRewardType === "paid" && (
+                  <FormField
+                    control={form.control}
+                    name="rewardAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reward Amount (USD) *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="e.g., 20, 50, 100"
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                            data-testid="input-reward-amount"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enter the cash reward amount in USD
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField

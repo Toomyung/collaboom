@@ -514,8 +514,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create campaign
   app.post("/api/admin/campaigns", requireAuth("admin"), async (req, res) => {
     try {
+      // Validate that paid campaigns have a reward amount
+      if (req.body.rewardType === 'paid' && (!req.body.rewardAmount || req.body.rewardAmount <= 0)) {
+        return res.status(400).json({ message: "Reward amount is required for paid campaigns" });
+      }
+      
       const data = insertCampaignSchema.parse({
         ...req.body,
+        // Clear rewardAmount if gift type
+        rewardAmount: req.body.rewardType === 'gift' ? null : req.body.rewardAmount,
         createdByAdminId: req.session.userId,
       });
       const campaign = await storage.createCampaign(data);
@@ -531,7 +538,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update campaign
   app.put("/api/admin/campaigns/:id", requireAuth("admin"), async (req, res) => {
     try {
-      const campaign = await storage.updateCampaign(req.params.id, req.body);
+      // Parse deadline string back to Date if provided
+      const data = { ...req.body };
+      if (data.deadline && typeof data.deadline === 'string') {
+        data.deadline = new Date(data.deadline);
+      }
+      
+      // Validate that paid campaigns have a reward amount
+      if (data.rewardType === 'paid' && (!data.rewardAmount || data.rewardAmount <= 0)) {
+        return res.status(400).json({ message: "Reward amount is required for paid campaigns" });
+      }
+      
+      // Clear rewardAmount if switching to gift type
+      if (data.rewardType === 'gift') {
+        data.rewardAmount = null;
+      }
+      
+      const campaign = await storage.updateCampaign(req.params.id, data);
       if (!campaign) {
         return res.status(404).json({ message: "Campaign not found" });
       }

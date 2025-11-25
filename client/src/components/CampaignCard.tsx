@@ -32,31 +32,46 @@ export function CampaignCard({
   const isClosed = campaign.status === "closed" || campaign.status === "archived";
 
   const getRewardBadge = () => {
-    switch (campaign.rewardType) {
-      case "gift":
-        return (
-          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 text-white">
-            <Gift className="h-3 w-3 mr-1" />
-            Gift Only
-          </Badge>
-        );
-      case "20usd":
-        return (
-          <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white">
-            <DollarSign className="h-3 w-3 mr-1" />
-            +$20 Reward
-          </Badge>
-        );
-      case "50usd":
-        return (
-          <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white">
-            <DollarSign className="h-3 w-3 mr-1" />
-            +$50 Reward
-          </Badge>
-        );
-      default:
-        return null;
+    // Handle new 'paid' type with custom amount
+    if (campaign.rewardType === "paid" && campaign.rewardAmount) {
+      return (
+        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white">
+          <DollarSign className="h-3 w-3 mr-1" />
+          +${campaign.rewardAmount} Reward
+        </Badge>
+      );
     }
+    
+    // Handle gift type
+    if (campaign.rewardType === "gift") {
+      return (
+        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 text-white">
+          <Gift className="h-3 w-3 mr-1" />
+          Gift Only
+        </Badge>
+      );
+    }
+    
+    // Legacy support for old reward types (20usd, 50usd)
+    if (campaign.rewardType === "20usd") {
+      return (
+        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white">
+          <DollarSign className="h-3 w-3 mr-1" />
+          +$20 Reward
+        </Badge>
+      );
+    }
+    
+    if (campaign.rewardType === "50usd") {
+      return (
+        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white">
+          <DollarSign className="h-3 w-3 mr-1" />
+          +$50 Reward
+        </Badge>
+      );
+    }
+    
+    return null;
   };
 
   const getStatusBadge = () => {

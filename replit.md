@@ -196,3 +196,15 @@ Preferred communication style: Simple, everyday language.
 - Returns events sorted by createdAt DESC
 - Reuses existing storage methods: `getScoreEventsByInfluencer`, `getPenaltyEventsByInfluencer`
 - Supports PRD's "transparent reputation system" philosophy
+
+**Reward Type System Redesign (November 2025)**
+- Changed rewardType from fixed options (gift, 20usd, 50usd) to flexible (gift, paid)
+- Added `rewardAmount` integer field for custom paid amounts (e.g., 20, 50, 100 USD)
+- Admin campaign form shows conditional amount input when "paid" is selected
+- All display components (CampaignCard, CampaignDetailPage, AdminCampaignDetailPage) updated
+- Legacy support maintained for existing campaigns with "20usd" or "50usd" reward types
+- Frontend displays: "Gift Only" for gift type, "Gift + $X Reward" for paid type with amount
+
+**Bug Fixes (November 2025)**
+- Fixed admin login navigation: Added small delay to ensure auth state updates before redirecting
+- Fixed campaign update toISOString error: Backend now parses deadline string back to Date object

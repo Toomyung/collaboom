@@ -34,7 +34,10 @@ export default function AdminLoginPage() {
         title: "Welcome back!",
         description: "You have successfully signed in as admin.",
       });
-      setLocation("/admin");
+      // Small delay to ensure auth state is updated before navigation
+      setTimeout(() => {
+        setLocation("/admin");
+      }, 100);
     } else {
       toast({
         title: "Sign in failed",
