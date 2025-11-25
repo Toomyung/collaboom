@@ -14,6 +14,26 @@ import {
 import { randomUUID } from "crypto";
 import * as bcrypt from 'bcryptjs';
 
+export interface InfluencerWithStats extends Influencer {
+  appliedCount: number;
+  acceptedCount: number;
+  completedCount: number;
+}
+
+export interface PaginatedInfluencersResult {
+  items: InfluencerWithStats[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface GetInfluencersOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  campaignId?: string;
+}
+
 export interface IStorage {
   // Admin
   getAdmin(id: string): Promise<Admin | undefined>;
@@ -28,6 +48,7 @@ export interface IStorage {
   createInfluencerFromSupabase(data: { email: string; supabaseId: string; name?: string | null; profileImageUrl?: string | null }): Promise<Influencer>;
   updateInfluencer(id: string, data: Partial<Influencer>): Promise<Influencer | undefined>;
   getAllInfluencers(): Promise<Influencer[]>;
+  getInfluencersPaginated(options: GetInfluencersOptions): Promise<PaginatedInfluencersResult>;
   
   // Campaign
   getCampaign(id: string): Promise<Campaign | undefined>;
@@ -364,6 +385,53 @@ export class MemStorage implements IStorage {
 
   async getAllInfluencers(): Promise<Influencer[]> {
     return Array.from(this.influencers.values());
+  }
+
+  async getInfluencersPaginated(options: GetInfluencersOptions): Promise<PaginatedInfluencersResult> {
+    const page = Math.max(1, options.page || 1);
+    const pageSize = Math.min(50, Math.max(1, options.pageSize || 20));
+    
+    let allInfluencers = Array.from(this.influencers.values());
+    
+    if (options.search) {
+      const searchLower = options.search.toLowerCase();
+      allInfluencers = allInfluencers.filter(inf => 
+        inf.name?.toLowerCase().includes(searchLower) ||
+        inf.email.toLowerCase().includes(searchLower) ||
+        inf.tiktokHandle?.toLowerCase().includes(searchLower) ||
+        inf.instagramHandle?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    if (options.campaignId) {
+      const appInfluencerIds = new Set(
+        Array.from(this.applications.values())
+          .filter(a => a.campaignId === options.campaignId)
+          .map(a => a.influencerId)
+      );
+      allInfluencers = allInfluencers.filter(inf => appInfluencerIds.has(inf.id));
+    }
+    
+    const totalCount = allInfluencers.length;
+    const startIndex = (page - 1) * pageSize;
+    const paginatedInfluencers = allInfluencers.slice(startIndex, startIndex + pageSize);
+    
+    const itemsWithStats = paginatedInfluencers.map(inf => {
+      const apps = Array.from(this.applications.values()).filter(a => a.influencerId === inf.id);
+      return {
+        ...inf,
+        appliedCount: apps.length,
+        acceptedCount: apps.filter(a => ['approved', 'shipped', 'delivered', 'uploaded', 'verified'].includes(a.status)).length,
+        completedCount: apps.filter(a => a.status === 'verified').length,
+      };
+    });
+    
+    return {
+      items: itemsWithStats,
+      totalCount,
+      page,
+      pageSize,
+    };
   }
 
   // Campaign methods

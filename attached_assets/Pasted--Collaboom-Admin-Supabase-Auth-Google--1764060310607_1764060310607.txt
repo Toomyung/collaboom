@@ -1,0 +1,149 @@
+[상황 설명]
+현재 Collaboom 프로젝트에서 Admin용 인플루언서 관리 페이지를 구현 중입니다.
+지금은 Supabase Auth에 Google 로그인 유저가 기록되고, 서버 쪽에서는 DatabaseStorage 클래스를 통해 Postgres DB를 사용하도록 수정된 상태입니다. 또한 server/storage.ts, server/databaseStorage.ts, shared/schema.ts, client/src/pages/admin/AdminInfluencersPage.tsx 파일이 이미 생성/수정되었습니다.
+
+PRD & MVP 요구사항에 따르면:
+
+인플루언서/캠페인 정보는 Supabase Postgres 에 영구 저장되어야 하고,
+
+Admin에서는 인플루언서 목록 + 캠페인 참여 정보가 함께 보이며,
+
+페이지네이션과 검색이 필수입니다.
+
+[요청 내용]
+아래 작업을 순서대로 수행해서,
+Admin 인플루언서 페이지가 PRD/MVP 요구사항에 맞게 동작하도록 수정해 주세요.
+
+데이터 저장 구조 정리 (Supabase 기준)
+
+Supabase Postgres를 이 프로젝트의 “단일 데이터 소스”로 사용해 주세요.
+
+이미 존재하는 테이블(influencers, campaigns, applications 등)이 있다면 shared/schema.ts 기준으로 스키마를 확인하고, DatabaseStorage가 이 Supabase DB에 연결되도록 구성해 주세요.
+
+로컬 인메모리 저장소나 임시 DB에만 데이터가 남는 구조는 모두 제거합니다.
+
+Auth.users ↔ influencers 테이블 동기화 로직 추가
+
+유저가 Google OAuth로 로그인하면, Supabase Auth의 auth.users 테이블에 기록됩니다.
+
+로그인 후 서버에서 유저 정보를 받아올 때, 아래 동작을 수행하는 헬퍼 함수를 구현해 주세요.
+
+getOrCreateInfluencerByAuthUser(authUser) 형태의 함수
+
+authUser.id를 기준으로 influencers 테이블을 조회
+
+없으면 influencers에 새 row insert (email, name, imageUrl, tiktok_handle은 비워둬도 됨, profile_completed=false 등 기본값 세팅)
+
+있으면 업데이트(upsert)
+
+이 로직은 로그인 콜백/세션 생성 시점에 호출되어, Supabase Auth에만 유저가 있고 influencers에는 없는 상태가 생기지 않도록 해 주세요.
+
+Admin 인플루언서 리스트 API를 DB 기반으로 재구현
+
+엔드포인트 예시: GET /api/admin/influencers
+
+쿼리 파라미터:
+
+page (기본값 1)
+
+pageSize (기본값 20, 최대 50)
+
+search (옵션: 이름, 이메일, 소셜 핸들에 LIKE 검색)
+
+DB 쿼리는 limit / offset 기반 페이지네이션으로 구현하고, 아래 정보를 함께 반환해 주세요.
+
+items: 인플루언서 배열
+
+totalCount: 전체 인플루언서 수
+
+page, pageSize
+
+인플루언서 한 명에 대해 아래 필드를 포함합니다.
+
+기본 정보: id, name, email, tiktok_handle, instagram_handle, joined_at, profile_completed
+
+캠페인 참여 요약:
+
+appliedCount: 지원한 캠페인 개수
+
+acceptedCount: 확정된 캠페인 개수
+
+completedCount: 콘텐츠 업로드 완료 캠페인 개수
+
+이 값들은 applications 또는 유사한 조인 테이블을 GROUP BY influencer_id 로 집계해서 가져오거나, 뷰/서브쿼리로 계산해 주세요.
+
+AdminInfluencersPage.tsx에서 페이지네이션 UI/연동 구현
+
+client/src/pages/admin/AdminInfluencersPage.tsx에서:
+
+초기 로드시 page=1, pageSize=20으로 API 호출
+
+응답의 totalCount를 사용해 총 페이지 수 계산
+
+하단에 “이전/다음” 버튼 또는 간단한 페이지 번호 네비게이션 추가
+
+리스트가 매우 길어지지 않도록, 한 페이지에 최대 20~30명 정도만 렌더링해 주세요.
+
+인플루언서 정보 카드/테이블에는 다음 정보가 보이면 좋습니다.
+
+이름, 이메일, 주요 채널 핸들
+
+가입일 / 최근 활동일
+
+캠페인 참여 요약 (예: 3 applied · 2 accepted · 1 completed)
+
+클릭 시 상세 페이지로 이동할 수 있는 링크(추후 구현용 placeholder)
+
+Admin 페이지에서 에러/로딩 상태도 처리해 주세요 (로딩 스피너, 에러 메시지 등).
+
+PRD 기준 누락된 부분 검증 및 보완
+
+기존 PRD/MVP에서 Admin 인플루언서 페이지 관련 요구사항(검색, 정렬, 캠페인 필터, 페이지네이션 등)을 다시 확인하고, 현재 코드에서 누락된 부분이 있는지 체크한 뒤 최소 기능을 보완해 주세요.
+
+예를 들어, PRD에 “캠페인별 필터링”이 포함되어 있다면:
+
+campaignId 쿼리 파라미터를 추가해서 특정 캠페인에 참여한 인플루언서만 필터링할 수 있게 해 주세요.
+
+PRD에 포함된 필수 필드는 컬럼/응답에 모두 포함되어 있는지 확인해 주세요.
+
+[기술적 요구사항]
+
+사용 기술: Node.js + Express 백엔드, TypeScript, React 18 + TypeScript 프론트엔드, Supabase(PostgreSQL)
+
+파일 위치:
+
+DB 연결: server/db.ts
+
+스토리지 인터페이스 및 구현: server/storage.ts, server/databaseStorage.ts
+
+공유 스키마: shared/schema.ts
+
+Admin 페이지: client/src/pages/admin/AdminInfluencersPage.tsx
+
+Admin 관련 라우터: server/routes/admin*.ts (존재 시)
+
+기존 코드 스타일과 타입 정의 패턴을 유지해 주세요.
+
+쿼리는 반드시 Supabase Postgres 를 대상으로 실행되도록 하고, 인메모리 배열/로컬 파일에만 쓰는 코드는 모두 정리해 주세요.
+
+[예상 결과]
+
+Google 로그인으로 가입한 사용자는 Supabase Auth와 influencers 테이블에 모두 기록됩니다.
+
+Admin에서 인플루언서 페이지를 열면:
+
+DB에서 페이지네이션된 데이터가 로드되고,
+
+인플루언서 기본 정보 + 캠페인 참여 요약이 한눈에 보이며,
+
+페이지네이션/검색/필터 기능이 동작합니다.
+
+인플루언서 수가 수천 명 이상으로 늘어나도, 한 번에 20~30명만 조회하므로 페이지가 무겁지 않고 빠르게 렌더링됩니다.
+
+[추가 고려사항]
+
+브랜드 색상 Collaboom Purple #8a01ff를 Admin UI 강조 색상(버튼/하이라이트)에 사용해 주세요.
+
+반응형 디자인을 유지하고, 기존 shadcn/ui 컴포넌트 스타일과 일관되게 구성해 주세요.
+
+나중에 캠페인 상세/인플루언서 상세 페이지를 확장할 수 있도록, API와 컴포넌트 구조를 지나치게 하드코딩하지 말고 재사용 가능하게 설계해 주세요.

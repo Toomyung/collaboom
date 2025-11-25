@@ -870,10 +870,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all influencers (admin)
+  // Get all influencers (admin) with pagination
   app.get("/api/admin/influencers", requireAuth("admin"), async (req, res) => {
-    const influencers = await storage.getAllInfluencers();
-    return res.json(influencers);
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = Math.min(50, parseInt(req.query.pageSize as string) || 20);
+      const search = req.query.search as string | undefined;
+      const campaignId = req.query.campaignId as string | undefined;
+
+      const result = await storage.getInfluencersPaginated({
+        page,
+        pageSize,
+        search,
+        campaignId,
+      });
+
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching influencers:", error);
+      return res.status(500).json({ message: error.message });
+    }
   });
 
   // Adjust influencer score

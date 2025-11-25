@@ -113,6 +113,111 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(influencers).orderBy(desc(influencers.createdAt));
   }
 
+  async getInfluencersPaginated(options: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    campaignId?: string;
+  }): Promise<{
+    items: Array<Influencer & { appliedCount: number; acceptedCount: number; completedCount: number }>;
+    totalCount: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const page = Math.max(1, options.page || 1);
+    const pageSize = Math.min(50, Math.max(1, options.pageSize || 20));
+    const offset = (page - 1) * pageSize;
+
+    let baseQuery = db.select().from(influencers);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(influencers);
+
+    const conditions: any[] = [];
+
+    if (options.search) {
+      const searchPattern = `%${options.search.toLowerCase()}%`;
+      conditions.push(
+        sql`(LOWER(${influencers.name}) LIKE ${searchPattern} OR LOWER(${influencers.email}) LIKE ${searchPattern} OR LOWER(${influencers.tiktokHandle}) LIKE ${searchPattern} OR LOWER(${influencers.instagramHandle}) LIKE ${searchPattern})`
+      );
+    }
+
+    if (options.campaignId) {
+      const influencerIds = await db
+        .select({ influencerId: applications.influencerId })
+        .from(applications)
+        .where(eq(applications.campaignId, options.campaignId));
+      
+      const ids = influencerIds.map(r => r.influencerId);
+      if (ids.length > 0) {
+        conditions.push(sql`${influencers.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`);
+      } else {
+        return { items: [], totalCount: 0, page, pageSize };
+      }
+    }
+
+    let influencerResults: Influencer[];
+    let totalCount: number;
+
+    if (conditions.length > 0) {
+      const whereClause = conditions.length === 1 ? conditions[0] : sql`${conditions[0]} AND ${conditions[1]}`;
+      influencerResults = await db
+        .select()
+        .from(influencers)
+        .where(whereClause)
+        .orderBy(desc(influencers.createdAt))
+        .limit(pageSize)
+        .offset(offset);
+      
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(influencers)
+        .where(whereClause);
+      totalCount = Number(countResult[0]?.count || 0);
+    } else {
+      influencerResults = await db
+        .select()
+        .from(influencers)
+        .orderBy(desc(influencers.createdAt))
+        .limit(pageSize)
+        .offset(offset);
+      
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(influencers);
+      totalCount = Number(countResult[0]?.count || 0);
+    }
+
+    const itemsWithStats = await Promise.all(
+      influencerResults.map(async (inf) => {
+        const apps = await db
+          .select()
+          .from(applications)
+          .where(eq(applications.influencerId, inf.id));
+        
+        const appliedCount = apps.length;
+        const acceptedCount = apps.filter(a => 
+          ['approved', 'shipped', 'delivered', 'uploaded', 'verified'].includes(a.status)
+        ).length;
+        const completedCount = apps.filter(a => 
+          a.status === 'verified'
+        ).length;
+
+        return {
+          ...inf,
+          appliedCount,
+          acceptedCount,
+          completedCount,
+        };
+      })
+    );
+
+    return {
+      items: itemsWithStats,
+      totalCount,
+      page,
+      pageSize,
+    };
+  }
+
   async getCampaign(id: string): Promise<Campaign | undefined> {
     const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, id));
     return campaign;

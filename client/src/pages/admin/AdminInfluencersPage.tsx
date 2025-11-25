@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -60,20 +60,34 @@ import { SiTiktok, SiInstagram } from "react-icons/si";
 
 type ApplicationWithCampaign = Application & { campaign?: Campaign };
 
+type InfluencerWithStats = Influencer & {
+  appliedCount: number;
+  acceptedCount: number;
+  completedCount: number;
+};
+
+type PaginatedResponse = {
+  items: InfluencerWithStats[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 export default function AdminInfluencersPage() {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedInfluencer, setSelectedInfluencer] = useState<InfluencerWithStats | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [newNote, setNewNote] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  const { data: influencers, isLoading } = useQuery<Influencer[]>({
-    queryKey: ["/api/admin/influencers"],
+  const { data: paginatedData, isLoading } = useQuery<PaginatedResponse>({
+    queryKey: ["/api/admin/influencers", { page: currentPage, pageSize: itemsPerPage, search: debouncedSearch }],
     enabled: isAuthenticated && isAdmin,
   });
 
@@ -153,6 +167,13 @@ export default function AdminInfluencersPage() {
     },
   });
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   if (authLoading) {
     return (
       <AdminLayout>
@@ -168,24 +189,12 @@ export default function AdminInfluencersPage() {
     return <Redirect to="/admin/login" />;
   }
 
-  const filteredInfluencers = influencers?.filter((inf) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      inf.name?.toLowerCase().includes(query) ||
-      inf.email.toLowerCase().includes(query) ||
-      inf.tiktokHandle?.toLowerCase().includes(query)
-    );
-  });
-
-  const totalItems = filteredInfluencers?.length || 0;
+  const influencers = paginatedData?.items || [];
+  const totalItems = paginatedData?.totalCount || 0;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedInfluencers = filteredInfluencers?.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    setCurrentPage(Math.max(1, Math.min(page, totalPages || 1)));
   };
 
   const handleItemsPerPageChange = (value: string) => {
@@ -195,10 +204,9 @@ export default function AdminInfluencersPage() {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1);
   };
 
-  const handleOpenDrawer = (inf: Influencer) => {
+  const handleOpenDrawer = (inf: InfluencerWithStats) => {
     setSelectedInfluencer(inf);
     setActiveTab("profile");
   };
@@ -264,12 +272,13 @@ export default function AdminInfluencersPage() {
                   <Skeleton key={i} className="h-12" />
                 ))}
               </div>
-            ) : paginatedInfluencers && paginatedInfluencers.length > 0 ? (
+            ) : influencers && influencers.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Influencer</TableHead>
                     <TableHead>TikTok</TableHead>
+                    <TableHead>Campaigns</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Penalty</TableHead>
                     <TableHead>Status</TableHead>
@@ -277,7 +286,7 @@ export default function AdminInfluencersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedInfluencers.map((inf) => (
+                  {influencers.map((inf) => (
                     <TableRow
                       key={inf.id}
                       className="cursor-pointer"
@@ -292,6 +301,15 @@ export default function AdminInfluencersPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {inf.tiktokHandle ? `@${inf.tiktokHandle}` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs text-muted-foreground space-x-1">
+                          <span>{inf.appliedCount} applied</span>
+                          <span>·</span>
+                          <span>{inf.acceptedCount} accepted</span>
+                          <span>·</span>
+                          <span className="text-green-600">{inf.completedCount} completed</span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -339,7 +357,7 @@ export default function AdminInfluencersPage() {
         {totalItems > 0 && (
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <p data-testid="text-pagination-info">
-              Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} influencers
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} influencers
             </p>
             <div className="flex items-center gap-2">
               <Button
