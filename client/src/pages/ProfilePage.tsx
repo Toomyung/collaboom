@@ -27,7 +27,7 @@ import { updateProfileSchema, UpdateProfile } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import {
   User,
   MapPin,
@@ -96,6 +96,7 @@ const US_STATES = [
 export default function ProfilePage() {
   const { isAuthenticated, influencer, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<UpdateProfile>({
     resolver: zodResolver(updateProfileSchema),
@@ -134,8 +135,11 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({
         title: "Profile updated",
-        description: "Your profile has been saved successfully.",
+        description: "Your profile has been saved successfully. Redirecting...",
       });
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
