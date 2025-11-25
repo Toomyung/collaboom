@@ -15,6 +15,9 @@ import {
   Users,
   Clock,
   CheckCircle,
+  LayoutDashboard,
+  User,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -75,11 +78,68 @@ const faqs = [
 ];
 
 export default function LandingPage() {
-  const { isAuthenticated, influencer } = useAuth();
+  const { user, isAuthenticated, influencer, logout, isLoading } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
     <div className="min-h-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between gap-4">
+            <Link href="/" className="flex items-center gap-2 font-bold text-xl" data-testid="link-landing-home">
+              <Sparkles className="h-6 w-6 text-primary" />
+              <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                Collaboom
+              </span>
+            </Link>
+
+            <div className="flex items-center gap-3">
+              {isLoading ? (
+                <div className="h-9 w-20 bg-muted animate-pulse rounded-md" />
+              ) : isAuthenticated ? (
+                <div className="flex items-center gap-3">
+                  <Link href="/dashboard">
+                    <Button variant="ghost" size="sm" data-testid="header-link-dashboard">
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Link href="/profile">
+                    <Button variant="ghost" size="sm" data-testid="header-link-profile">
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </Button>
+                  </Link>
+                  <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{user?.name || user?.email}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => logout()}
+                    data-testid="header-button-logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link href="/login">
+                    <Button variant="ghost" data-testid="header-link-signin">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button data-testid="header-link-getstarted">Get Started</Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
