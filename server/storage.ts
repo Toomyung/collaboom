@@ -34,6 +34,20 @@ export interface GetInfluencersOptions {
   campaignId?: string;
 }
 
+export interface PaginatedCampaignsResult {
+  items: Campaign[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface GetCampaignsOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+}
+
 export interface IStorage {
   // Admin
   getAdmin(id: string): Promise<Admin | undefined>;
@@ -54,6 +68,7 @@ export interface IStorage {
   getCampaign(id: string): Promise<Campaign | undefined>;
   getAllCampaigns(): Promise<Campaign[]>;
   getActiveCampaigns(): Promise<Campaign[]>;
+  getCampaignsPaginated(options: GetCampaignsOptions): Promise<PaginatedCampaignsResult>;
   createCampaign(campaign: InsertCampaign): Promise<Campaign>;
   updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign | undefined>;
   incrementCampaignApprovedCount(id: string): Promise<void>;
@@ -448,6 +463,39 @@ export class MemStorage implements IStorage {
     return Array.from(this.campaigns.values()).filter(
       c => c.status === 'active' || c.status === 'full'
     );
+  }
+
+  async getCampaignsPaginated(options: GetCampaignsOptions): Promise<PaginatedCampaignsResult> {
+    const page = Math.max(1, options.page || 1);
+    const pageSize = Math.min(50, Math.max(1, options.pageSize || 20));
+    const search = options.search?.toLowerCase();
+    const status = options.status;
+
+    let items = Array.from(this.campaigns.values());
+
+    // Apply search filter
+    if (search) {
+      items = items.filter(c => c.name.toLowerCase().includes(search));
+    }
+
+    // Apply status filter
+    if (status && status !== 'all') {
+      items = items.filter(c => c.status === status);
+    }
+
+    // Sort by createdAt descending
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const totalCount = items.length;
+    const offset = (page - 1) * pageSize;
+    const paginatedItems = items.slice(offset, offset + pageSize);
+
+    return {
+      items: paginatedItems,
+      totalCount,
+      page,
+      pageSize,
+    };
   }
 
   async createCampaign(campaign: InsertCampaign): Promise<Campaign> {
