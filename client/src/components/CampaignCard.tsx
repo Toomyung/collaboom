@@ -23,11 +23,17 @@ export function CampaignCard({
   canApply = true,
   applyDisabledReason,
 }: CampaignCardProps) {
-  const daysLeft = Math.max(
+  // Application deadline - when users can apply (fallback to upload deadline if not set)
+  const applicationDeadlineDate = campaign.applicationDeadline 
+    ? new Date(campaign.applicationDeadline) 
+    : new Date(campaign.deadline);
+  
+  const daysLeftToApply = Math.max(
     0,
-    Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    Math.ceil((applicationDeadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
   );
 
+  const isApplicationClosed = applicationDeadlineDate.getTime() < Date.now();
   const isFull = (campaign.approvedCount ?? 0) >= campaign.inventory;
   const isClosed = campaign.status === "closed" || campaign.status === "archived";
 
@@ -77,6 +83,9 @@ export function CampaignCard({
   const getStatusBadge = () => {
     if (isClosed) {
       return <Badge variant="secondary">Closed</Badge>;
+    }
+    if (isApplicationClosed) {
+      return <Badge variant="secondary">Applications Closed</Badge>;
     }
     if (isFull) {
       return <Badge variant="secondary">Full</Badge>;
@@ -141,7 +150,11 @@ export function CampaignCard({
           <div className="flex items-center gap-1.5">
             <Clock className="h-4 w-4" />
             <span>
-              {daysLeft === 0 ? "Last day" : `${daysLeft} days left`}
+              {isApplicationClosed 
+                ? "Applications closed" 
+                : daysLeftToApply === 0 
+                  ? "Last day to apply" 
+                  : `${daysLeftToApply} days to apply`}
             </span>
           </div>
         </div>
@@ -161,9 +174,9 @@ export function CampaignCard({
           ) : (
             <Button
               className="flex-1"
-              disabled={!canApply || isFull || isClosed}
+              disabled={!canApply || isFull || isClosed || isApplicationClosed}
               onClick={onApply}
-              title={applyDisabledReason}
+              title={isApplicationClosed ? "Application deadline has passed" : applyDisabledReason}
               data-testid={`button-apply-${campaign.id}`}
             >
               Apply Now
