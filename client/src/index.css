@@ -134,6 +134,23 @@
 }
 
 @layer base {
+  :root {
+    --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+    --font-serif: Georgia, "Times New Roman", serif;
+    --font-mono: "JetBrains Mono", monospace;
+    --elevate-1: rgba(255, 255, 255, 0.08);
+    --elevate-2: rgba(255, 255, 255, 0.12);
+    --opaque-button-border-intensity: -8%;
+    --button-outline: hsl(var(--border));
+    --badge-outline: hsl(var(--border));
+  }
+
+  .dark {
+    --elevate-1: rgba(255, 255, 255, 0.06);
+    --elevate-2: rgba(255, 255, 255, 0.1);
+    --opaque-button-border-intensity: 8%;
+  }
+
   * {
     @apply border-border;
   }

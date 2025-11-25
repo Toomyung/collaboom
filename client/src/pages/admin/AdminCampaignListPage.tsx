@@ -1,0 +1,247 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { AdminLayout } from "@/components/layout/AdminLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Campaign } from "@shared/schema";
+import { Link, Redirect } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  Copy,
+  Archive,
+  MoreHorizontal,
+} from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+export default function AdminCampaignListPage() {
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data: campaigns, isLoading } = useQuery<Campaign[]>({
+    queryKey: ["/api/admin/campaigns"],
+    enabled: isAuthenticated && isAdmin,
+  });
+
+  if (authLoading) {
+    return (
+      <AdminLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-96" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!isAuthenticated || !isAdmin) {
+    return <Redirect to="/admin/login" />;
+  }
+
+  const filteredCampaigns = campaigns?.filter((campaign) => {
+    const matchesSearch =
+      !searchQuery ||
+      campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || campaign.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusBadge = (status: string) => {
+    const configs: Record<string, { label: string; className: string }> = {
+      draft: { label: "Draft", className: "bg-gray-500/10 text-gray-600 border-gray-500/20" },
+      active: { label: "Active", className: "bg-green-500/10 text-green-600 border-green-500/20" },
+      full: { label: "Full", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+      closed: { label: "Closed", className: "bg-red-500/10 text-red-600 border-red-500/20" },
+      archived: { label: "Archived", className: "bg-gray-500/10 text-gray-600 border-gray-500/20" },
+    };
+    const config = configs[status] || configs.draft;
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Campaigns</h1>
+            <p className="text-muted-foreground">Manage your product campaigns</p>
+          </div>
+          <Link href="/admin/campaigns/new">
+            <Button data-testid="button-new-campaign">
+              <Plus className="h-4 w-4 mr-2" />
+              New Campaign
+            </Button>
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search campaigns..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="input-search"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]" data-testid="select-status">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="full">Full</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Campaigns Table */}
+        <Card>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-6 space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-12" />
+                ))}
+              </div>
+            ) : filteredCampaigns && filteredCampaigns.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campaign</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Slots</TableHead>
+                    <TableHead>Deadline</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCampaigns.map((campaign) => (
+                    <TableRow key={campaign.id} data-testid={`row-campaign-${campaign.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {campaign.imageUrl ? (
+                            <img
+                              src={campaign.imageUrl}
+                              alt=""
+                              className="h-10 w-10 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-lg bg-muted" />
+                          )}
+                          <div>
+                            <p className="font-medium">{campaign.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {campaign.brandName}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {campaign.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(campaign.status)}</TableCell>
+                      <TableCell>
+                        <span className="font-medium">{campaign.approvedCount ?? 0}</span>
+                        <span className="text-muted-foreground"> / {campaign.inventory}</span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(campaign.deadline), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" data-testid={`menu-${campaign.id}`}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <Link href={`/admin/campaigns/${campaign.id}`}>
+                              <DropdownMenuItem>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                            </Link>
+                            <Link href={`/admin/campaigns/${campaign.id}/edit`}>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuItem>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
+                              <Archive className="h-4 w-4 mr-2" />
+                              Archive
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Plus className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">No campaigns found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery || statusFilter !== "all"
+                    ? "Try adjusting your filters"
+                    : "Create your first campaign to get started"}
+                </p>
+                <Link href="/admin/campaigns/new">
+                  <Button>Create Campaign</Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
+  );
+}

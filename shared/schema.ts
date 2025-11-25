@@ -1,18 +1,280 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
+// Admin users
+export const admins = pgTable("admins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  name: text("name"),
+  role: text("role").default("admin"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+export const insertAdminSchema = createInsertSchema(admins).pick({
+  email: true,
   password: true,
+  name: true,
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type InsertAdmin = z.infer<typeof insertAdminSchema>;
+export type Admin = typeof admins.$inferSelect;
+
+// Influencers
+export const influencers = pgTable("influencers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+  tiktokHandle: text("tiktok_handle").unique(),
+  instagramHandle: text("instagram_handle"),
+  phone: text("phone"),
+  addressLine1: text("address_line1"),
+  addressLine2: text("address_line2"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  country: text("country").default("United States"),
+  paypalEmail: text("paypal_email"),
+  profileCompleted: boolean("profile_completed").default(false),
+  score: integer("score").default(0),
+  penalty: integer("penalty").default(0),
+  restricted: boolean("restricted").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInfluencerSchema = createInsertSchema(influencers).pick({
+  email: true,
+  name: true,
+  tiktokHandle: true,
+  instagramHandle: true,
+  phone: true,
+  addressLine1: true,
+  addressLine2: true,
+  city: true,
+  state: true,
+  zipCode: true,
+  paypalEmail: true,
+});
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  tiktokHandle: z.string().min(1, "TikTok handle is required"),
+  instagramHandle: z.string().optional(),
+  phone: z.string().min(1, "Phone number is required"),
+  addressLine1: z.string().min(1, "Address is required"),
+  addressLine2: z.string().optional(),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zipCode: z.string().min(1, "ZIP code is required"),
+  paypalEmail: z.string().email("Valid PayPal email is required"),
+});
+
+export type InsertInfluencer = z.infer<typeof insertInfluencerSchema>;
+export type Influencer = typeof influencers.$inferSelect;
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;
+
+// Campaigns
+export const campaigns = pgTable("campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  brandName: text("brand_name").notNull(),
+  category: text("category").notNull(), // 'beauty' | 'food' | 'lifestyle'
+  rewardType: text("reward_type").notNull(), // 'gift' | '20usd' | '50usd'
+  inventory: integer("inventory").notNull(),
+  approvedCount: integer("approved_count").default(0),
+  imageUrl: text("image_url"),
+  amazonUrl: text("amazon_url"),
+  guidelinesSummary: text("guidelines_summary"),
+  guidelinesUrl: text("guidelines_url"),
+  requiredHashtags: text("required_hashtags").array(),
+  requiredMentions: text("required_mentions").array(),
+  deadline: timestamp("deadline").notNull(),
+  status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'
+  createdByAdminId: varchar("created_by_admin_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCampaignSchema = createInsertSchema(campaigns).omit({
+  id: true,
+  approvedCount: true,
+  createdAt: true,
+});
+
+export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
+export type Campaign = typeof campaigns.$inferSelect;
+
+// Applications
+export const applications = pgTable("applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  campaignId: varchar("campaign_id").notNull(),
+  influencerId: varchar("influencer_id").notNull(),
+  status: text("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected' | 'shipped' | 'delivered' | 'uploaded' | 'deadline_missed' | 'completed'
+  appliedAt: timestamp("applied_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
+  rejectedAt: timestamp("rejected_at"),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
+  uploadedAt: timestamp("uploaded_at"),
+  deadlineMissedAt: timestamp("deadline_missed_at"),
+  firstTime: boolean("first_time").default(false),
+  notesInternal: text("notes_internal"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertApplicationSchema = createInsertSchema(applications).pick({
+  campaignId: true,
+  influencerId: true,
+});
+
+export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+export type Application = typeof applications.$inferSelect;
+
+// Shipping
+export const shipping = pgTable("shipping", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  applicationId: varchar("application_id").notNull().unique(),
+  status: text("status").notNull().default("pending"), // 'pending' | 'shipped' | 'delivered'
+  trackingNumber: text("tracking_number"),
+  courier: text("courier"),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertShippingSchema = createInsertSchema(shipping).pick({
+  applicationId: true,
+  trackingNumber: true,
+  courier: true,
+});
+
+export type InsertShipping = z.infer<typeof insertShippingSchema>;
+export type Shipping = typeof shipping.$inferSelect;
+
+// Uploads
+export const uploads = pgTable("uploads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  applicationId: varchar("application_id").notNull().unique(),
+  status: text("status").notNull().default("not_uploaded"), // 'not_uploaded' | 'uploaded' | 'verified' | 'missed'
+  tiktokVideoUrl: text("tiktok_video_url"),
+  detectedAt: timestamp("detected_at"),
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUploadSchema = createInsertSchema(uploads).pick({
+  applicationId: true,
+  tiktokVideoUrl: true,
+});
+
+export type InsertUpload = z.infer<typeof insertUploadSchema>;
+export type Upload = typeof uploads.$inferSelect;
+
+// Score Events
+export const scoreEvents = pgTable("score_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull(),
+  campaignId: varchar("campaign_id"),
+  applicationId: varchar("application_id"),
+  delta: integer("delta").notNull(),
+  reason: text("reason").notNull(), // 'first_upload', 'upload_success', 'streak_3', 'brand_feedback', 'admin_manual'
+  createdByAdminId: varchar("created_by_admin_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertScoreEventSchema = createInsertSchema(scoreEvents).pick({
+  influencerId: true,
+  campaignId: true,
+  applicationId: true,
+  delta: true,
+  reason: true,
+  createdByAdminId: true,
+});
+
+export type InsertScoreEvent = z.infer<typeof insertScoreEventSchema>;
+export type ScoreEvent = typeof scoreEvents.$inferSelect;
+
+// Penalty Events
+export const penaltyEvents = pgTable("penalty_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull(),
+  campaignId: varchar("campaign_id"),
+  applicationId: varchar("application_id"),
+  delta: integer("delta").notNull(),
+  reason: text("reason").notNull(), // 'deadline_missed', 'first_ghosting', 'admin_manual', 'rollback'
+  createdByAdminId: varchar("created_by_admin_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPenaltyEventSchema = createInsertSchema(penaltyEvents).pick({
+  influencerId: true,
+  campaignId: true,
+  applicationId: true,
+  delta: true,
+  reason: true,
+  createdByAdminId: true,
+});
+
+export type InsertPenaltyEvent = z.infer<typeof insertPenaltyEventSchema>;
+export type PenaltyEvent = typeof penaltyEvents.$inferSelect;
+
+// Admin Notes
+export const adminNotes = pgTable("admin_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull(),
+  campaignId: varchar("campaign_id"),
+  applicationId: varchar("application_id"),
+  adminId: varchar("admin_id").notNull(),
+  note: text("note").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAdminNoteSchema = createInsertSchema(adminNotes).pick({
+  influencerId: true,
+  campaignId: true,
+  applicationId: true,
+  adminId: true,
+  note: true,
+});
+
+export type InsertAdminNote = z.infer<typeof insertAdminNoteSchema>;
+export type AdminNote = typeof adminNotes.$inferSelect;
+
+// Notifications
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull(),
+  campaignId: varchar("campaign_id"),
+  applicationId: varchar("application_id"),
+  type: text("type").notNull(), // 'welcome', 'approved', 'rejected', 'shipping_shipped', 'shipping_delivered', 'deadline_48h', 'deadline_missed', 'account_restricted'
+  channel: text("channel").notNull().default("email"),
+  status: text("status").notNull().default("sent"), // 'queued' | 'sent' | 'failed'
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).pick({
+  influencerId: true,
+  campaignId: true,
+  applicationId: true,
+  type: true,
+  channel: true,
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+
+// Extended types for frontend with joined data
+export type ApplicationWithDetails = Application & {
+  campaign: Campaign;
+  influencer?: Influencer;
+  shipping?: Shipping;
+  upload?: Upload;
+};
+
+export type CampaignWithStats = Campaign & {
+  applicationCount?: number;
+  pendingCount?: number;
+};
