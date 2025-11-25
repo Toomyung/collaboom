@@ -6,39 +6,42 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  const { data: authState, isLoading } = useQuery<AuthState>({
+  const { data: authState, isLoading, refetch } = useQuery<AuthState>({
     queryKey: ["/api/auth/me"],
     queryFn: getCurrentUser,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const influencerLoginMutation = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      loginInfluencer(email, password),
-    onSuccess: (result) => {
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const result = await loginInfluencer(email, password);
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       }
+      return result;
     },
   });
 
   const influencerRegisterMutation = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      registerInfluencer(email, password),
-    onSuccess: (result) => {
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const result = await registerInfluencer(email, password);
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       }
+      return result;
     },
   });
 
   const adminLoginMutation = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      loginAdmin(email, password),
-    onSuccess: (result) => {
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const result = await loginAdmin(email, password);
       if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       }
+      return result;
     },
   });
 

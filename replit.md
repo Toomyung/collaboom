@@ -115,3 +115,44 @@ Preferred communication style: Simple, everyday language.
 - @replit/vite-plugin-cartographer for code mapping
 - @replit/vite-plugin-dev-banner for development indicators
 - Conditional loading based on REPL_ID environment variable
+
+## Recent Changes (November 2025)
+
+### Phase 2 Features Implemented
+
+**Admin Notes System**
+- API routes: GET/POST `/api/admin/influencers/:id/notes`
+- Notes displayed in admin influencer drawer under "Notes" tab
+- Each note records admin ID, timestamp, and optional campaign/application context
+
+**Score/Penalty Event History**
+- API routes: GET `/api/admin/influencers/:id/score-events` and `/penalty-events`
+- History displayed in admin influencer drawer under "History" tab
+- Manual score/penalty adjustment controls for admins
+
+**Shipping Issue Reporting**
+- Influencers can report shipping problems via `/api/applications/:id/report-issue`
+- Issues stored in `shipping_issues` table with status tracking
+- Admin routes to view and resolve issues at `/api/admin/issues`
+
+**First-Time Ghosting Detection**
+- When influencer misses first deadline with no completed campaigns: +5 penalty
+- Storage layer automatically sets `restricted=true` when penalty ≥5
+- Subsequent missed deadlines apply +1 penalty only
+
+**Enhanced Admin Influencer Drawer**
+- Tabbed interface: Profile, History, Notes, Applications
+- Profile tab shows influencer details and account status
+- History tab shows score/penalty events chronologically
+- Notes tab allows adding and viewing admin notes
+- Applications tab shows all campaign applications for the influencer
+
+**Email Notification Infrastructure**
+- Notifications logged on all state transitions:
+  - `approved`: When application is approved
+  - `rejected`: When application is rejected
+  - `shipping_shipped`: When product ships
+  - `shipping_delivered`: When product is delivered
+  - `deadline_missed`: When upload deadline is missed
+  - `account_restricted`: When account gets restricted (first ghosting)
+- Stored in `notifications` table for future email integration
