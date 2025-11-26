@@ -64,12 +64,23 @@ export const updateProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
   tiktokHandle: z.string().min(1, "TikTok handle is required"),
   instagramHandle: z.string().optional(),
-  phone: z.string().min(1, "Phone number is required"),
-  addressLine1: z.string().min(1, "Address is required"),
-  addressLine2: z.string().optional(),
-  city: z.string().min(1, "City is required"),
+  phone: z.string()
+    .min(1, "Phone number is required")
+    .regex(/^[\d\s\-\+\(\)]+$/, "Phone number can only contain digits, spaces, and +/- characters"),
+  addressLine1: z.string()
+    .min(1, "Address is required")
+    .regex(/^[a-zA-Z0-9\s\.,#\-\/]+$/, "Address must contain only English letters, numbers, and common punctuation"),
+  addressLine2: z.string()
+    .regex(/^[a-zA-Z0-9\s\.,#\-\/]*$/, "Address must contain only English letters, numbers, and common punctuation")
+    .optional()
+    .or(z.literal("")),
+  city: z.string()
+    .min(1, "City is required")
+    .regex(/^[a-zA-Z\s\-\.]+$/, "City must contain only English letters"),
   state: z.string().min(1, "State is required"),
-  zipCode: z.string().min(1, "ZIP code is required"),
+  zipCode: z.string()
+    .min(1, "ZIP code is required")
+    .regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 digits (e.g., 12345) or 9 digits with hyphen (e.g., 12345-6789)"),
   paypalEmail: z.string().email("Valid PayPal email is required").optional().or(z.literal("")),
 });
 
