@@ -46,6 +46,10 @@ const formSchema = insertCampaignSchema.extend({
   productName: z.string().optional(),
   requiredHashtags: z.array(z.string()).optional(),
   requiredMentions: z.array(z.string()).optional(),
+  contentOverview: z.string().optional(),
+  productDetail: z.string().optional(),
+  stepByStepProcess: z.string().optional(),
+  eligibilityRequirements: z.string().optional(),
   applicationDeadline: z.string().min(1, "Application deadline is required"),
   deadline: z.string().min(1, "Upload deadline is required"),
   rewardAmount: z.number().optional().nullable(),
@@ -107,6 +111,9 @@ export default function AdminCampaignFormPage() {
       contentOverview: "",
       requiredHashtags: [],
       requiredMentions: [],
+      productDetail: "",
+      stepByStepProcess: "",
+      eligibilityRequirements: "",
       applicationDeadline: new Date().toISOString().split("T")[0] + "T23:59:00",
       deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] + "T23:59:00",
       status: "draft",
@@ -129,6 +136,9 @@ export default function AdminCampaignFormPage() {
             contentOverview: (campaign as any).contentOverview || "",
             requiredHashtags: campaign.requiredHashtags || [],
             requiredMentions: campaign.requiredMentions || [],
+            productDetail: (campaign as any).productDetail || "",
+            stepByStepProcess: (campaign as any).stepByStepProcess || "",
+            eligibilityRequirements: (campaign as any).eligibilityRequirements || "",
             applicationDeadline: campaign.applicationDeadline 
               ? new Date(campaign.applicationDeadline).toISOString().slice(0, 16)
               : new Date().toISOString().split("T")[0] + "T23:59",
@@ -664,6 +674,99 @@ export default function AdminCampaignFormPage() {
                     ))}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Product Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="productDetail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product Detail</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe the product in detail - features, benefits, what makes it special..."
+                          rows={6}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-product-detail"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Detailed product information that helps influencers understand what they're promoting
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Step by Step Process */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Step by Step Process</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="stepByStepProcess"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Process Steps</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="1. Apply for the campaign&#10;2. Wait for approval&#10;3. Receive the product&#10;4. Create content following guidelines&#10;5. Upload your content before deadline"
+                          rows={8}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-step-by-step"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Step-by-step instructions for influencers to follow throughout the campaign
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Eligibility and Requirements */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Eligibility and Requirements</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="eligibilityRequirements"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Eligibility Criteria</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="• Minimum 1,000 TikTok followers&#10;• US-based creators only&#10;• Must post within deadline&#10;• Active engagement on recent posts"
+                          rows={6}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-eligibility"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Requirements that influencers must meet to be eligible for this campaign
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 

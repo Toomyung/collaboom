@@ -107,6 +107,9 @@ export const campaigns = pgTable("campaigns", {
   contentOverview: text("content_overview"), // Brief overview of content expectations
   requiredHashtags: text("required_hashtags").array(),
   requiredMentions: text("required_mentions").array(),
+  productDetail: text("product_detail"), // Detailed product information
+  stepByStepProcess: text("step_by_step_process"), // Step-by-step process for influencers
+  eligibilityRequirements: text("eligibility_requirements"), // Eligibility and requirements
   applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
   deadline: timestamp("deadline").notNull(), // Upload deadline (content submission deadline)
   status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'

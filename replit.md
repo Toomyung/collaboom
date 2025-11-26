@@ -37,6 +37,10 @@ Preferred communication style: Simple, everyday language.
 - **Influencer Transparency Features:** APIs for influencers to view their own notifications, score, and penalty event history.
 - **Flexible Reward System:** Campaigns can offer "Gift Only" or "Gift + Paid" rewards with customizable amounts.
 - **Dual Deadline System:** Campaigns have separate `applicationDeadline` and `upload deadline`.
+- **Extended Campaign Information:** Campaigns include three additional content sections for admin configuration:
+  - **Product Information**: `productDetail` field for detailed product descriptions
+  - **Step by Step Process**: `stepByStepProcess` field for influencer workflow instructions
+  - **Eligibility and Requirements**: `eligibilityRequirements` field for participation criteria
 - **Admin Campaign Workflow:** Streamlined tabbed interface for managing applicants, approved influencers, shipping, and uploads.
 - **Inline Shipping Entry & Bulk Upload:** Admins can enter shipping details individually or via CSV upload, including courier, tracking number, and URL.
 - **Enhanced Shipping Display:** Clear display of shipping information for both admins and influencers.

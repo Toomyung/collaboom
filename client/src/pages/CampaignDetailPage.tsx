@@ -17,6 +17,9 @@ import {
   AtSign,
   CheckCircle,
   Package,
+  ListOrdered,
+  ShieldCheck,
+  Info,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -389,6 +392,51 @@ export default function CampaignDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Product Information */}
+        {(campaign as any).productDetail && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2">
+                <Info className="h-5 w-5 text-primary" />
+                Product Information
+              </h2>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {(campaign as any).productDetail}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step by Step Process */}
+        {(campaign as any).stepByStepProcess && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2">
+                <ListOrdered className="h-5 w-5 text-primary" />
+                Step by Step Process
+              </h2>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {(campaign as any).stepByStepProcess}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Eligibility and Requirements */}
+        {(campaign as any).eligibilityRequirements && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Eligibility and Requirements
+              </h2>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {(campaign as any).eligibilityRequirements}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Amazon Link */}
         {campaign.amazonUrl && (
