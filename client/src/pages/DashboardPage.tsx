@@ -59,6 +59,8 @@ export default function DashboardPage() {
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
   const [showIssueDialog, setShowIssueDialog] = useState(false);
   const [issueMessage, setIssueMessage] = useState("");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [applicationToCancel, setApplicationToCancel] = useState<ApplicationWithDetails | null>(null);
 
   const { data: applications, isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/applications/detailed"],
@@ -73,8 +75,10 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
       toast({
         title: "Application cancelled",
-        description: "Your application has been cancelled.",
+        description: "Your application has been cancelled. You can re-apply to this campaign if you change your mind.",
       });
+      setShowCancelDialog(false);
+      setApplicationToCancel(null);
     },
     onError: (error: Error) => {
       toast({
@@ -82,6 +86,8 @@ export default function DashboardPage() {
         description: error.message,
         variant: "destructive",
       });
+      setShowCancelDialog(false);
+      setApplicationToCancel(null);
     },
   });
 
@@ -145,9 +151,13 @@ export default function DashboardPage() {
   });
 
   const handleCancelApplication = (application: ApplicationWithDetails) => {
-    if (confirm("Are you sure you want to cancel this application?")) {
-      cancelMutation.mutate(application.id);
-    }
+    setApplicationToCancel(application);
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancelApplication = () => {
+    if (!applicationToCancel) return;
+    cancelMutation.mutate(applicationToCancel.id);
   };
 
   const handleReportIssue = (application: ApplicationWithDetails) => {
@@ -404,6 +414,51 @@ export default function DashboardPage() {
               data-testid="button-submit-issue"
             >
               {reportIssueMutation.isPending ? "Submitting..." : "Submit Report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Application Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Application</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel your application for{" "}
+              <span className="font-medium">{applicationToCancel?.campaign.name}</span>?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-700 dark:text-amber-300">
+                <p className="font-medium">Important:</p>
+                <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
+                  <li>You can re-apply to this campaign after cancelling</li>
+                  <li>Once approved, applications cannot be cancelled</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowCancelDialog(false);
+                setApplicationToCancel(null);
+              }}
+              data-testid="button-cancel-dialog-close"
+            >
+              Keep Application
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmCancelApplication}
+              disabled={cancelMutation.isPending}
+              data-testid="button-confirm-cancel"
+            >
+              {cancelMutation.isPending ? "Cancelling..." : "Cancel Application"}
             </Button>
           </DialogFooter>
         </DialogContent>
