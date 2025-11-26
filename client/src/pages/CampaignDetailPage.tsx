@@ -221,7 +221,10 @@ export default function CampaignDetailPage() {
             {!isClosed && isApplicationClosed && <Badge variant="secondary">Applications Closed</Badge>}
             {isFull && <Badge variant="secondary">Full</Badge>}
           </div>
-          <p className="text-muted-foreground mb-1">{campaign.brandName}</p>
+          <p className="text-muted-foreground mb-1">
+            {campaign.brandName}
+            {(campaign as any).productName && ` - ${(campaign as any).productName}`}
+          </p>
           <h1 className="text-3xl font-bold mb-4">{campaign.name}</h1>
 
           {/* Stats */}

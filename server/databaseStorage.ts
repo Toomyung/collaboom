@@ -281,8 +281,10 @@ export class DatabaseStorage implements IStorage {
     const [newCampaign] = await db.insert(campaigns).values({
       name: campaign.name,
       brandName: campaign.brandName,
+      productName: campaign.productName || null,
       category: campaign.category,
       rewardType: campaign.rewardType,
+      rewardAmount: campaign.rewardAmount || null,
       inventory: campaign.inventory,
       approvedCount: 0,
       imageUrl: campaign.imageUrl || null,
@@ -291,6 +293,7 @@ export class DatabaseStorage implements IStorage {
       guidelinesUrl: campaign.guidelinesUrl || null,
       requiredHashtags: campaign.requiredHashtags || null,
       requiredMentions: campaign.requiredMentions || null,
+      applicationDeadline: campaign.applicationDeadline ? new Date(campaign.applicationDeadline) : null,
       deadline: new Date(campaign.deadline),
       status: campaign.status || 'draft',
       createdByAdminId: campaign.createdByAdminId || null,

@@ -24,15 +24,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Campaign, insertCampaignSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Loader2, X, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, X, Plus, AlertCircle } from "lucide-react";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { PlacementImageUpload } from "@/components/PlacementImageUpload";
 
 const formSchema = insertCampaignSchema.extend({
+  productName: z.string().optional(),
   requiredHashtags: z.array(z.string()).optional(),
   requiredMentions: z.array(z.string()).optional(),
   applicationDeadline: z.string().min(1, "Application deadline is required"),
@@ -48,16 +59,6 @@ const formSchema = insertCampaignSchema.extend({
   {
     message: "Reward amount is required for paid campaigns",
     path: ["rewardAmount"],
-  }
-).refine(
-  (data) => {
-    const appDeadline = new Date(data.applicationDeadline);
-    const uploadDeadline = new Date(data.deadline);
-    return appDeadline <= uploadDeadline;
-  },
-  {
-    message: "Application deadline must be before or equal to upload deadline",
-    path: ["applicationDeadline"],
   }
 );
 
@@ -82,6 +83,7 @@ export default function AdminCampaignFormPage() {
   const { toast } = useToast();
   const [hashtagInput, setHashtagInput] = useState("");
   const [mentionInput, setMentionInput] = useState("");
+  const [dateErrorDialogOpen, setDateErrorDialogOpen] = useState(false);
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
@@ -93,6 +95,7 @@ export default function AdminCampaignFormPage() {
     defaultValues: {
       name: "",
       brandName: "",
+      productName: "",
       category: "beauty",
       rewardType: "gift",
       rewardAmount: null,
@@ -113,6 +116,7 @@ export default function AdminCampaignFormPage() {
           return {
             name: campaign.name,
             brandName: campaign.brandName,
+            productName: (campaign as any).productName || "",
             category: campaign.category,
             rewardType: normalizedReward.rewardType,
             rewardAmount: normalizedReward.rewardAmount,
@@ -194,6 +198,14 @@ export default function AdminCampaignFormPage() {
   }
 
   const onSubmit = (data: FormData) => {
+    const appDeadline = new Date(data.applicationDeadline);
+    const uploadDeadline = new Date(data.deadline);
+    
+    if (appDeadline >= uploadDeadline) {
+      setDateErrorDialogOpen(true);
+      return;
+    }
+
     if (isEditing) {
       updateMutation.mutate(data);
     } else {
@@ -276,19 +288,35 @@ export default function AdminCampaignFormPage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="brandName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Brand Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="GlowLab" {...field} data-testid="input-brand" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="brandName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Brand Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="GlowLab" {...field} data-testid="input-brand" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="productName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Vitamin C Serum" {...field} value={field.value || ""} data-testid="input-product" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField
@@ -462,13 +490,11 @@ export default function AdminCampaignFormPage() {
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Campaign Image URL</FormLabel>
+                      <FormLabel>Placement Image</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="https://..."
-                          {...field}
+                        <PlacementImageUpload
                           value={field.value || ""}
-                          data-testid="input-image"
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />
@@ -494,7 +520,15 @@ export default function AdminCampaignFormPage() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
 
+            {/* Guidelines */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Guidelines</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
                   name="guidelinesUrl"
@@ -509,19 +543,14 @@ export default function AdminCampaignFormPage() {
                           data-testid="input-guidelines-url"
                         />
                       </FormControl>
+                      <FormDescription>
+                        Link to the full campaign guidelines document
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
 
-            {/* Guidelines */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Content Guidelines</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
                   name="guidelinesSummary"
@@ -631,6 +660,23 @@ export default function AdminCampaignFormPage() {
             </div>
           </form>
         </Form>
+
+        <AlertDialog open={dateErrorDialogOpen} onOpenChange={setDateErrorDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+                Invalid Date Range
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Application Deadline must be before Upload Deadline. Please adjust the dates and try again.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction data-testid="button-date-error-ok">OK</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );

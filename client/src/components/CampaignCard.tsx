@@ -142,7 +142,10 @@ export function CampaignCard({
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground mb-1">{campaign.brandName}</p>
+            <p className="text-xs text-muted-foreground mb-1">
+              {campaign.brandName}
+              {(campaign as any).productName && ` - ${(campaign as any).productName}`}
+            </p>
             <h3 className="font-semibold text-lg leading-tight truncate">{campaign.name}</h3>
           </div>
           {getCategoryBadge()}
