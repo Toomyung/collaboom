@@ -1,0 +1,164 @@
+[상황 설명]
+현재 Collaboom 프로젝트에서 캠페인 관리자(Admin)가 작성하는 폼에 영상 가이드라인을 입력하는 기능이 필요합니다.
+지금은 인플루언서에게 Notion 링크만 전달해서 가이드라인을 보게 하고 있는데, 이 방식은 외부 링크 이탈률이 높고 UX가 좋지 않습니다.
+
+그래서
+
+Admin이 폼에서 직접 Video Guideline을 구조적으로 입력할 수 있고
+
+인플루언서(유저)는 캠페인 상세/지원 화면에서 같은 페이지 안에서 부드럽게 열리는 탭/패널 UI로 가이드라인을 확인하며
+
+TikTok 레퍼런스 영상은 플랫폼 내부에서 바로 재생되도록 만드는 구조가 필요합니다.
+
+[요청 내용]
+아래 요구사항에 맞게 Admin 폼 + Home 스키마 + 프론트엔드 UI 전체 흐름을 설계·구현해 주세요.
+
+Admin용 Video Guideline 입력 영역 추가
+
+Admin이 캠페인 생성/수정 폼에서 아래 필드를 입력할 수 있는 **섹션(예: “Video Guidelines”)**을 추가해주세요.
+
+Essential cuts (필수 연출 컷)
+
+About product (제품에 대한 설명)
+
+Details (촬영/연출 디테일, 각종 추가 정보)
+
+Reference video (주로 TikTok URL 리스트)
+
+Key Points (핵심 메시지 요약)
+
+이 영역은 단순한 한 줄 인풋이 아니라, 간단한 노션 페이지 같은 느낌의 에디터 섹션이면 좋겠습니다.
+
+각 항목별로 label + multi-line textarea 또는 간단한 리치 텍스트 형태
+
+Reference video는 여러 개의 TikTok URL을 배열 형태로 관리 가능하도록 해주세요 (예: comma 구분 입력 또는 동적 필드 추가 버튼).
+
+스키마(예: Home Schema / Campaign Schema)에 구조적으로 저장
+
+위 5개 항목이 명시적인 구조로 저장되도록 타입/스키마를 설계해 주세요.
+
+예시 타입(실제 프로젝트의 스키마 네이밍/구조에 맞춰 조정):
+
+videoGuidelines: {
+  essentialCuts: string;
+  aboutProduct: string;
+  details: string;
+  referenceVideos: string[]; // TikTok URL 리스트
+  keyPoints: string;
+}
+
+
+Zod 스키마(homeSchema 또는 캠페인 관련 스키마)에 해당 필드를 추가하고,
+폼에서 이 필드를 읽고/저장할 수 있도록 폼 바인딩 + API 연동까지 마무리해 주세요.
+
+인플루언서(유저)용 Video Guideline 뷰 UI
+
+인플루언서가 캠페인 상세 페이지(또는 지원 페이지)를 볼 때:
+
+“Video Guidelines” 혹은 “Content Guidelines” 같은 버튼/탭을 하나 두고
+이를 클릭하면 같은 화면 안에서 부드럽게 열리는 패널/탭/모달로 가이드라인이 나타나도록 해주세요.
+
+완전히 다른 페이지로 이동(X) → 이탈률 감소를 목표로 함.
+
+UI 예시:
+
+캠페인 상세 카드 안에 Guidelines 탭을 두고, 탭 클릭 시 내용이 아래에 펼쳐지거나
+
+오른쪽에서 슬라이드되는 패널(slideover) 또는 중앙 모달을 열어서 가이드라인을 표시
+
+패널 내부 구성:
+
+각 섹션을 구분된 블록으로 출력
+
+“Essential Cuts” 제목 + 내용
+
+“About Product” 제목 + 내용
+
+“Details” 제목 + 내용
+
+“Reference Videos” 블록 (TikTok 임베드 리스트)
+
+“Key Points” 블록
+
+디자인:
+
+shadcn/ui 컴포넌트(Card, Tabs, Dialog, Sheet 등)를 사용
+
+Tailwind로 여백/타이포를 정리해서 한 번에 봐도 구조가 눈에 들어오도록 레이아웃 구성
+
+TikTok Reference Video 인라인 재생 처리
+
+Reference video에 입력된 TikTok URL들은 단순 링크가 아니라, 플랫폼 안에서 바로 재생되도록 해주세요.
+
+구현 방향:
+
+URL 리스트를 순회하면서 각 TikTok을 임베드 컴포넌트로 렌더링
+
+필요하다면 blockquote + TikTok 스크립트 또는 TikTok용 React 컴포넌트를 사용하여 구현
+(Next.js 환경이라면 <Script> 컴포넌트 활용 등, 프로젝트 표준 방식에 맞춰 구현)
+
+중요한 점:
+
+유저가 TikTok으로 새 탭 이동하지 않고, Collaboom 내에서 바로 영상 미리보기/재생이 가능해야 합니다.
+
+로딩 속도와 레이아웃 깨짐을 최소화하도록, 썸네일 + 플레이 버튼 형태도 고려해 주세요.
+
+기존 Admin 폼 패턴과의 일관성 유지
+
+기존 Admin 대시보드에서 사용 중인 **폼 패턴(예: React Hook Form, zodResolver, shadcn/ui Form)**이 있다면 그대로 따르되,
+새 필드는 동일한 UX/밸리데이션 패턴을 유지해 주세요.
+
+저장/수정/불러오기까지 풀 플로우가 자연스럽게 동작해야 합니다.
+
+[기술적 요구사항]
+
+사용 기술:
+
+React 18
+
+TypeScript
+
+Next.js(App Router 기준이라면 그 구조 유지)
+
+Tailwind CSS
+
+shadcn/ui
+
+기존에 사용 중인 폼/상태 관리 패턴(예: React Hook Form + Zod) 그대로 활용
+
+파일 위치(예시):
+
+Admin 캠페인 생성/수정 폼 컴포넌트가 있는 위치를 먼저 찾아서 수정해 주세요.
+
+예: client/src/app/(admin)/campaigns/[id]/edit/page.tsx 또는 유사한 경로
+
+인플루언서용 캠페인 상세/지원 페이지(유저가 실제로 캠페인을 보는 화면)를 찾아서,
+해당 페이지에 Video Guidelines 버튼 + 패널 UI를 추가해 주세요.
+
+스키마:
+
+캠페인 또는 홈 스키마(Home Schema)에서 사용 중인 Zod/TypeScript 타입에
+videoGuidelines 필드를 추가하고, API 계층과도 타입을 맞춰 주세요.
+
+DB/ORM(Drizzle 등)을 사용 중이라면, 필요 시 관련 컬럼 추가(또는 JSON 필드)도 설계해 주세요.
+
+[예상 결과]
+
+Admin 측:
+
+캠페인 생성/수정 페이지에 “Video Guidelines” 섹션이 생기고,
+Essential cuts / About product / Details / Reference video / Key Points를 직접 입력·수정 가능.
+
+폼을 저장하면 이 값들이 스키마 및 DB에 구조적으로 저장된다.
+
+인플루언서 측:
+
+캠페인 상세/지원 페이지에서 “Video Guidelines” 버튼이나 탭을 클릭하면
+같은 페이지 내에서 부드럽게 펼쳐지는 가이드라인 패널에서 모든 내용을 확인 가능.
+
+TikTok reference videos는 외부로 나가지 않고, Collaboom 페이지 안에서 바로 재생 가능.
+
+전체적으로:
+
+Notion 링크 기반 가이드라인 제공에서 벗어나,
+이탈률을 줄이고, 한 화면에서 정보 확인 + 시청까지 가능한 UX로 개선된 상태가 되어야 합니다.

@@ -37,7 +37,7 @@ import { Campaign, insertCampaignSchema } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Loader2, X, Plus, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, X, Plus, AlertCircle, Video, Link as LinkIcon } from "lucide-react";
 import { z } from "zod";
 import { useState, useEffect } from "react";
 import { PlacementImageUpload } from "@/components/PlacementImageUpload";
@@ -50,6 +50,12 @@ const formSchema = insertCampaignSchema.extend({
   productDetail: z.string().optional(),
   stepByStepProcess: z.string().optional(),
   eligibilityRequirements: z.string().optional(),
+  // Video Guidelines
+  videoEssentialCuts: z.string().optional(),
+  videoAboutProduct: z.string().optional(),
+  videoDetails: z.string().optional(),
+  videoReferenceUrls: z.array(z.string()).optional(),
+  videoKeyPoints: z.string().optional(),
   applicationDeadline: z.string().min(1, "Application deadline is required"),
   deadline: z.string().min(1, "Upload deadline is required"),
   rewardAmount: z.number().optional().nullable(),
@@ -87,6 +93,7 @@ export default function AdminCampaignFormPage() {
   const { toast } = useToast();
   const [hashtagInput, setHashtagInput] = useState("");
   const [mentionInput, setMentionInput] = useState("");
+  const [referenceUrlInput, setReferenceUrlInput] = useState("");
   const [dateErrorDialogOpen, setDateErrorDialogOpen] = useState(false);
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
@@ -114,6 +121,11 @@ export default function AdminCampaignFormPage() {
       productDetail: "",
       stepByStepProcess: "",
       eligibilityRequirements: "",
+      videoEssentialCuts: "",
+      videoAboutProduct: "",
+      videoDetails: "",
+      videoReferenceUrls: [],
+      videoKeyPoints: "",
       applicationDeadline: new Date().toISOString().split("T")[0] + "T23:59:00",
       deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] + "T23:59:00",
       status: "draft",
@@ -139,6 +151,11 @@ export default function AdminCampaignFormPage() {
             productDetail: (campaign as any).productDetail || "",
             stepByStepProcess: (campaign as any).stepByStepProcess || "",
             eligibilityRequirements: (campaign as any).eligibilityRequirements || "",
+            videoEssentialCuts: (campaign as any).videoEssentialCuts || "",
+            videoAboutProduct: (campaign as any).videoAboutProduct || "",
+            videoDetails: (campaign as any).videoDetails || "",
+            videoReferenceUrls: (campaign as any).videoReferenceUrls || [],
+            videoKeyPoints: (campaign as any).videoKeyPoints || "",
             applicationDeadline: campaign.applicationDeadline 
               ? new Date(campaign.applicationDeadline).toISOString().slice(0, 16)
               : new Date().toISOString().split("T")[0] + "T23:59",
@@ -280,6 +297,25 @@ export default function AdminCampaignFormPage() {
     form.setValue(
       "requiredMentions",
       current.filter((m) => m !== mention),
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
+
+  const addReferenceUrl = () => {
+    if (!referenceUrlInput.trim()) return;
+    const url = referenceUrlInput.trim();
+    const current = form.getValues("videoReferenceUrls") || [];
+    if (!current.includes(url)) {
+      form.setValue("videoReferenceUrls", [...current, url], { shouldDirty: true, shouldValidate: true });
+    }
+    setReferenceUrlInput("");
+  };
+
+  const removeReferenceUrl = (url: string) => {
+    const current = form.getValues("videoReferenceUrls") || [];
+    form.setValue(
+      "videoReferenceUrls",
+      current.filter((u) => u !== url),
       { shouldDirty: true, shouldValidate: true }
     );
   };
@@ -767,6 +803,147 @@ export default function AdminCampaignFormPage() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* Video Guidelines */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Video className="h-5 w-5" />
+                  Video Guidelines
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="videoEssentialCuts"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Essential Cuts</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe the essential scenes/cuts that must be included in the video...&#10;• Opening hook&#10;• Product unboxing&#10;• Application/usage&#10;• Before & after"
+                          rows={5}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-essential-cuts"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Required scenes or cuts that influencers must include in their video
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="videoAboutProduct"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>About Product</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="How to present the product in the video...&#10;• Key features to highlight&#10;• Benefits to mention&#10;• How to showcase texture/packaging"
+                          rows={5}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-about-product"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        How influencers should present and talk about the product
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="videoDetails"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Video Details</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Additional video requirements and details...&#10;• Video length: 30-60 seconds&#10;• Format: vertical (9:16)&#10;• Music: trending sounds preferred&#10;• Lighting: natural daylight"
+                          rows={5}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-video-details"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Technical requirements and additional filming details
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="videoKeyPoints"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Key Points</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Key messages to communicate...&#10;• Main selling points&#10;• Call-to-action&#10;• Brand voice/tone"
+                          rows={4}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-key-points"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Key messages and points that influencers should highlight
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Reference Videos */}
+                <div>
+                  <FormLabel className="flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4" />
+                    Reference Videos (TikTok)
+                  </FormLabel>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="https://www.tiktok.com/@username/video/..."
+                      value={referenceUrlInput}
+                      onChange={(e) => setReferenceUrlInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addReferenceUrl())}
+                      data-testid="input-reference-url"
+                    />
+                    <Button type="button" variant="outline" onClick={addReferenceUrl}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FormDescription className="mt-1">
+                    Add TikTok video URLs as reference examples for influencers
+                  </FormDescription>
+                  <div className="flex flex-col gap-2 mt-3">
+                    {form.watch("videoReferenceUrls")?.map((url, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                        <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm truncate flex-1">{url}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeReferenceUrl(url)}
+                          className="hover:text-destructive flex-shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

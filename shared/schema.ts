@@ -110,6 +110,12 @@ export const campaigns = pgTable("campaigns", {
   productDetail: text("product_detail"), // Detailed product information
   stepByStepProcess: text("step_by_step_process"), // Step-by-step process for influencers
   eligibilityRequirements: text("eligibility_requirements"), // Eligibility and requirements
+  // Video Guidelines
+  videoEssentialCuts: text("video_essential_cuts"), // Essential cuts/scenes for the video
+  videoAboutProduct: text("video_about_product"), // How to present the product in video
+  videoDetails: text("video_details"), // Detailed video requirements
+  videoReferenceUrls: text("video_reference_urls").array(), // TikTok reference video URLs
+  videoKeyPoints: text("video_key_points"), // Key points to highlight
   applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
   deadline: timestamp("deadline").notNull(), // Upload deadline (content submission deadline)
   status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'

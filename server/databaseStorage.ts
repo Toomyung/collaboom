@@ -298,6 +298,12 @@ export class DatabaseStorage implements IStorage {
       productDetail: (campaign as any).productDetail || null,
       stepByStepProcess: (campaign as any).stepByStepProcess || null,
       eligibilityRequirements: (campaign as any).eligibilityRequirements || null,
+      // Video Guidelines
+      videoEssentialCuts: (campaign as any).videoEssentialCuts || null,
+      videoAboutProduct: (campaign as any).videoAboutProduct || null,
+      videoDetails: (campaign as any).videoDetails || null,
+      videoReferenceUrls: (campaign as any).videoReferenceUrls || null,
+      videoKeyPoints: (campaign as any).videoKeyPoints || null,
       applicationDeadline: campaign.applicationDeadline ? new Date(campaign.applicationDeadline) : null,
       deadline: new Date(campaign.deadline),
       status: campaign.status || 'draft',
