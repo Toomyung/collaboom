@@ -860,6 +860,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add shipping info for a single application (inline form)
+  app.post("/api/admin/applications/:applicationId/ship", requireAuth("admin"), async (req, res) => {
+    try {
+      const { courier, trackingNumber, shippedDate } = req.body;
+      
+      if (!courier || !trackingNumber) {
+        return res.status(400).json({ message: "Courier and tracking number are required" });
+      }
+
+      const application = await storage.getApplication(req.params.applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.status !== "approved") {
+        return res.status(400).json({ message: "Can only ship approved applications" });
+      }
+
+      const shippedAt = shippedDate ? new Date(shippedDate) : new Date();
+
+      // Update shipping record
+      await storage.updateShippingByApplication(application.id, {
+        trackingNumber,
+        courier,
+        status: "shipped",
+        shippedAt,
+      });
+
+      // Update application status
+      await storage.updateApplication(application.id, {
+        status: "shipped",
+        shippedAt,
+      });
+
+      // Log shipping notification
+      await storage.createNotification({
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        type: "shipping_shipped",
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Mark upload as verified
   app.post("/api/admin/uploads/:applicationId/mark-uploaded", requireAuth("admin"), async (req, res) => {
     try {

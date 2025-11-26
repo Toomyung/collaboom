@@ -57,6 +57,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface ShippingFormData {
+  courier: string;
+  trackingNumber: string;
+  shippedDate: string;
+}
+
 export default function AdminCampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
@@ -66,6 +72,7 @@ export default function AdminCampaignDetailPage() {
   const [showCsvDialog, setShowCsvDialog] = useState(false);
   const [csvContent, setCsvContent] = useState("");
   const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
+  const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
@@ -159,6 +166,44 @@ export default function AdminCampaignDetailPage() {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
     },
   });
+
+  const shipMutation = useMutation({
+    mutationFn: async ({ applicationId, data }: { applicationId: string; data: ShippingFormData }) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/ship`, data);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      setShippingForms((prev) => {
+        const updated = { ...prev };
+        delete updated[variables.applicationId];
+        return updated;
+      });
+      toast({ title: "Shipping info saved" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to save shipping info", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateShippingForm = (applicationId: string, field: keyof ShippingFormData, value: string) => {
+    setShippingForms((prev) => ({
+      ...prev,
+      [applicationId]: {
+        ...prev[applicationId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleShip = (applicationId: string) => {
+    const formData = shippingForms[applicationId];
+    if (!formData?.courier || !formData?.trackingNumber) {
+      toast({ title: "Please fill in courier and tracking number", variant: "destructive" });
+      return;
+    }
+    shipMutation.mutate({ applicationId, data: formData });
+  };
 
   if (authLoading || campaignLoading) {
     return (
@@ -576,9 +621,9 @@ export default function AdminCampaignDetailPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-4">
                 <CardTitle>Approved Influencers</CardTitle>
-                <Button onClick={() => setShowCsvDialog(true)} data-testid="button-upload-csv">
+                <Button onClick={() => setShowCsvDialog(true)} data-testid="button-upload-csv" variant="outline" size="sm">
                   <UploadCloud className="h-4 w-4 mr-2" />
-                  Upload Shipping CSV
+                  Upload CSV
                 </Button>
               </CardHeader>
               <CardContent>
@@ -586,55 +631,81 @@ export default function AdminCampaignDetailPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Influencer</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>TikTok</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Approved At</TableHead>
+                        <TableHead className="w-[140px]">Influencer</TableHead>
+                        <TableHead className="w-[100px]">Address</TableHead>
+                        <TableHead className="w-[90px]">Approved</TableHead>
+                        <TableHead className="w-[120px]">Courier</TableHead>
+                        <TableHead className="w-[140px]">Tracking #</TableHead>
+                        <TableHead className="w-[120px]">Ship Date</TableHead>
+                        <TableHead className="w-[70px]">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {approvedApplications.map((app) => (
-                        <TableRow key={app.id}>
-                          <TableCell className="font-medium">
-                            <button
-                              className="text-left hover:underline"
-                              onClick={() => setSelectedInfluencer(app.influencer || null)}
-                            >
-                              {app.influencer?.name}
-                            </button>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {app.influencer?.email}
-                          </TableCell>
-                          <TableCell>
-                            {app.influencer?.tiktokHandle && (
-                              <a
-                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                      {approvedApplications.map((app) => {
+                        const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", shippedDate: "" };
+                        return (
+                          <TableRow key={app.id}>
+                            <TableCell className="font-medium">
+                              <button
+                                className="text-left hover:underline text-sm"
+                                onClick={() => setSelectedInfluencer(app.influencer || null)}
                               >
-                                <SiTiktok className="h-3 w-3" />
-                                @{app.influencer.tiktokHandle}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                            {app.influencer?.addressLine1 && (
-                              <span title={`${app.influencer.addressLine1}, ${app.influencer.city}, ${app.influencer.state} ${app.influencer.zipCode}`}>
-                                {app.influencer.city}, {app.influencer.state}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {app.approvedAt
-                              ? format(new Date(app.approvedAt), "MMM d, h:mm a")
-                              : "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                {app.influencer?.name}
+                              </button>
+                              <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {app.influencer?.addressLine1 && (
+                                <span title={`${app.influencer.addressLine1}, ${app.influencer.city}, ${app.influencer.state} ${app.influencer.zipCode}`}>
+                                  {app.influencer.city}, {app.influencer.state}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {app.approvedAt
+                                ? format(new Date(app.approvedAt), "MMM d")
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                placeholder="CJ, Hanjin..."
+                                className="h-8 text-sm"
+                                value={formData.courier}
+                                onChange={(e) => updateShippingForm(app.id, "courier", e.target.value)}
+                                data-testid={`input-courier-${app.id}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                placeholder="Tracking number"
+                                className="h-8 text-sm"
+                                value={formData.trackingNumber}
+                                onChange={(e) => updateShippingForm(app.id, "trackingNumber", e.target.value)}
+                                data-testid={`input-tracking-${app.id}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="date"
+                                className="h-8 text-sm"
+                                value={formData.shippedDate}
+                                onChange={(e) => updateShippingForm(app.id, "shippedDate", e.target.value)}
+                                data-testid={`input-ship-date-${app.id}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                onClick={() => handleShip(app.id)}
+                                disabled={shipMutation.isPending || !formData.courier || !formData.trackingNumber}
+                                data-testid={`button-ship-${app.id}`}
+                              >
+                                <Truck className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 ) : (
