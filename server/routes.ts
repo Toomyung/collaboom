@@ -29,6 +29,11 @@ function requireAuth(userType?: "influencer" | "admin") {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Trust proxy - required for secure cookies behind Replit/GCP proxy
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   // Session middleware
   app.use(
     session({
@@ -39,6 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
       },
     })
   );
