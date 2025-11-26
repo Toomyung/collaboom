@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, X, Image as ImageIcon, Link as LinkIcon } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Link as LinkIcon, Monitor, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -105,23 +105,52 @@ export function PlacementImageUpload({ value, onChange }: PlacementImageUploadPr
             
             {previewUrl ? (
               <div className="relative">
-                <img
-                  src={previewUrl}
-                  alt="Placement Preview"
-                  className="w-full h-48 object-contain rounded-md"
-                  onError={() => {
-                    toast({
-                      title: "Image Load Error",
-                      description: "Could not load the image. Please check the URL.",
-                      variant: "destructive"
-                    });
-                  }}
-                />
+                <div className="flex flex-col items-center gap-4">
+                  <p className="text-sm font-medium text-foreground">Preview</p>
+                  
+                  <div className="flex gap-6 justify-center flex-wrap">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Monitor className="h-3 w-3" />
+                        <span>Desktop</span>
+                      </div>
+                      <div className="w-48 h-28 rounded-md overflow-hidden bg-muted border">
+                        <img
+                          src={previewUrl}
+                          alt="Desktop Preview"
+                          className="w-full h-full object-cover"
+                          onError={() => {
+                            toast({
+                              title: "Image Load Error",
+                              description: "Could not load the image. Please check the URL.",
+                              variant: "destructive"
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Smartphone className="h-3 w-3" />
+                        <span>Mobile</span>
+                      </div>
+                      <div className="w-20 h-28 rounded-md overflow-hidden bg-muted border">
+                        <img
+                          src={previewUrl}
+                          alt="Mobile Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 <Button
                   type="button"
                   variant="destructive"
                   size="icon"
-                  className="absolute top-2 right-2 h-8 w-8"
+                  className="absolute top-0 right-0 h-8 w-8"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRemove();
@@ -168,13 +197,18 @@ export function PlacementImageUpload({ value, onChange }: PlacementImageUploadPr
         </>
       )}
 
-      <div className="bg-muted/50 rounded-md p-3 text-xs text-muted-foreground space-y-1">
-        <p className="font-medium text-foreground">Recommended Image Sizes:</p>
-        <ul className="list-disc list-inside space-y-0.5">
-          <li><span className="font-medium">Mobile:</span> 390 x 520 px (3:4 ratio)</li>
-          <li><span className="font-medium">Desktop:</span> 1200 x 630 px (16:9 ratio)</li>
-        </ul>
-        <p className="mt-2">Supports JPG, PNG, WebP (max 5MB)</p>
+      <div className="bg-muted/50 rounded-md p-3 text-xs text-muted-foreground space-y-2">
+        <div>
+          <p className="font-medium text-foreground">Recommended Size:</p>
+          <p className="mt-1">
+            <span className="font-medium">1200 x 900 px</span> (4:3 ratio)
+          </p>
+        </div>
+        <p className="text-muted-foreground">
+          This single image will automatically adapt to both mobile and desktop views. 
+          Make sure the main subject is centered so it looks good when cropped.
+        </p>
+        <p>Supports JPG, PNG, WebP (max 5MB)</p>
       </div>
     </div>
   );
