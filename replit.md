@@ -49,6 +49,8 @@ Preferred communication style: Simple, everyday language.
   - **Reference Videos**: TikTok video URLs as examples (`videoReferenceUrls` array) with embedded playback
   - Influencers view via Sheet component with TikTok embeds for reference videos
 - **Admin Campaign Workflow:** Streamlined tabbed interface for managing applicants, approved influencers, shipping, and uploads.
+- **Admin Campaign Navigation:** Expandable sidebar sub-menu organizes campaigns into Active (draft/active/full), Finished (closed), and Archived views. Supports multi-status filtering via `statuses` query parameter.
+- **Campaign Archive & Delete:** Full lifecycle management with Archive (hide from influencers), Restore (unarchive), and Delete (cascade removal of applications, shipping, uploads, issues) functionality with confirmation dialogs.
 - **Inline Shipping Entry & Bulk Upload:** Admins can enter shipping details individually or via CSV upload, including courier, tracking number, and URL.
 - **Enhanced Shipping Display:** Clear display of shipping information for both admins and influencers.
 
