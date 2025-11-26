@@ -99,7 +99,8 @@ export const campaigns = pgTable("campaigns", {
   rewardAmount: integer("reward_amount"), // Amount in USD for 'paid' type (e.g., 20, 50, 100)
   inventory: integer("inventory").notNull(),
   approvedCount: integer("approved_count").default(0),
-  imageUrl: text("image_url"),
+  imageUrl: text("image_url"), // Legacy single image (deprecated)
+  imageUrls: text("image_urls").array(), // Array of image URLs (up to 6)
   amazonUrl: text("amazon_url"),
   guidelinesSummary: text("guidelines_summary"),
   guidelinesUrl: text("guidelines_url"),

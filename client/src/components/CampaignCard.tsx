@@ -122,9 +122,9 @@ export function CampaignCard({
         "relative aspect-[16/9] overflow-hidden bg-muted",
         isDisabled && "grayscale-[30%]"
       )}>
-        {campaign.imageUrl ? (
+        {(campaign.imageUrls?.length || campaign.imageUrl) ? (
           <img
-            src={campaign.imageUrl}
+            src={campaign.imageUrls?.[0] || campaign.imageUrl || ""}
             alt={campaign.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />

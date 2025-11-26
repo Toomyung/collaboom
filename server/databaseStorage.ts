@@ -288,6 +288,7 @@ export class DatabaseStorage implements IStorage {
       inventory: campaign.inventory,
       approvedCount: 0,
       imageUrl: campaign.imageUrl || null,
+      imageUrls: campaign.imageUrls || null,
       amazonUrl: campaign.amazonUrl || null,
       guidelinesSummary: campaign.guidelinesSummary || null,
       guidelinesUrl: campaign.guidelinesUrl || null,

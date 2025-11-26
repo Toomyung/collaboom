@@ -100,7 +100,7 @@ export default function AdminCampaignFormPage() {
       rewardType: "gift",
       rewardAmount: null,
       inventory: 50,
-      imageUrl: "",
+      imageUrls: [],
       amazonUrl: "",
       guidelinesSummary: "",
       guidelinesUrl: "",
@@ -121,7 +121,7 @@ export default function AdminCampaignFormPage() {
             rewardType: normalizedReward.rewardType,
             rewardAmount: normalizedReward.rewardAmount,
             inventory: campaign.inventory,
-            imageUrl: campaign.imageUrl || "",
+            imageUrls: campaign.imageUrls || (campaign.imageUrl ? [campaign.imageUrl] : []),
             amazonUrl: campaign.amazonUrl || "",
             guidelinesSummary: campaign.guidelinesSummary || "",
             guidelinesUrl: campaign.guidelinesUrl || "",
@@ -480,14 +480,15 @@ export default function AdminCampaignFormPage() {
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="imageUrl"
+                  name="imageUrls"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Placement Image</FormLabel>
+                      <FormLabel>Placement Images</FormLabel>
                       <FormControl>
                         <PlacementImageUpload
-                          value={field.value || ""}
+                          value={field.value || []}
                           onChange={field.onChange}
+                          maxImages={6}
                         />
                       </FormControl>
                       <FormMessage />

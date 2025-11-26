@@ -33,6 +33,54 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  
+  if (!images.length) {
+    return (
+      <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-muted mb-6">
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
+          <Package className="h-20 w-20 text-primary/40" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 mb-6">
+      <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-muted">
+        <img
+          src={images[selectedIndex]}
+          alt={`${alt} - Image ${selectedIndex + 1}`}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      {images.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {images.map((img, index) => (
+            <button
+              key={index}
+              onClick={() => setSelectedIndex(index)}
+              className={cn(
+                "flex-shrink-0 w-16 h-12 rounded-md overflow-hidden border-2 transition-all",
+                selectedIndex === index 
+                  ? "border-primary ring-2 ring-primary/20" 
+                  : "border-transparent hover:border-muted-foreground/30"
+              )}
+            >
+              <img
+                src={img}
+                alt={`Thumbnail ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -190,20 +238,13 @@ export default function CampaignDetailPage() {
           </Button>
         </Link>
 
-        {/* Hero Image */}
-        <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-muted mb-6">
-          {campaign.imageUrl ? (
-            <img
-              src={campaign.imageUrl}
-              alt={campaign.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
-              <Package className="h-20 w-20 text-primary/40" />
-            </div>
-          )}
-          <div className="absolute top-4 right-4">
+        {/* Hero Image Gallery */}
+        <div className="relative">
+          <ImageGallery 
+            images={campaign.imageUrls?.length ? campaign.imageUrls : (campaign.imageUrl ? [campaign.imageUrl] : [])} 
+            alt={campaign.name} 
+          />
+          <div className="absolute top-4 right-4 z-10">
             <Badge className={cn("bg-gradient-to-r text-white border-0", reward.color)}>
               <reward.icon className="h-3 w-3 mr-1" />
               {reward.label}
