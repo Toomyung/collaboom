@@ -197,20 +197,34 @@ export default function AdminCampaignFormPage() {
     return <Redirect to="/admin/login" />;
   }
 
-  const onSubmit = (data: FormData) => {
+  const validateDates = (data: FormData): boolean => {
     const appDeadline = new Date(data.applicationDeadline);
     const uploadDeadline = new Date(data.deadline);
     
     if (appDeadline >= uploadDeadline) {
       setDateErrorDialogOpen(true);
-      return;
+      return false;
     }
+    return true;
+  };
 
-    if (isEditing) {
-      updateMutation.mutate(data);
-    } else {
-      createMutation.mutate(data);
-    }
+  const onSubmitUpdate = (data: FormData) => {
+    if (!validateDates(data)) return;
+    updateMutation.mutate(data);
+  };
+
+  const handleCreateDraft = () => {
+    form.handleSubmit((data) => {
+      if (!validateDates(data)) return;
+      createMutation.mutate({ ...data, status: "draft" });
+    })();
+  };
+
+  const handleCreateActive = () => {
+    form.handleSubmit((data) => {
+      if (!validateDates(data)) return;
+      createMutation.mutate({ ...data, status: "active" });
+    })();
   };
 
   const addHashtag = () => {
@@ -267,7 +281,7 @@ export default function AdminCampaignFormPage() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmitUpdate)} className="space-y-6">
             {/* Basic Info */}
             <Card>
               <CardHeader>
@@ -455,30 +469,6 @@ export default function AdminCampaignFormPage() {
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-status">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft (Hidden)</SelectItem>
-                          <SelectItem value="active">Active (Visible to Influencers)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Draft campaigns are hidden. Set to Active to show in Discover Campaigns.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </CardContent>
             </Card>
 
@@ -648,18 +638,52 @@ export default function AdminCampaignFormPage() {
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={isPending} data-testid="button-save">
-                {isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : isEditing ? (
-                  "Update Campaign"
-                ) : (
-                  "Create Campaign"
-                )}
-              </Button>
+              {isEditing ? (
+                <Button type="submit" disabled={isPending} data-testid="button-save">
+                  {isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Update Campaign"
+                  )}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={isPending}
+                    onClick={handleCreateDraft}
+                    data-testid="button-save-draft"
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save as Draft"
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={isPending}
+                    onClick={handleCreateActive}
+                    data-testid="button-create"
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Campaign"
+                    )}
+                  </Button>
+                </>
+              )}
             </div>
           </form>
         </Form>
