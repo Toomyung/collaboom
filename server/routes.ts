@@ -47,6 +47,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CONFIG ROUTES
   // =====================
 
+  // Test email endpoint (development only)
+  app.post("/api/test/send-email", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ message: "Not available in production" });
+    }
+    
+    const { type } = req.body;
+    
+    try {
+      if (type === "welcome") {
+        const result = await sendWelcomeEmail("hello@collaboom.io", "Test User");
+        return res.json({ success: true, result });
+      } else if (type === "approval") {
+        const result = await sendApplicationApprovedEmail(
+          "hello@collaboom.io",
+          "Test User",
+          "Summer K-Beauty Campaign",
+          "Glow Beauty"
+        );
+        return res.json({ success: true, result });
+      } else if (type === "shipping") {
+        const result = await sendShippingNotificationEmail(
+          "hello@collaboom.io",
+          "Test User",
+          "Summer K-Beauty Campaign",
+          "Glow Beauty",
+          "FedEx",
+          "123456789012",
+          "https://fedex.com/track/123456789012"
+        );
+        return res.json({ success: true, result });
+      }
+      
+      return res.status(400).json({ message: "Invalid email type. Use: welcome, approval, or shipping" });
+    } catch (error) {
+      console.error("Test email error:", error);
+      return res.status(500).json({ message: "Failed to send test email", error: String(error) });
+    }
+  });
+
   // Get Supabase config (safe to expose anon key)
   app.get("/api/config/supabase", (req, res) => {
     const supabaseUrl = process.env.SUPABASE_URL;
