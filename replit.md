@@ -31,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 - **Shipping Issue Reporting:** Influencers can report shipping problems, which admins can view and resolve.
 - **Ghosting Detection:** Automated penalties for missed deadlines, leading to account restriction.
 - **Enhanced Admin Influencer Management:** Tabbed interface for profile, history, notes, and applications.
-- **Email Notification Infrastructure:** Logs notifications for key state transitions (e.g., application approved, shipping updates, deadlines).
+- **Email Notification System:** Resend API integration sends automated emails on: (1) influencer signup (welcome email), (2) application approval, (3) shipping info entry. Uses non-blocking async sending with beautiful HTML templates. Also logs to notifications table for audit trail.
 - **Pagination & Filtering:** Server-side pagination and filtering for admin interfaces (influencers, campaigns) based on search terms, campaign ID, or status.
 - **Influencer Campaign Stats:** Displays aggregated stats (applied, accepted, completed campaigns) per influencer.
 - **Influencer Transparency Features:** APIs for influencers to view their own notifications, score, and penalty event history.
@@ -44,6 +44,6 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 - **PostgreSQL Database:** Primary data store, connected via Drizzle ORM and `@neondatabase/serverless`. Migrations handled by `drizzle-kit`.
-- **Email Notifications:** Currently uses Gmail/Google Apps Script for MVP; planned migration to SMTP services (Resend, Mailgun).
+- **Email Notifications:** Implemented via Resend API for transactional emails (welcome, approval, shipping notifications).
 - **Third-Party UI Components:** Radix UI primitives, shadcn/ui, Tailwind CSS, and Google Fonts (Inter).
 - **Development Tools (Replit-specific):** `@replit/vite-plugin-runtime-error-modal`, `@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner` for enhanced development experience within Replit.
