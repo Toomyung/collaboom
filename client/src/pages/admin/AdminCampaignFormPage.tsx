@@ -104,6 +104,7 @@ export default function AdminCampaignFormPage() {
       amazonUrl: "",
       guidelinesSummary: "",
       guidelinesUrl: "",
+      contentOverview: "",
       requiredHashtags: [],
       requiredMentions: [],
       applicationDeadline: new Date().toISOString().split("T")[0] + "T23:59:00",
@@ -125,6 +126,7 @@ export default function AdminCampaignFormPage() {
             amazonUrl: campaign.amazonUrl || "",
             guidelinesSummary: campaign.guidelinesSummary || "",
             guidelinesUrl: campaign.guidelinesUrl || "",
+            contentOverview: (campaign as any).contentOverview || "",
             requiredHashtags: campaign.requiredHashtags || [],
             requiredMentions: campaign.requiredMentions || [],
             applicationDeadline: campaign.applicationDeadline 
@@ -569,6 +571,30 @@ export default function AdminCampaignFormPage() {
                       </FormControl>
                       <FormDescription>
                         This appears on the campaign detail page
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Content Overview */}
+                <FormField
+                  control={form.control}
+                  name="contentOverview"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content Overview</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Brief overview of content expectations for influencers..."
+                          rows={4}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-content-overview"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Describes content requirements shown on the campaign detail page
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

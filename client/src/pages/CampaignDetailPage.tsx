@@ -311,6 +311,13 @@ export default function CampaignDetailPage() {
             <CardContent className="p-6">
               <h2 className="font-semibold mb-4">Content Overview</h2>
               
+              {/* Content Overview Text */}
+              {(campaign as any).contentOverview && (
+                <p className="text-sm text-muted-foreground whitespace-pre-line mb-4">
+                  {(campaign as any).contentOverview}
+                </p>
+              )}
+
               {campaign.requiredHashtags && campaign.requiredHashtags.length > 0 && (
                 <div className="mb-4">
                   <p className="text-sm font-medium mb-2 flex items-center gap-2">
@@ -343,10 +350,11 @@ export default function CampaignDetailPage() {
                 </div>
               )}
 
-              {(!campaign.requiredHashtags || campaign.requiredHashtags.length === 0) &&
+              {!(campaign as any).contentOverview &&
+                (!campaign.requiredHashtags || campaign.requiredHashtags.length === 0) &&
                 (!campaign.requiredMentions || campaign.requiredMentions.length === 0) && (
                   <p className="text-sm text-muted-foreground">
-                    No specific hashtags or mentions required. Check the full guidelines for details.
+                    No specific content requirements. Check the full guidelines for details.
                   </p>
                 )}
             </CardContent>

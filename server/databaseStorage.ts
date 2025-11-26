@@ -292,6 +292,7 @@ export class DatabaseStorage implements IStorage {
       amazonUrl: campaign.amazonUrl || null,
       guidelinesSummary: campaign.guidelinesSummary || null,
       guidelinesUrl: campaign.guidelinesUrl || null,
+      contentOverview: (campaign as any).contentOverview || null,
       requiredHashtags: campaign.requiredHashtags || null,
       requiredMentions: campaign.requiredMentions || null,
       applicationDeadline: campaign.applicationDeadline ? new Date(campaign.applicationDeadline) : null,

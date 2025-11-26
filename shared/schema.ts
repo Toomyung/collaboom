@@ -104,6 +104,7 @@ export const campaigns = pgTable("campaigns", {
   amazonUrl: text("amazon_url"),
   guidelinesSummary: text("guidelines_summary"),
   guidelinesUrl: text("guidelines_url"),
+  contentOverview: text("content_overview"), // Brief overview of content expectations
   requiredHashtags: text("required_hashtags").array(),
   requiredMentions: text("required_mentions").array(),
   applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
