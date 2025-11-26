@@ -191,10 +191,15 @@ export default function AdminCampaignDetailPage() {
   }
 
   const pendingApplications = applications?.filter((a) => a.status === "pending") || [];
-  const approvedApplications = applications?.filter((a) => 
-    ["approved", "shipped", "delivered", "uploaded", "completed"].includes(a.status)
+  const approvedApplications = applications?.filter((a) => a.status === "approved") || [];
+  const rejectedApplications = applications?.filter((a) => a.status === "rejected") || [];
+  const shippingApplications = applications?.filter((a) => 
+    ["shipped", "delivered"].includes(a.status)
   ) || [];
   const deliveredApplications = applications?.filter((a) => a.status === "delivered") || [];
+  const uploadedApplications = applications?.filter((a) => 
+    ["uploaded", "completed"].includes(a.status)
+  ) || [];
 
   const toggleApplication = (appId: string) => {
     const newSelected = new Set(selectedApplications);
@@ -278,16 +283,16 @@ export default function AdminCampaignDetailPage() {
                 <p className="text-2xl font-bold">
                   {approvedApplications.length}
                 </p>
-                <p className="text-xs text-muted-foreground">Confirmed</p>
+                <p className="text-xs text-muted-foreground">Approved</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <Upload className="h-5 w-5 text-muted-foreground" />
+              <Truck className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-2xl font-bold">{deliveredApplications.length}</p>
-                <p className="text-xs text-muted-foreground">Awaiting Upload</p>
+                <p className="text-2xl font-bold">{shippingApplications.length}</p>
+                <p className="text-xs text-muted-foreground">Shipping</p>
               </div>
             </CardContent>
           </Card>
@@ -309,12 +314,30 @@ export default function AdminCampaignDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="shipping" data-testid="tab-shipping">
-              <Truck className="h-4 w-4 mr-2" />
-              Shipping
+            <TabsTrigger value="approved" data-testid="tab-approved">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Approved
               {approvedApplications.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {approvedApplications.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="rejected" data-testid="tab-rejected">
+              <XCircle className="h-4 w-4 mr-2" />
+              Rejected
+              {rejectedApplications.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {rejectedApplications.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="shipping" data-testid="tab-shipping">
+              <Truck className="h-4 w-4 mr-2" />
+              Shipping
+              {shippingApplications.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {shippingApplications.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -548,14 +571,14 @@ export default function AdminCampaignDetailPage() {
             </Card>
           </TabsContent>
 
-          {/* Shipping Tab */}
-          <TabsContent value="shipping" className="mt-6">
+          {/* Approved Tab */}
+          <TabsContent value="approved" className="mt-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-4">
-                <CardTitle>Shipping Management</CardTitle>
+                <CardTitle>Approved Influencers</CardTitle>
                 <Button onClick={() => setShowCsvDialog(true)} data-testid="button-upload-csv">
                   <UploadCloud className="h-4 w-4 mr-2" />
-                  Upload CSV
+                  Upload Shipping CSV
                 </Button>
               </CardHeader>
               <CardContent>
@@ -565,14 +588,158 @@ export default function AdminCampaignDetailPage() {
                       <TableRow>
                         <TableHead>Influencer</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>TikTok</TableHead>
+                        <TableHead>Address</TableHead>
+                        <TableHead>Approved At</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {approvedApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell className="font-medium">
+                            <button
+                              className="text-left hover:underline"
+                              onClick={() => setSelectedInfluencer(app.influencer || null)}
+                            >
+                              {app.influencer?.name}
+                            </button>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.influencer?.email}
+                          </TableCell>
+                          <TableCell>
+                            {app.influencer?.tiktokHandle && (
+                              <a
+                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <SiTiktok className="h-3 w-3" />
+                                @{app.influencer.tiktokHandle}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                            {app.influencer?.addressLine1 && (
+                              <span title={`${app.influencer.addressLine1}, ${app.influencer.city}, ${app.influencer.state} ${app.influencer.zipCode}`}>
+                                {app.influencer.city}, {app.influencer.state}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.approvedAt
+                              ? format(new Date(app.approvedAt), "MMM d, h:mm a")
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No approved influencers yet</p>
+                    <p className="text-sm mt-1">Approve applicants from the Applicants tab</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Rejected Tab */}
+          <TabsContent value="rejected" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rejected Applications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {rejectedApplications.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Influencer</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>TikTok</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead>Applied At</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rejectedApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell className="font-medium">
+                            <button
+                              className="text-left hover:underline"
+                              onClick={() => setSelectedInfluencer(app.influencer || null)}
+                            >
+                              {app.influencer?.name}
+                            </button>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.influencer?.email}
+                          </TableCell>
+                          <TableCell>
+                            {app.influencer?.tiktokHandle && (
+                              <a
+                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <SiTiktok className="h-3 w-3" />
+                                @{app.influencer.tiktokHandle}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 text-yellow-500" />
+                              <span>{app.influencer?.score ?? 0}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.appliedAt
+                              ? format(new Date(app.appliedAt), "MMM d, h:mm a")
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <XCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No rejected applications</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Shipping Tab */}
+          <TabsContent value="shipping" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Shipping Tracking</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {shippingApplications.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Influencer</TableHead>
+                        <TableHead>Email</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Tracking</TableHead>
+                        <TableHead>Tracking Number</TableHead>
                         <TableHead>Shipped</TableHead>
                         <TableHead>Delivered</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {approvedApplications.map((app) => (
+                      {shippingApplications.map((app) => (
                         <TableRow key={app.id}>
                           <TableCell className="font-medium">
                             {app.influencer?.name}
@@ -613,7 +780,8 @@ export default function AdminCampaignDetailPage() {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Truck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No approved applications yet</p>
+                    <p>No shipping in progress</p>
+                    <p className="text-sm mt-1">Upload a CSV from the Approved tab to add shipping info</p>
                   </div>
                 )}
               </CardContent>
