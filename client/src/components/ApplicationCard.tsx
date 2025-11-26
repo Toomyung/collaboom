@@ -12,9 +12,11 @@ import {
   Upload,
   ExternalLink,
   AlertTriangle,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Link } from "wouter";
 
 interface ApplicationCardProps {
   application: ApplicationWithDetails;
@@ -185,15 +187,29 @@ export function ApplicationCard({
                 </Button>
               )}
 
-              {application.status === "pending" && onCancelApplication && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onCancelApplication}
-                  data-testid={`button-cancel-${application.id}`}
-                >
-                  Cancel Application
-                </Button>
+              {application.status === "pending" && (
+                <>
+                  <Link href={`/campaigns/${campaign.id}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid={`button-view-campaign-${application.id}`}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View Campaign
+                    </Button>
+                  </Link>
+                  {onCancelApplication && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onCancelApplication}
+                      data-testid={`button-cancel-${application.id}`}
+                    >
+                      Cancel Application
+                    </Button>
+                  )}
+                </>
               )}
 
               {(application.status === "shipped" || application.status === "delivered") &&
