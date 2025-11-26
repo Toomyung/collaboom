@@ -633,7 +633,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update campaign
   app.put("/api/admin/campaigns/:id", requireAuth("admin"), async (req, res) => {
     try {
-      console.log("[DEBUG] Update campaign request body:", JSON.stringify({ status: req.body.status, id: req.params.id }));
       // Parse deadline strings back to Date if provided
       const data = { ...req.body };
       if (data.deadline && typeof data.deadline === 'string') {
