@@ -163,7 +163,7 @@ export class DatabaseStorage implements IStorage {
     let totalCount: number;
 
     if (conditions.length > 0) {
-      const whereClause = conditions.length === 1 ? conditions[0] : sql`${conditions[0]} AND ${conditions[1]}`;
+      const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
       influencerResults = await db
         .select()
         .from(influencers)
