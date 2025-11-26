@@ -244,6 +244,7 @@ export class DatabaseStorage implements IStorage {
     const offset = (page - 1) * pageSize;
     const search = options.search;
     const status = options.status;
+    const statuses = options.statuses;
 
     // Build conditions
     const conditions = [];
@@ -252,6 +253,10 @@ export class DatabaseStorage implements IStorage {
     }
     if (status && status !== 'all') {
       conditions.push(eq(campaigns.status, status));
+    } else if (statuses) {
+      // Support filtering by multiple statuses (comma-separated)
+      const statusList = statuses.split(',').map(s => s.trim());
+      conditions.push(sql`${campaigns.status} IN (${sql.join(statusList.map(s => sql`${s}`), sql`, `)})`);
     }
 
     // Get total count
@@ -346,6 +351,27 @@ export class DatabaseStorage implements IStorage {
         .set({ approvedCount: (campaign.approvedCount ?? 1) - 1 })
         .where(eq(campaigns.id, id));
     }
+  }
+
+  async deleteCampaign(id: string): Promise<void> {
+    // Get all applications for this campaign
+    const campaignApps = await db.select().from(applications).where(eq(applications.campaignId, id));
+    
+    // Delete related data for each application
+    for (const app of campaignApps) {
+      await db.delete(shipping).where(eq(shipping.applicationId, app.id));
+      await db.delete(uploads).where(eq(uploads.applicationId, app.id));
+      await db.delete(shippingIssues).where(eq(shippingIssues.applicationId, app.id));
+    }
+    
+    // Delete notifications for this campaign
+    await db.delete(notifications).where(eq(notifications.campaignId, id));
+    
+    // Delete all applications for this campaign
+    await db.delete(applications).where(eq(applications.campaignId, id));
+    
+    // Finally delete the campaign
+    await db.delete(campaigns).where(eq(campaigns.id, id));
   }
 
   async getApplication(id: string): Promise<Application | undefined> {

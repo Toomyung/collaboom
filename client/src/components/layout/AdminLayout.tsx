@@ -11,6 +11,11 @@ import {
   Menu,
   ExternalLink,
   Home,
+  ChevronDown,
+  ChevronRight,
+  PlayCircle,
+  CheckCircle,
+  Archive,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -19,9 +24,25 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: any;
+  subItems?: { href: string; label: string; icon: any }[];
+}
+
+const navItems: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/campaigns", label: "Campaigns", icon: Megaphone },
+  { 
+    href: "/admin/campaigns", 
+    label: "Campaigns", 
+    icon: Megaphone,
+    subItems: [
+      { href: "/admin/campaigns", label: "Active", icon: PlayCircle },
+      { href: "/admin/campaigns/finished", label: "Finished", icon: CheckCircle },
+      { href: "/admin/campaigns/archived", label: "Archived", icon: Archive },
+    ]
+  },
   { href: "/admin/influencers", label: "Influencers", icon: Users },
 ];
 
@@ -29,10 +50,29 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Campaigns"]);
 
   const isActive = (href: string) => {
     if (href === "/admin") return location === "/admin";
-    return location.startsWith(href);
+    if (href === "/admin/campaigns" && !location.includes("/finished") && !location.includes("/archived")) {
+      return location === "/admin/campaigns" || location.startsWith("/admin/campaigns/") && !location.includes("/finished") && !location.includes("/archived");
+    }
+    return location === href || location.startsWith(href + "/");
+  };
+
+  const isParentActive = (item: NavItem) => {
+    if (item.subItems) {
+      return item.subItems.some(sub => isActive(sub.href));
+    }
+    return isActive(item.href);
+  };
+
+  const toggleExpand = (label: string) => {
+    setExpandedItems(prev => 
+      prev.includes(label) 
+        ? prev.filter(l => l !== label) 
+        : [...prev, label]
+    );
   };
 
   return (
@@ -54,20 +94,80 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant={isActive(item.href) ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start gap-3",
-                    isActive(item.href) && "bg-sidebar-accent text-sidebar-accent-foreground"
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                  data-testid={`nav-${item.label.toLowerCase()}`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Button>
-              </Link>
+              <div key={item.href}>
+                {item.subItems ? (
+                  <>
+                    <div className="flex items-center w-full">
+                      <Link href={item.href} className="flex-1">
+                        <Button
+                          variant={isParentActive(item) ? "secondary" : "ghost"}
+                          className={cn(
+                            "w-full justify-start gap-3",
+                            isParentActive(item) && "bg-sidebar-accent text-sidebar-accent-foreground"
+                          )}
+                          onClick={() => setSidebarOpen(false)}
+                          data-testid={`nav-${item.label.toLowerCase()}`}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {item.label}
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 ml-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(item.label);
+                        }}
+                        data-testid={`nav-${item.label.toLowerCase()}-expand`}
+                      >
+                        {expandedItems.includes(item.label) ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {expandedItems.includes(item.label) && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {item.subItems.map((subItem) => (
+                          <Link key={subItem.href} href={subItem.href}>
+                            <Button
+                              variant={isActive(subItem.href) ? "secondary" : "ghost"}
+                              size="sm"
+                              className={cn(
+                                "w-full justify-start gap-3",
+                                isActive(subItem.href) && "bg-sidebar-accent text-sidebar-accent-foreground"
+                              )}
+                              onClick={() => setSidebarOpen(false)}
+                              data-testid={`nav-${item.label.toLowerCase()}-${subItem.label.toLowerCase()}`}
+                            >
+                              <subItem.icon className="h-3.5 w-3.5" />
+                              {subItem.label}
+                            </Button>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link href={item.href}>
+                    <Button
+                      variant={isActive(item.href) ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start gap-3",
+                        isActive(item.href) && "bg-sidebar-accent text-sidebar-accent-foreground"
+                      )}
+                      onClick={() => setSidebarOpen(false)}
+                      data-testid={`nav-${item.label.toLowerCase()}`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Button>
+                  </Link>
+                )}
+              </div>
             ))}
           </nav>
 

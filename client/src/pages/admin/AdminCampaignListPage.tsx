@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Campaign } from "@shared/schema";
-import { Link, Redirect } from "wouter";
+import { Link, Redirect, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Plus,
   Search,
@@ -34,6 +46,8 @@ import {
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -41,6 +55,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -53,39 +68,91 @@ interface PaginatedCampaignsResponse {
 
 const DEFAULT_PAGE_SIZE = 20;
 
+type ViewMode = "active" | "finished" | "archived";
+
 export default function AdminCampaignListPage() {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
+  const [location] = useLocation();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const pageSize = DEFAULT_PAGE_SIZE;
+  
+  // Dialog states
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+
+  // Determine view mode from URL
+  const viewMode: ViewMode = location.includes("/archived") 
+    ? "archived" 
+    : location.includes("/finished") 
+      ? "finished" 
+      : "active";
+
+  // Get page config based on view mode
+  const pageConfig = {
+    active: {
+      title: "Active Campaigns",
+      description: "Manage your active product campaigns",
+      statuses: ["draft", "active", "full"],
+      showNewButton: true,
+    },
+    finished: {
+      title: "Finished Campaigns",
+      description: "View completed campaigns",
+      statuses: ["closed"],
+      showNewButton: false,
+    },
+    archived: {
+      title: "Archived Campaigns",
+      description: "View archived campaigns that are hidden from influencers",
+      statuses: ["archived"],
+      showNewButton: false,
+    },
+  }[viewMode];
 
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setPage(1); // Reset to first page when search changes
+      setPage(1);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset page when status filter changes
+  // Reset page when view mode changes
   useEffect(() => {
     setPage(1);
-  }, [statusFilter]);
+    setStatusFilter("all");
+  }, [viewMode]);
 
   const buildQueryUrl = () => {
     const params = new URLSearchParams();
     params.set("page", page.toString());
     params.set("pageSize", pageSize.toString());
     if (debouncedSearch) params.set("search", debouncedSearch);
-    if (statusFilter !== "all") params.set("status", statusFilter);
+    
+    // Apply status filter based on view mode
+    if (viewMode === "active") {
+      if (statusFilter !== "all") {
+        params.set("status", statusFilter);
+      } else {
+        params.set("statuses", "draft,active,full");
+      }
+    } else if (viewMode === "finished") {
+      params.set("status", "closed");
+    } else if (viewMode === "archived") {
+      params.set("status", "archived");
+    }
+    
     return `/api/admin/campaigns?${params.toString()}`;
   };
 
-  const { data, isLoading } = useQuery<PaginatedCampaignsResponse>({
-    queryKey: ["/api/admin/campaigns", page, pageSize, debouncedSearch, statusFilter],
+  const { data, isLoading, refetch } = useQuery<PaginatedCampaignsResponse>({
+    queryKey: ["/api/admin/campaigns", viewMode, page, pageSize, debouncedSearch, statusFilter],
     queryFn: async () => {
       const res = await fetch(buildQueryUrl(), { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch campaigns");
@@ -93,6 +160,60 @@ export default function AdminCampaignListPage() {
     },
     enabled: isAuthenticated && isAdmin,
   });
+
+  // Archive mutation
+  const archiveMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      return apiRequest("POST", `/api/admin/campaigns/${campaignId}/archive`);
+    },
+    onSuccess: () => {
+      toast({ title: "Campaign archived", description: "The campaign has been archived." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+      setArchiveDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to archive campaign", variant: "destructive" });
+    },
+  });
+
+  // Restore mutation (unarchive)
+  const restoreMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      return apiRequest("POST", `/api/admin/campaigns/${campaignId}/restore`);
+    },
+    onSuccess: () => {
+      toast({ title: "Campaign restored", description: "The campaign has been restored." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to restore campaign", variant: "destructive" });
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      return apiRequest("DELETE", `/api/admin/campaigns/${campaignId}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Campaign deleted", description: "The campaign has been permanently deleted." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+      setDeleteDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete campaign", variant: "destructive" });
+    },
+  });
+
+  const handleArchive = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setArchiveDialogOpen(true);
+  };
+
+  const handleDelete = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setDeleteDialogOpen(true);
+  };
 
   const campaigns = data?.items;
   const totalCount = data?.totalCount ?? 0;
@@ -131,15 +252,17 @@ export default function AdminCampaignListPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Campaigns</h1>
-            <p className="text-muted-foreground">Manage your product campaigns</p>
+            <h1 className="text-2xl font-bold">{pageConfig.title}</h1>
+            <p className="text-muted-foreground">{pageConfig.description}</p>
           </div>
-          <Link href="/admin/campaigns/new">
-            <Button data-testid="button-new-campaign">
-              <Plus className="h-4 w-4 mr-2" />
-              New Campaign
-            </Button>
-          </Link>
+          {pageConfig.showNewButton && (
+            <Link href="/admin/campaigns/new">
+              <Button data-testid="button-new-campaign">
+                <Plus className="h-4 w-4 mr-2" />
+                New Campaign
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Filters */}
@@ -154,19 +277,19 @@ export default function AdminCampaignListPage() {
               data-testid="input-search"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]" data-testid="select-status">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="full">Full</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
+          {viewMode === "active" && (
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]" data-testid="select-status">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="full">Full</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Campaigns Table */}
@@ -249,10 +372,35 @@ export default function AdminCampaignListPage() {
                               <Copy className="h-4 w-4 mr-2" />
                               Duplicate
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Archive className="h-4 w-4 mr-2" />
-                              Archive
-                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {viewMode === "archived" ? (
+                              <>
+                                <DropdownMenuItem 
+                                  onClick={() => restoreMutation.mutate(campaign.id)}
+                                  data-testid={`restore-${campaign.id}`}
+                                >
+                                  <RotateCcw className="h-4 w-4 mr-2" />
+                                  Restore
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-red-600"
+                                  onClick={() => handleDelete(campaign)}
+                                  data-testid={`delete-${campaign.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Permanently
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <DropdownMenuItem 
+                                className="text-orange-600"
+                                onClick={() => handleArchive(campaign)}
+                                data-testid={`archive-${campaign.id}`}
+                              >
+                                <Archive className="h-4 w-4 mr-2" />
+                                Archive
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -336,6 +484,51 @@ export default function AdminCampaignListPage() {
           </div>
         )}
       </div>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Campaign</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive "{selectedCampaign?.name}"? 
+              This will hide the campaign from influencers but keep all data for records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedCampaign && archiveMutation.mutate(selectedCampaign.id)}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Campaign Permanently</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete "{selectedCampaign?.name}"? 
+              This action cannot be undone. All associated data including applications, 
+              shipping info, and uploads will be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedCampaign && deleteMutation.mutate(selectedCampaign.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

@@ -574,12 +574,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const pageSize = parseInt(req.query.pageSize as string) || 20;
     const search = req.query.search as string | undefined;
     const status = req.query.status as string | undefined;
+    const statuses = req.query.statuses as string | undefined;
 
     const result = await storage.getCampaignsPaginated({
       page,
       pageSize,
       search,
       status,
+      statuses,
     });
     return res.json(result);
   });
@@ -663,6 +665,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Campaign not found" });
       }
       return res.json(campaign);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Archive campaign
+  app.post("/api/admin/campaigns/:id/archive", requireAuth("admin"), async (req, res) => {
+    try {
+      const campaign = await storage.getCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      const updated = await storage.updateCampaign(req.params.id, { status: "archived" });
+      return res.json({ success: true, campaign: updated });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Restore (unarchive) campaign
+  app.post("/api/admin/campaigns/:id/restore", requireAuth("admin"), async (req, res) => {
+    try {
+      const campaign = await storage.getCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      if (campaign.status !== "archived") {
+        return res.status(400).json({ message: "Campaign is not archived" });
+      }
+
+      // Restore to draft status
+      const updated = await storage.updateCampaign(req.params.id, { status: "draft" });
+      return res.json({ success: true, campaign: updated });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Delete campaign permanently
+  app.delete("/api/admin/campaigns/:id", requireAuth("admin"), async (req, res) => {
+    try {
+      const campaign = await storage.getCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      // Delete campaign and all related data
+      await storage.deleteCampaign(req.params.id);
+      return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

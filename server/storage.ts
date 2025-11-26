@@ -46,6 +46,7 @@ export interface GetCampaignsOptions {
   pageSize?: number;
   search?: string;
   status?: string;
+  statuses?: string;  // Comma-separated list of statuses
 }
 
 export interface IStorage {
@@ -72,6 +73,7 @@ export interface IStorage {
   getCampaignsPaginated(options: GetCampaignsOptions): Promise<PaginatedCampaignsResult>;
   createCampaign(campaign: InsertCampaign): Promise<Campaign>;
   updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign | undefined>;
+  deleteCampaign(id: string): Promise<void>;
   incrementCampaignApprovedCount(id: string): Promise<void>;
   decrementCampaignApprovedCount(id: string): Promise<void>;
   
@@ -486,6 +488,7 @@ export class MemStorage implements IStorage {
     const pageSize = Math.min(50, Math.max(1, options.pageSize || 20));
     const search = options.search?.toLowerCase();
     const status = options.status;
+    const statuses = options.statuses;
 
     let items = Array.from(this.campaigns.values());
 
@@ -497,6 +500,9 @@ export class MemStorage implements IStorage {
     // Apply status filter
     if (status && status !== 'all') {
       items = items.filter(c => c.status === status);
+    } else if (statuses) {
+      const statusList = statuses.split(',').map(s => s.trim());
+      items = items.filter(c => statusList.includes(c.status));
     }
 
     // Sort by createdAt descending
@@ -571,6 +577,46 @@ export class MemStorage implements IStorage {
       campaign.approvedCount = (campaign.approvedCount ?? 1) - 1;
       this.campaigns.set(id, campaign);
     }
+  }
+
+  async deleteCampaign(id: string): Promise<void> {
+    // Get all applications for this campaign
+    const campaignApps = Array.from(this.applications.values())
+      .filter(app => app.campaignId === id);
+    
+    // Delete related data for each application
+    for (const app of campaignApps) {
+      // Delete shipping
+      for (const [shippingId, s] of this.shipping) {
+        if (s.applicationId === app.id) {
+          this.shipping.delete(shippingId);
+        }
+      }
+      // Delete uploads
+      for (const [uploadId, u] of this.uploads) {
+        if (u.applicationId === app.id) {
+          this.uploads.delete(uploadId);
+        }
+      }
+      // Delete shipping issues
+      for (const [issueId, issue] of this.shippingIssues) {
+        if (issue.applicationId === app.id) {
+          this.shippingIssues.delete(issueId);
+        }
+      }
+      // Delete application
+      this.applications.delete(app.id);
+    }
+    
+    // Delete notifications for this campaign
+    for (const [notifId, notif] of this.notifications) {
+      if (notif.campaignId === id) {
+        this.notifications.delete(notifId);
+      }
+    }
+    
+    // Finally delete the campaign
+    this.campaigns.delete(id);
   }
 
   // Application methods
