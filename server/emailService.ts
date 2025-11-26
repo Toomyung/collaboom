@@ -23,57 +23,23 @@ export async function sendWelcomeEmail(
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
-      subject: "Welcome to Collaboom! 🎉",
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-            <div style="background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <h1 style="color: #8a01ff; font-size: 28px; margin: 0;">Collaboom</h1>
-              </div>
-              
-              <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">
-                Welcome, ${influencerName}! 🎉
-              </h2>
-              
-              <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                We're thrilled to have you join Collaboom! You're now part of an exclusive community of creators collaborating with top K-Beauty, Food, and Lifestyle brands.
-              </p>
-              
-              <div style="background-color: #f8f4ff; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                <h3 style="color: #8a01ff; font-size: 16px; margin: 0 0 12px 0;">What's Next?</h3>
-                <ul style="color: #666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
-                  <li>Complete your profile with your TikTok handle and shipping address</li>
-                  <li>Browse available campaigns that match your niche</li>
-                  <li>Apply to campaigns you're excited about</li>
-                  <li>Receive free products and create amazing content!</li>
-                </ul>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="https://collaboom.replit.app/dashboard" style="display: inline-block; background-color: #8a01ff; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                  Go to Dashboard
-                </a>
-              </div>
-              
-              <p style="color: #999; font-size: 14px; text-align: center; margin: 0;">
-                Questions? Reply to this email and we'll help you out!
-              </p>
-            </div>
-            
-            <p style="color: #999; font-size: 12px; text-align: center; margin-top: 24px;">
-              © 2025 Collaboom. All rights reserved.
-            </p>
-          </div>
-        </body>
-        </html>
-      `,
+      subject: "Welcome to Collaboom!",
+      text: `Hi ${influencerName},
+
+Welcome to Collaboom! We're excited to have you join our community of creators.
+
+What's Next?
+
+1. Complete your profile with your TikTok handle and shipping address
+2. Browse available campaigns that match your niche
+3. Apply to campaigns you're interested in
+4. Receive free products and create content!
+
+Visit your dashboard: https://collaboom.replit.app/dashboard
+
+Questions? Just reply to this email.
+
+- The Collaboom Team`,
     });
 
     if (error) {
@@ -100,63 +66,23 @@ export async function sendApplicationApprovedEmail(
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
-      subject: `Great news! You've been approved for ${campaignName} 🎁`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-            <div style="background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <h1 style="color: #8a01ff; font-size: 28px; margin: 0;">Collaboom</h1>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 24px;">
-                <span style="display: inline-block; background-color: #22c55e; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">
-                  ✓ Application Approved
-                </span>
-              </div>
-              
-              <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px; text-align: center;">
-                Congratulations, ${influencerName}!
-              </h2>
-              
-              <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 24px; text-align: center;">
-                Your application for <strong>${campaignName}</strong> by <strong>${brandName}</strong> has been approved!
-              </p>
-              
-              <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                <h3 style="color: #166534; font-size: 16px; margin: 0 0 12px 0;">What Happens Next?</h3>
-                <ol style="color: #666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
-                  <li>The brand will ship your product soon</li>
-                  <li>You'll receive a tracking notification when it ships</li>
-                  <li>Create your content following the campaign guidelines</li>
-                  <li>Upload your content by the deadline</li>
-                </ol>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 24px;">
-                <a href="https://collaboom.replit.app/dashboard" style="display: inline-block; background-color: #8a01ff; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                  View Campaign Details
-                </a>
-              </div>
-              
-              <p style="color: #999; font-size: 14px; text-align: center; margin: 0;">
-                Make sure your shipping address is up to date in your profile!
-              </p>
-            </div>
-            
-            <p style="color: #999; font-size: 12px; text-align: center; margin-top: 24px;">
-              © 2025 Collaboom. All rights reserved.
-            </p>
-          </div>
-        </body>
-        </html>
-      `,
+      subject: `You've been approved for ${campaignName}`,
+      text: `Hi ${influencerName},
+
+Great news! Your application for "${campaignName}" by ${brandName} has been approved.
+
+What Happens Next?
+
+1. The brand will ship your product soon
+2. You'll receive an email with tracking info when it ships
+3. Create your content following the campaign guidelines
+4. Upload your content by the deadline
+
+View campaign details: https://collaboom.replit.app/dashboard
+
+Make sure your shipping address is up to date in your profile!
+
+- The Collaboom Team`,
     });
 
     if (error) {
@@ -183,80 +109,29 @@ export async function sendShippingNotificationEmail(
 ): Promise<EmailResult> {
   try {
     const recipient = TEST_EMAIL_OVERRIDE || to;
-    const trackingSection = trackingUrl
-      ? `<a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">Track Your Package</a>`
-      : `<p style="color: #666; font-size: 14px;">Track your package using the tracking number above on the ${courier} website.</p>`;
+    const trackingInfo = trackingUrl 
+      ? `Track your package: ${trackingUrl}`
+      : `Track your package on the ${courier} website using the tracking number above.`;
 
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
-      subject: `Your ${campaignName} package has shipped! 📦`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-            <div style="background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <h1 style="color: #8a01ff; font-size: 28px; margin: 0;">Collaboom</h1>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 24px;">
-                <span style="display: inline-block; background-color: #3b82f6; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">
-                  📦 Package Shipped
-                </span>
-              </div>
-              
-              <h2 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px; text-align: center;">
-                Your package is on the way!
-              </h2>
-              
-              <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 24px; text-align: center;">
-                Hi ${influencerName}, your product from <strong>${brandName}</strong> for the <strong>${campaignName}</strong> campaign has been shipped!
-              </p>
-              
-              <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                <h3 style="color: #1e40af; font-size: 16px; margin: 0 0 16px 0;">Shipping Details</h3>
-                <table style="width: 100%; font-size: 14px;">
-                  <tr>
-                    <td style="color: #666; padding: 4px 0;">Courier:</td>
-                    <td style="color: #1a1a1a; font-weight: 600; text-align: right;">${courier}</td>
-                  </tr>
-                  <tr>
-                    <td style="color: #666; padding: 4px 0;">Tracking Number:</td>
-                    <td style="color: #1a1a1a; font-weight: 600; text-align: right; font-family: monospace;">${trackingNumber}</td>
-                  </tr>
-                </table>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 24px;">
-                ${trackingSection}
-              </div>
-              
-              <div style="background-color: #fefce8; border: 1px solid #fef08a; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-                <p style="color: #854d0e; font-size: 14px; margin: 0;">
-                  <strong>Reminder:</strong> Once you receive your package, don't forget to create and upload your content by the campaign deadline!
-                </p>
-              </div>
-              
-              <div style="text-align: center;">
-                <a href="https://collaboom.replit.app/dashboard" style="color: #8a01ff; text-decoration: none; font-size: 14px; font-weight: 600;">
-                  View in Dashboard →
-                </a>
-              </div>
-            </div>
-            
-            <p style="color: #999; font-size: 12px; text-align: center; margin-top: 24px;">
-              © 2025 Collaboom. All rights reserved.
-            </p>
-          </div>
-        </body>
-        </html>
-      `,
+      subject: `Your ${campaignName} package has shipped`,
+      text: `Hi ${influencerName},
+
+Your product from ${brandName} for the "${campaignName}" campaign has been shipped!
+
+Shipping Details:
+- Courier: ${courier}
+- Tracking Number: ${trackingNumber}
+
+${trackingInfo}
+
+Reminder: Once you receive your package, don't forget to create and upload your content by the campaign deadline.
+
+View in dashboard: https://collaboom.replit.app/dashboard
+
+- The Collaboom Team`,
     });
 
     if (error) {
