@@ -187,13 +187,16 @@ export default function AdminCampaignDetailPage() {
   });
 
   const updateShippingForm = (applicationId: string, field: keyof ShippingFormData, value: string) => {
-    setShippingForms((prev) => ({
-      ...prev,
-      [applicationId]: {
-        ...prev[applicationId],
-        [field]: value,
-      },
-    }));
+    setShippingForms((prev) => {
+      const existing = prev[applicationId] || { courier: "", trackingNumber: "", shippedDate: "" };
+      return {
+        ...prev,
+        [applicationId]: {
+          ...existing,
+          [field]: value,
+        },
+      };
+    });
   };
 
   const handleShip = (applicationId: string) => {

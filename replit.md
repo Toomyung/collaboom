@@ -229,13 +229,21 @@ Preferred communication style: Simple, everyday language.
 - Restructured tabs for clearer workflow progression:
   - Overview: Campaign details and guidelines
   - Applicants: Pending applications (approve/reject actions)
-  - Approved (NEW): Approved influencers waiting for shipping CSV upload
+  - Approved (NEW): Approved influencers with inline shipping form + CSV upload option
   - Rejected (NEW): Rejected applications for reference
   - Shipping: Only shipped/delivered influencers with tracking info
   - Uploads: Content verification for delivered products
-- Workflow: Applicants → Approve → Approved tab → Upload CSV → Shipping tab → Delivered → Uploads tab
+- Workflow: Applicants → Approve → Approved tab → Enter shipping info or Upload CSV → Shipping tab → Delivered → Uploads tab
 - Each tab shows badge with count when items exist
 - Stats cards updated: Pending, Approved, Shipping
+
+**Inline Shipping Info Entry (November 2025)**
+- Added inline shipping form in Approved tab for individual application shipping
+- Each row has 3 input fields: Courier, Tracking Number, Ship Date
+- Ship button submits shipping info via POST `/api/admin/applications/:applicationId/ship`
+- API validates courier and tracking number are required
+- Upon submission, application moves from "approved" to "shipped" status
+- CSV upload still available for bulk shipping updates
 
 **Bug Fixes (November 2025)**
 - Fixed admin login navigation: Added small delay to ensure auth state updates before redirecting
