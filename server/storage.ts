@@ -84,6 +84,7 @@ export interface IStorage {
   getApplicationsWithDetailsByCampaign(campaignId: string): Promise<ApplicationWithDetails[]>;
   createApplication(application: InsertApplication): Promise<Application>;
   updateApplication(id: string, data: Partial<Application>): Promise<Application | undefined>;
+  deleteApplication(id: string): Promise<void>;
   
   // Shipping
   getShippingByApplication(applicationId: string): Promise<Shipping | undefined>;
@@ -663,6 +664,10 @@ export class MemStorage implements IStorage {
     const updated = { ...application, ...data };
     this.applications.set(id, updated);
     return updated;
+  }
+
+  async deleteApplication(id: string): Promise<void> {
+    this.applications.delete(id);
   }
 
   // Shipping methods
