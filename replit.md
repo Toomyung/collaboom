@@ -230,3 +230,6 @@ Preferred communication style: Simple, everyday language.
 - Fixed campaign deadline parsing: Backend now parses deadline string to Date object on both create and update routes
 - Added legacy reward type normalization: When editing campaigns with "20usd" or "50usd", form automatically converts to paid type with appropriate amount
 - Added reward amount validation: Both frontend (Zod refinement) and backend enforce rewardAmount > 0 for paid campaigns
+- Fixed admin influencers page query URL: Changed from object-based queryKey to explicit URL string with query parameters to prevent "[object Object]" in URLs
+- Added application cancellation: Influencers can cancel pending applications via DELETE endpoint; uses hard delete for immediate re-application capability
+- Replaced browser confirm() with in-app Dialog component for cancellation confirmation
