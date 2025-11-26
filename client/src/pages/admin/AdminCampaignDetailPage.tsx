@@ -273,12 +273,12 @@ export default function AdminCampaignDetailPage() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <Truck className="h-5 w-5 text-muted-foreground" />
+              <CheckCircle className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold">
-                  {applications?.filter((a) => a.status === "shipped").length || 0}
+                  {approvedApplications.length}
                 </p>
-                <p className="text-xs text-muted-foreground">Shipping</p>
+                <p className="text-xs text-muted-foreground">Confirmed</p>
               </div>
             </CardContent>
           </Card>
@@ -312,6 +312,11 @@ export default function AdminCampaignDetailPage() {
             <TabsTrigger value="shipping" data-testid="tab-shipping">
               <Truck className="h-4 w-4 mr-2" />
               Shipping
+              {approvedApplications.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {approvedApplications.length}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="uploads" data-testid="tab-uploads">
               <Upload className="h-4 w-4 mr-2" />
