@@ -225,6 +225,18 @@ Preferred communication style: Simple, everyday language.
 - API route `/api/campaigns/:id/apply` validates applicationDeadline before accepting applications
 - Existing campaigns migrated to use upload deadline as default applicationDeadline
 
+**Admin Campaign Detail Tab Workflow (November 2025)**
+- Restructured tabs for clearer workflow progression:
+  - Overview: Campaign details and guidelines
+  - Applicants: Pending applications (approve/reject actions)
+  - Approved (NEW): Approved influencers waiting for shipping CSV upload
+  - Rejected (NEW): Rejected applications for reference
+  - Shipping: Only shipped/delivered influencers with tracking info
+  - Uploads: Content verification for delivered products
+- Workflow: Applicants → Approve → Approved tab → Upload CSV → Shipping tab → Delivered → Uploads tab
+- Each tab shows badge with count when items exist
+- Stats cards updated: Pending, Approved, Shipping
+
 **Bug Fixes (November 2025)**
 - Fixed admin login navigation: Added small delay to ensure auth state updates before redirecting
 - Fixed campaign deadline parsing: Backend now parses deadline string to Date object on both create and update routes
