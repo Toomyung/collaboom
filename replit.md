@@ -41,6 +41,13 @@ Preferred communication style: Simple, everyday language.
   - **Product Information**: `productDetail` field for detailed product descriptions
   - **Step by Step Process**: `stepByStepProcess` field for influencer workflow instructions
   - **Eligibility and Requirements**: `eligibilityRequirements` field for participation criteria
+- **Video Guidelines System:** Comprehensive video creation guidance for influencers:
+  - **Essential Cuts**: Required scenes/cuts for the video (`videoEssentialCuts`)
+  - **About Product**: How to present the product in video (`videoAboutProduct`)
+  - **Video Details**: Technical requirements and filming details (`videoDetails`)
+  - **Key Points**: Key messages to highlight (`videoKeyPoints`)
+  - **Reference Videos**: TikTok video URLs as examples (`videoReferenceUrls` array) with embedded playback
+  - Influencers view via Sheet component with TikTok embeds for reference videos
 - **Admin Campaign Workflow:** Streamlined tabbed interface for managing applicants, approved influencers, shipping, and uploads.
 - **Inline Shipping Entry & Bulk Upload:** Admins can enter shipping details individually or via CSV upload, including courier, tracking number, and URL.
 - **Enhanced Shipping Display:** Clear display of shipping information for both admins and influencers.
