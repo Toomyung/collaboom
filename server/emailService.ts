@@ -4,6 +4,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL = "Collaboom <onboarding@resend.dev>";
 
+// For testing: Override recipient email until domain is verified
+// Set to null to send to actual recipients after domain verification
+const TEST_EMAIL_OVERRIDE = "hello@collaboom.io";
+
 interface EmailResult {
   success: boolean;
   emailId?: string;
@@ -15,9 +19,10 @@ export async function sendWelcomeEmail(
   influencerName: string
 ): Promise<EmailResult> {
   try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: [to],
+      to: [recipient],
       subject: "Welcome to Collaboom! 🎉",
       html: `
         <!DOCTYPE html>
@@ -91,9 +96,10 @@ export async function sendApplicationApprovedEmail(
   brandName: string
 ): Promise<EmailResult> {
   try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: [to],
+      to: [recipient],
       subject: `Great news! You've been approved for ${campaignName} 🎁`,
       html: `
         <!DOCTYPE html>
@@ -176,13 +182,14 @@ export async function sendShippingNotificationEmail(
   trackingUrl?: string
 ): Promise<EmailResult> {
   try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
     const trackingSection = trackingUrl
       ? `<a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">Track Your Package</a>`
       : `<p style="color: #666; font-size: 14px;">Track your package using the tracking number above on the ${courier} website.</p>`;
 
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: [to],
+      to: [recipient],
       subject: `Your ${campaignName} package has shipped! 📦`,
       html: `
         <!DOCTYPE html>
