@@ -241,7 +241,7 @@ export default function AdminCampaignFormPage() {
     const tag = hashtagInput.startsWith("#") ? hashtagInput : `#${hashtagInput}`;
     const current = form.getValues("requiredHashtags") || [];
     if (!current.includes(tag)) {
-      form.setValue("requiredHashtags", [...current, tag]);
+      form.setValue("requiredHashtags", [...current, tag], { shouldDirty: true, shouldValidate: true });
     }
     setHashtagInput("");
   };
@@ -250,7 +250,8 @@ export default function AdminCampaignFormPage() {
     const current = form.getValues("requiredHashtags") || [];
     form.setValue(
       "requiredHashtags",
-      current.filter((t) => t !== tag)
+      current.filter((t) => t !== tag),
+      { shouldDirty: true, shouldValidate: true }
     );
   };
 
@@ -259,7 +260,7 @@ export default function AdminCampaignFormPage() {
     const mention = mentionInput.startsWith("@") ? mentionInput : `@${mentionInput}`;
     const current = form.getValues("requiredMentions") || [];
     if (!current.includes(mention)) {
-      form.setValue("requiredMentions", [...current, mention]);
+      form.setValue("requiredMentions", [...current, mention], { shouldDirty: true, shouldValidate: true });
     }
     setMentionInput("");
   };
@@ -268,7 +269,8 @@ export default function AdminCampaignFormPage() {
     const current = form.getValues("requiredMentions") || [];
     form.setValue(
       "requiredMentions",
-      current.filter((m) => m !== mention)
+      current.filter((m) => m !== mention),
+      { shouldDirty: true, shouldValidate: true }
     );
   };
 
