@@ -227,6 +227,13 @@ export default function AdminCampaignFormPage() {
     })();
   };
 
+  const handlePublish = () => {
+    form.handleSubmit((data) => {
+      if (!validateDates(data)) return;
+      updateMutation.mutate({ ...data, status: "active" });
+    })();
+  };
+
   const addHashtag = () => {
     if (!hashtagInput.trim()) return;
     const tag = hashtagInput.startsWith("#") ? hashtagInput : `#${hashtagInput}`;
@@ -640,16 +647,35 @@ export default function AdminCampaignFormPage() {
                 </Button>
               </Link>
               {isEditing ? (
-                <Button type="submit" disabled={isPending} data-testid="button-save">
-                  {isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Update Campaign"
+                <>
+                  <Button type="submit" disabled={isPending} variant="secondary" data-testid="button-save">
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                  {campaign?.status === "draft" && (
+                    <Button 
+                      type="button" 
+                      disabled={isPending} 
+                      onClick={handlePublish}
+                      data-testid="button-publish"
+                    >
+                      {isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Publishing...
+                        </>
+                      ) : (
+                        "Publish Campaign"
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </>
               ) : (
                 <>
                   <Button
