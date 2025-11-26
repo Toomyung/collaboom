@@ -1,255 +1,49 @@
 # Collaboom MVP
 
 ## Overview
-
-Collaboom is an influencer campaign management platform focused on free product seeding campaigns (UGC gifting). The platform connects US-based TikTok influencers (1,000+ followers) with K-Beauty, Food, and Lifestyle brands. Influencers can browse campaigns, apply, track shipments, upload content, and build their reputation score in one centralized dashboard.
-
-The MVP prioritizes the influencer experience with a clean, modern interface while providing admins with efficient tools to manage hundreds of applications, verify uploads, and track campaign performance.
+Collaboom is an influencer campaign management platform designed to connect US-based TikTok influencers (1,000+ followers) with K-Beauty, Food, and Lifestyle brands for free product seeding campaigns (UGC gifting). The platform provides influencers with a centralized dashboard to browse campaigns, apply, track shipments, upload content, and build their reputation. For brands and admins, it offers efficient tools to manage applications, verify content, and track campaign performance. The MVP focuses on a clean, modern influencer experience and robust admin capabilities.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
 ### Frontend Architecture
-
-**Framework & Build System**
-- React 18 with TypeScript for type safety
-- Vite as the build tool for fast development and optimized production builds
-- Wouter for lightweight client-side routing
-- React Query (@tanstack/react-query) for server state management with automatic caching and refetching
-
-**UI Component Strategy**
-- shadcn/ui component library built on Radix UI primitives for accessibility
-- Tailwind CSS for utility-first styling with custom design tokens
-- Dual design approach: Marketing-focused interface for influencers (inspired by Linear/Notion) and data-dense admin interface (Fluent Design principles)
-- Custom CSS variables for theming with brand color (#8a01ff) used sparingly as accent
-- Inter font family via Google Fonts for clean, modern typography
-
-**State Management Pattern**
-- React Query handles all server state (campaigns, applications, user data)
-- Session-based authentication state cached via React Query
-- Local component state with React hooks for UI interactions
-- Form state managed by react-hook-form with Zod schema validation
-
-**Routing Structure**
-- Public routes: Landing page, login, register, campaign browsing
-- Influencer routes: Dashboard, profile, campaign details (protected)
-- Admin routes: Dashboard, campaign management, influencer management, application processing (protected)
-- Route protection handled via useAuth hook checking session state
+- **Framework & Build System:** React 18 with TypeScript, Vite for fast development and optimized builds, Wouter for routing, and React Query for server state management.
+- **UI Component Strategy:** shadcn/ui built on Radix UI, Tailwind CSS for styling with custom design tokens. Features a dual design approach: marketing-focused for influencers (Linear/Notion inspired) and data-dense for admins (Fluent Design principles). Custom CSS variables enable theming, and Inter font family ensures modern typography.
+- **State Management:** React Query manages server and authentication state. Local component state uses React hooks. Form state is managed by `react-hook-form` with Zod validation.
+- **Routing:** Public, Influencer (protected), and Admin (protected) routes with `useAuth` hook for protection.
 
 ### Backend Architecture
-
-**Server Framework**
-- Express.js for REST API with session-based authentication
-- Separate dev/prod server entry points (index-dev.ts, index-prod.ts)
-- Development mode integrates Vite middleware for HMR
-- Production serves pre-built static assets from dist/public
-
-**API Design Pattern**
-- RESTful endpoints organized by resource type (auth, campaigns, applications, etc.)
-- Session middleware using express-session for stateful authentication
-- Role-based access control: influencer vs admin user types
-- Middleware functions enforce authentication and authorization per route
-
-**Data Access Layer**
-- PostgreSQL database with DatabaseStorage implementation (IStorage interface)
-- Connected via Drizzle ORM with @neondatabase/serverless driver
-- Storage abstraction allows swapping implementations without changing business logic
-- All database interactions go through storage layer methods
-- Database seeding on startup creates default admin and sample campaigns
-
-**Authentication Flow**
-- Email/password authentication with bcrypt password hashing
-- Separate login flows for influencers and admins
-- Session data stores userId and userType (influencer|admin)
-- Sessions persist 7 days with httpOnly cookies
+- **Server Framework:** Express.js for a REST API with session-based authentication. Supports separate development and production entry points.
+- **API Design:** RESTful endpoints, `express-session` for stateful authentication, and role-based access control (influencer vs. admin).
+- **Data Access:** PostgreSQL database via Drizzle ORM and `@neondatabase/serverless` driver. A storage abstraction layer allows for flexible database implementations. Database seeding provides initial admin and sample data.
+- **Authentication:** Email/password authentication with bcrypt hashing, separate login flows, and session persistence (7 days with httpOnly cookies).
 
 ### Database Design (Drizzle Schema)
+- **Core Entities:** `admins`, `influencers` (with profile, social, shipping, scores), `campaigns` (with inventory, deadlines, rewards), `applications` (junction table with workflow states), `shipping`, `uploads` (content verification), `score_events`, `penalty_events`, `admin_notes`, and `notifications`.
+- **State Machine Architecture:** Implements state transitions for applications (pending to verified/deadline_missed), influencer accounts (uninitialized to active/restricted), and campaigns (draft to archived). State changes trigger business logic.
+- **Key Relationships:** Applications link influencers and campaigns. Shipping, uploads, and reputation events are tied to applications. Admin notes are linked to influencers.
 
-**Core Entities**
-- `admins`: Internal staff with email/password auth
-- `influencers`: User accounts with profile data, social handles, shipping addresses, score/penalty tracking
-- `campaigns`: Brand campaigns with inventory limits, deadlines, reward types, and status
-- `applications`: Junction table linking influencers to campaigns with approval workflow states
-- `shipping`: Tracking information linked to approved applications
-- `uploads`: Content verification for influencer submissions
-- `score_events`: Positive reputation tracking (successful completions)
-- `penalty_events`: Negative reputation tracking (missed deadlines, guideline violations)
-- `admin_notes`: Internal communication log per influencer
-- `notifications`: Email notification history
+### System Features & Implementations
+- **Admin Notes System:** Allows admins to add internal notes to influencer profiles.
+- **Score/Penalty Event History:** Tracks and displays influencer reputation events.
+- **Shipping Issue Reporting:** Influencers can report shipping problems, which admins can view and resolve.
+- **Ghosting Detection:** Automated penalties for missed deadlines, leading to account restriction.
+- **Enhanced Admin Influencer Management:** Tabbed interface for profile, history, notes, and applications.
+- **Email Notification Infrastructure:** Logs notifications for key state transitions (e.g., application approved, shipping updates, deadlines).
+- **Pagination & Filtering:** Server-side pagination and filtering for admin interfaces (influencers, campaigns) based on search terms, campaign ID, or status.
+- **Influencer Campaign Stats:** Displays aggregated stats (applied, accepted, completed campaigns) per influencer.
+- **Influencer Transparency Features:** APIs for influencers to view their own notifications, score, and penalty event history.
+- **Flexible Reward System:** Campaigns can offer "Gift Only" or "Gift + Paid" rewards with customizable amounts.
+- **Dual Deadline System:** Campaigns have separate `applicationDeadline` and `upload deadline`.
+- **Admin Campaign Workflow:** Streamlined tabbed interface for managing applicants, approved influencers, shipping, and uploads.
+- **Inline Shipping Entry & Bulk Upload:** Admins can enter shipping details individually or via CSV upload, including courier, tracking number, and URL.
+- **Enhanced Shipping Display:** Clear display of shipping information for both admins and influencers.
 
-**State Machine Architecture**
-- Application states: pending → approved/rejected → shipped → delivered → uploaded → verified/deadline_missed
-- Influencer account states: uninitialized → active ↔ restricted
-- Campaign states: draft → active → closed → archived
-- State transitions trigger business logic (inventory updates, notifications, score changes)
+## External Dependencies
 
-**Key Relationships**
-- Applications reference both influencer and campaign (many-to-many with state)
-- Shipping, uploads, score events, penalty events all reference applications
-- Admin notes reference influencers for historical tracking
-
-### External Dependencies
-
-**PostgreSQL Database**
-- Primary data store configured via Drizzle ORM
-- Connection via @neondatabase/serverless for serverless PostgreSQL
-- Migrations managed through drizzle-kit
-- Database URL configured via environment variable
-
-**Email Notifications (Planned)**
-- Gmail/Google Apps Script for MVP notification delivery
-- Future migration path to SMTP services (Resend, Mailgun)
-- Triggered on key state transitions (application approved, shipped, deadline reminders)
-- Tracked in notifications table for audit trail
-
-**Third-Party UI Components**
-- Radix UI primitives (@radix-ui/*) for accessible components
-- shadcn/ui pre-built components configured via components.json
-- Tailwind CSS for styling with custom configuration
-- Google Fonts CDN for Inter font family
-
-**Development Tools (Replit-specific)**
-- @replit/vite-plugin-runtime-error-modal for development error overlay
-- @replit/vite-plugin-cartographer for code mapping
-- @replit/vite-plugin-dev-banner for development indicators
-- Conditional loading based on REPL_ID environment variable
-
-## Recent Changes (November 2025)
-
-### Phase 2 Features Implemented
-
-**Admin Notes System**
-- API routes: GET/POST `/api/admin/influencers/:id/notes`
-- Notes displayed in admin influencer drawer under "Notes" tab
-- Each note records admin ID, timestamp, and optional campaign/application context
-
-**Score/Penalty Event History**
-- API routes: GET `/api/admin/influencers/:id/score-events` and `/penalty-events`
-- History displayed in admin influencer drawer under "History" tab
-- Manual score/penalty adjustment controls for admins
-
-**Shipping Issue Reporting**
-- Influencers can report shipping problems via `/api/applications/:id/report-issue`
-- Issues stored in `shipping_issues` table with status tracking
-- Admin routes to view and resolve issues at `/api/admin/issues`
-
-**First-Time Ghosting Detection**
-- When influencer misses first deadline with no completed campaigns: +5 penalty
-- Storage layer automatically sets `restricted=true` when penalty ≥5
-- Subsequent missed deadlines apply +1 penalty only
-
-**Enhanced Admin Influencer Drawer**
-- Tabbed interface: Profile, History, Notes, Applications
-- Profile tab shows influencer details and account status
-- History tab shows score/penalty events chronologically
-- Notes tab allows adding and viewing admin notes
-- Applications tab shows all campaign applications for the influencer
-
-**Email Notification Infrastructure**
-- Notifications logged on all state transitions:
-  - `approved`: When application is approved
-  - `rejected`: When application is rejected
-  - `shipping_shipped`: When product ships
-  - `shipping_delivered`: When product is delivered
-  - `deadline_missed`: When upload deadline is missed
-  - `account_restricted`: When account gets restricted (first ghosting)
-- Stored in `notifications` table for future email integration
-
-### Database Migration (November 2025)
-
-**PostgreSQL Implementation**
-- Migrated from in-memory storage to PostgreSQL database
-- Created `server/db.ts` for database connection using Drizzle ORM
-- Created `server/databaseStorage.ts` implementing IStorage interface
-- Created `server/seed.ts` for initial data seeding
-- Database seeding creates default admin (admin@collaboom.com) and sample campaigns
-
-**Admin Influencers Pagination**
-- Server-side pagination with configurable items per page (10, 25, 50, default: 20)
-- API: GET `/api/admin/influencers?page=1&pageSize=20&search=&campaignId=`
-- Response includes: items (InfluencerWithStats[]), totalCount, page, pageSize
-- Page navigation with numbered buttons and prev/next controls
-- "Showing X to Y of Z" info display
-- Debounced search (300ms delay) for efficient server-side filtering
-- Campaign filter support via campaignId query parameter
-
-**Influencer Campaign Stats**
-- Each influencer row shows campaign participation: "X applied · Y accepted · Z completed"
-- Stats calculated via SQL aggregation (COUNT with case expressions)
-- InfluencerWithStats type: Influencer + appliedCount, acceptedCount, completedCount
-
-**Influencer Notifications API**
-- API: GET `/api/me/notifications?limit=50&offset=0`
-- Returns notifications for the logged-in influencer, sorted by createdAt DESC
-- Requires influencer authentication (requireAuth("influencer"))
-- Pagination support via limit (max 100) and offset query parameters
-- Notification types: approved, rejected, shipping_shipped, shipping_delivered, deadline_missed, account_restricted
-- Storage method: `getNotificationsByInfluencer(influencerId, { limit, offset })`
-
-**Influencer Score/Penalty History API (Transparency Feature)**
-- API: GET `/api/me/score-events` - Returns influencer's own score event history
-- API: GET `/api/me/penalty-events` - Returns influencer's own penalty event history
-- Both require influencer authentication (requireAuth("influencer"))
-- Returns events sorted by createdAt DESC
-- Reuses existing storage methods: `getScoreEventsByInfluencer`, `getPenaltyEventsByInfluencer`
-- Supports PRD's "transparent reputation system" philosophy
-
-**Reward Type System Redesign (November 2025)**
-- Changed rewardType from fixed options (gift, 20usd, 50usd) to flexible (gift, paid)
-- Added `rewardAmount` integer field for custom paid amounts (e.g., 20, 50, 100 USD)
-- Admin campaign form shows conditional amount input when "paid" is selected
-- All display components (CampaignCard, CampaignDetailPage, AdminCampaignDetailPage) updated
-- Legacy support maintained for existing campaigns with "20usd" or "50usd" reward types
-- Frontend displays: "Gift Only" for gift type, "Gift + $X Reward" for paid type with amount
-
-**Admin Campaigns Pagination**
-- Server-side pagination with configurable items per page (default: 20)
-- API: GET `/api/admin/campaigns?page=1&pageSize=20&search=&status=`
-- Response includes: items (Campaign[]), totalCount, page, pageSize
-- Page navigation with numbered buttons and prev/next controls
-- "Showing X to Y of Z" info display
-- Debounced search (300ms delay) for efficient server-side filtering
-- Status filter support via status query parameter (draft, active, closed, archived)
-- Storage method: `getCampaignsPaginated(options: GetCampaignsOptions)`
-
-**Dual Deadline System (November 2025)**
-- Added `applicationDeadline` field to campaigns table (distinct from upload `deadline`)
-- `applicationDeadline`: When applications close (users can no longer apply)
-- `deadline`: When content uploads are due (for approved influencers)
-- Admin campaign form includes both deadline inputs with validation (applicationDeadline ≤ deadline)
-- Campaign cards grey out and disable Apply button when applicationDeadline passes
-- Campaign detail pages display both deadlines in a clear format
-- API route `/api/campaigns/:id/apply` validates applicationDeadline before accepting applications
-- Existing campaigns migrated to use upload deadline as default applicationDeadline
-
-**Admin Campaign Detail Tab Workflow (November 2025)**
-- Restructured tabs for clearer workflow progression:
-  - Overview: Campaign details and guidelines
-  - Applicants: Pending applications (approve/reject actions)
-  - Approved (NEW): Approved influencers with inline shipping form + CSV upload option
-  - Rejected (NEW): Rejected applications for reference
-  - Shipping: Only shipped/delivered influencers with tracking info
-  - Uploads: Content verification for delivered products
-- Workflow: Applicants → Approve → Approved tab → Enter shipping info or Upload CSV → Shipping tab → Delivered → Uploads tab
-- Each tab shows badge with count when items exist
-- Stats cards updated: Pending, Approved, Shipping
-
-**Inline Shipping Info Entry (November 2025)**
-- Added inline shipping form in Approved tab for individual application shipping
-- Each row has 3 input fields: Courier, Tracking Number, Ship Date
-- Ship button submits shipping info via POST `/api/admin/applications/:applicationId/ship`
-- API validates courier and tracking number are required
-- Upon submission, application moves from "approved" to "shipped" status
-- CSV upload still available for bulk shipping updates
-
-**Bug Fixes (November 2025)**
-- Fixed admin login navigation: Added small delay to ensure auth state updates before redirecting
-- Fixed campaign deadline parsing: Backend now parses deadline string to Date object on both create and update routes
-- Added legacy reward type normalization: When editing campaigns with "20usd" or "50usd", form automatically converts to paid type with appropriate amount
-- Added reward amount validation: Both frontend (Zod refinement) and backend enforce rewardAmount > 0 for paid campaigns
-- Fixed admin influencers page query URL: Changed from object-based queryKey to explicit URL string with query parameters to prevent "[object Object]" in URLs
-- Added application cancellation: Influencers can cancel pending applications via DELETE endpoint; uses hard delete for immediate re-application capability
-- Replaced browser confirm() with in-app Dialog component for cancellation confirmation
+- **PostgreSQL Database:** Primary data store, connected via Drizzle ORM and `@neondatabase/serverless`. Migrations handled by `drizzle-kit`.
+- **Email Notifications:** Currently uses Gmail/Google Apps Script for MVP; planned migration to SMTP services (Resend, Mailgun).
+- **Third-Party UI Components:** Radix UI primitives, shadcn/ui, Tailwind CSS, and Google Fonts (Inter).
+- **Development Tools (Replit-specific):** `@replit/vite-plugin-runtime-error-modal`, `@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner` for enhanced development experience within Replit.
