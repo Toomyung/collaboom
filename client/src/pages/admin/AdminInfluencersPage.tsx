@@ -86,8 +86,10 @@ export default function AdminInfluencersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
+  const influencersQueryUrl = `/api/admin/influencers?page=${currentPage}&pageSize=${itemsPerPage}${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}`;
+  
   const { data: paginatedData, isLoading } = useQuery<PaginatedResponse>({
-    queryKey: ["/api/admin/influencers", { page: currentPage, pageSize: itemsPerPage, search: debouncedSearch }],
+    queryKey: [influencersQueryUrl],
     enabled: isAuthenticated && isAdmin,
   });
 
@@ -111,13 +113,21 @@ export default function AdminInfluencersPage() {
     enabled: !!selectedInfluencer,
   });
 
+  const invalidateInfluencersQueries = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.startsWith('/api/admin/influencers');
+      }
+    });
+  };
+
   const adjustScoreMutation = useMutation({
     mutationFn: async ({ id, delta }: { id: string; delta: number }) => {
       await apiRequest("POST", `/api/admin/influencers/${id}/score`, { delta, reason: "admin_manual" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "score-events"] });
+      invalidateInfluencersQueries();
       toast({ title: "Score updated" });
     },
     onError: (error: Error) => {
@@ -130,8 +140,7 @@ export default function AdminInfluencersPage() {
       await apiRequest("POST", `/api/admin/influencers/${id}/penalty`, { delta, reason: "admin_manual" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "penalty-events"] });
+      invalidateInfluencersQueries();
       toast({ title: "Penalty updated" });
     },
     onError: (error: Error) => {
@@ -144,8 +153,7 @@ export default function AdminInfluencersPage() {
       await apiRequest("POST", `/api/admin/influencers/${id}/unlock`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "penalty-events"] });
+      invalidateInfluencersQueries();
       toast({ title: "Account unlocked" });
     },
     onError: (error: Error) => {
@@ -158,7 +166,7 @@ export default function AdminInfluencersPage() {
       await apiRequest("POST", `/api/admin/influencers/${id}/notes`, { note });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "notes"] });
+      invalidateInfluencersQueries();
       setNewNote("");
       toast({ title: "Note added" });
     },
