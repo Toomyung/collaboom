@@ -713,6 +713,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Campaign not found" });
       }
 
+      // Security: Only archived campaigns can be deleted permanently
+      if (campaign.status !== 'archived') {
+        return res.status(400).json({ 
+          message: "Only archived campaigns can be deleted. Please archive the campaign first." 
+        });
+      }
+
       // Delete campaign and all related data
       await storage.deleteCampaign(req.params.id);
       return res.json({ success: true });
