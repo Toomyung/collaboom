@@ -152,6 +152,7 @@ export const shipping = pgTable("shipping", {
   applicationId: varchar("application_id").notNull().unique(),
   status: text("status").notNull().default("pending"), // 'pending' | 'shipped' | 'delivered'
   trackingNumber: text("tracking_number"),
+  trackingUrl: text("tracking_url"),
   courier: text("courier"),
   shippedAt: timestamp("shipped_at"),
   deliveredAt: timestamp("delivered_at"),
@@ -161,6 +162,7 @@ export const shipping = pgTable("shipping", {
 export const insertShippingSchema = createInsertSchema(shipping).pick({
   applicationId: true,
   trackingNumber: true,
+  trackingUrl: true,
   courier: true,
 });
 

@@ -145,17 +145,35 @@ export function ApplicationCard({
             )}
 
             {/* Shipping info */}
-            {application.shipping && application.status !== "pending" && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                {application.shipping.trackingNumber && (
-                  <span>
-                    Tracking: <span className="font-medium">{application.shipping.trackingNumber}</span>
-                  </span>
-                )}
-                {application.shipping.courier && (
-                  <span>
-                    Courier: <span className="font-medium">{application.shipping.courier}</span>
-                  </span>
+            {application.shipping && (application.status === "shipped" || application.status === "delivered") && (
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-600">Shipping Information</span>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  {application.shipping.courier && (
+                    <span className="text-muted-foreground">
+                      Courier: <Badge variant="outline" className="ml-1">{application.shipping.courier}</Badge>
+                    </span>
+                  )}
+                  {application.shipping.trackingNumber && (
+                    <span className="text-muted-foreground">
+                      Tracking #: <span className="font-medium text-foreground">{application.shipping.trackingNumber}</span>
+                    </span>
+                  )}
+                </div>
+                {application.shipping.trackingUrl && (
+                  <a
+                    href={application.shipping.trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-medium"
+                    data-testid={`link-tracking-${application.id}`}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Track Your Package
+                  </a>
                 )}
               </div>
             )}

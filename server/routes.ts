@@ -863,7 +863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add shipping info for a single application (inline form)
   app.post("/api/admin/applications/:applicationId/ship", requireAuth("admin"), async (req, res) => {
     try {
-      const { courier, trackingNumber, shippedDate } = req.body;
+      const { courier, trackingNumber, trackingUrl } = req.body;
       
       if (!courier || !trackingNumber) {
         return res.status(400).json({ message: "Courier and tracking number are required" });
@@ -878,11 +878,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Can only ship approved applications" });
       }
 
-      const shippedAt = shippedDate ? new Date(shippedDate) : new Date();
+      const shippedAt = new Date();
 
       // Update shipping record
       await storage.updateShippingByApplication(application.id, {
         trackingNumber,
+        trackingUrl,
         courier,
         status: "shipped",
         shippedAt,

@@ -11,6 +11,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -60,8 +67,16 @@ import { cn } from "@/lib/utils";
 interface ShippingFormData {
   courier: string;
   trackingNumber: string;
-  shippedDate: string;
+  trackingUrl: string;
 }
+
+const COURIER_OPTIONS = [
+  { value: "USPS", label: "USPS" },
+  { value: "UPS", label: "UPS" },
+  { value: "DHL", label: "DHL" },
+  { value: "AMAZON", label: "Amazon" },
+  { value: "FEDEX", label: "FedEx" },
+];
 
 export default function AdminCampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -188,7 +203,7 @@ export default function AdminCampaignDetailPage() {
 
   const updateShippingForm = (applicationId: string, field: keyof ShippingFormData, value: string) => {
     setShippingForms((prev) => {
-      const existing = prev[applicationId] || { courier: "", trackingNumber: "", shippedDate: "" };
+      const existing = prev[applicationId] || { courier: "", trackingNumber: "", trackingUrl: "" };
       return {
         ...prev,
         [applicationId]: {
@@ -637,15 +652,15 @@ export default function AdminCampaignDetailPage() {
                         <TableHead className="w-[140px]">Influencer</TableHead>
                         <TableHead className="w-[100px]">Address</TableHead>
                         <TableHead className="w-[90px]">Approved</TableHead>
-                        <TableHead className="w-[120px]">Courier</TableHead>
-                        <TableHead className="w-[140px]">Tracking #</TableHead>
-                        <TableHead className="w-[120px]">Ship Date</TableHead>
+                        <TableHead className="w-[110px]">Courier</TableHead>
+                        <TableHead className="w-[130px]">Tracking #</TableHead>
+                        <TableHead className="w-[180px]">Tracking URL</TableHead>
                         <TableHead className="w-[70px]">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {approvedApplications.map((app) => {
-                        const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", shippedDate: "" };
+                        const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", trackingUrl: "" };
                         return (
                           <TableRow key={app.id}>
                             <TableCell className="font-medium">
@@ -670,17 +685,25 @@ export default function AdminCampaignDetailPage() {
                                 : "-"}
                             </TableCell>
                             <TableCell>
-                              <Input
-                                placeholder="CJ, Hanjin..."
-                                className="h-8 text-sm"
+                              <Select
                                 value={formData.courier}
-                                onChange={(e) => updateShippingForm(app.id, "courier", e.target.value)}
-                                data-testid={`input-courier-${app.id}`}
-                              />
+                                onValueChange={(value) => updateShippingForm(app.id, "courier", value)}
+                              >
+                                <SelectTrigger className="h-8 text-sm" data-testid={`select-courier-${app.id}`}>
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {COURIER_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
                               <Input
-                                placeholder="Tracking number"
+                                placeholder="Tracking #"
                                 className="h-8 text-sm"
                                 value={formData.trackingNumber}
                                 onChange={(e) => updateShippingForm(app.id, "trackingNumber", e.target.value)}
@@ -689,11 +712,11 @@ export default function AdminCampaignDetailPage() {
                             </TableCell>
                             <TableCell>
                               <Input
-                                type="date"
+                                placeholder="https://..."
                                 className="h-8 text-sm"
-                                value={formData.shippedDate}
-                                onChange={(e) => updateShippingForm(app.id, "shippedDate", e.target.value)}
-                                data-testid={`input-ship-date-${app.id}`}
+                                value={formData.trackingUrl}
+                                onChange={(e) => updateShippingForm(app.id, "trackingUrl", e.target.value)}
+                                data-testid={`input-tracking-url-${app.id}`}
                               />
                             </TableCell>
                             <TableCell>
@@ -805,21 +828,40 @@ export default function AdminCampaignDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Influencer</TableHead>
-                        <TableHead>Email</TableHead>
+                        <TableHead>Courier</TableHead>
+                        <TableHead>Tracking #</TableHead>
+                        <TableHead>Tracking URL</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Tracking Number</TableHead>
                         <TableHead>Shipped</TableHead>
-                        <TableHead>Delivered</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {shippingApplications.map((app) => (
                         <TableRow key={app.id}>
                           <TableCell className="font-medium">
-                            {app.influencer?.name}
+                            <div>{app.influencer?.name}</div>
+                            <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {app.influencer?.email}
+                          <TableCell>
+                            <Badge variant="outline">{app.shipping?.courier || "-"}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {app.shipping?.trackingNumber || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {app.shipping?.trackingUrl ? (
+                              <a
+                                href={app.shipping.trackingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-primary hover:underline text-sm"
+                              >
+                                Track Package
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -834,17 +876,9 @@ export default function AdminCampaignDetailPage() {
                               {app.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            {app.shipping?.trackingNumber || "-"}
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
                             {app.shippedAt
                               ? format(new Date(app.shippedAt), "MMM d")
-                              : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {app.deliveredAt
-                              ? format(new Date(app.deliveredAt), "MMM d")
                               : "-"}
                           </TableCell>
                         </TableRow>
@@ -855,7 +889,7 @@ export default function AdminCampaignDetailPage() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Truck className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No shipping in progress</p>
-                    <p className="text-sm mt-1">Upload a CSV from the Approved tab to add shipping info</p>
+                    <p className="text-sm mt-1">Enter shipping info from the Approved tab</p>
                   </div>
                 )}
               </CardContent>
