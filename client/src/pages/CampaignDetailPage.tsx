@@ -305,8 +305,54 @@ export default function CampaignDetailPage() {
         </div>
 
         {/* Content Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Guidelines */}
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* Content Overview - First */}
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="font-semibold mb-4">Content Overview</h2>
+              
+              {campaign.requiredHashtags && campaign.requiredHashtags.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-primary" />
+                    Required Hashtags
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {campaign.requiredHashtags.map((tag, i) => (
+                      <Badge key={i} variant="secondary">
+                        {tag.startsWith("#") ? tag : `#${tag}`}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {campaign.requiredMentions && campaign.requiredMentions.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <AtSign className="h-4 w-4 text-primary" />
+                    Required Mentions
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {campaign.requiredMentions.map((mention, i) => (
+                      <Badge key={i} variant="secondary">
+                        {mention.startsWith("@") ? mention : `@${mention}`}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(!campaign.requiredHashtags || campaign.requiredHashtags.length === 0) &&
+                (!campaign.requiredMentions || campaign.requiredMentions.length === 0) && (
+                  <p className="text-sm text-muted-foreground">
+                    No specific hashtags or mentions required. Check the full guidelines for details.
+                  </p>
+                )}
+            </CardContent>
+          </Card>
+
+          {/* Campaign Guidelines - Second */}
           <Card>
             <CardContent className="p-6">
               <h2 className="font-semibold mb-4">Campaign Guidelines</h2>
@@ -334,55 +380,26 @@ export default function CampaignDetailPage() {
               )}
             </CardContent>
           </Card>
-
-          {/* Requirements */}
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="font-semibold mb-4">Content Requirements</h2>
-              
-              {campaign.requiredHashtags && campaign.requiredHashtags.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <Hash className="h-4 w-4" />
-                    Required Hashtags
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {campaign.requiredHashtags.map((tag, i) => (
-                      <Badge key={i} variant="secondary">
-                        {tag.startsWith("#") ? tag : `#${tag}`}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {campaign.requiredMentions && campaign.requiredMentions.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <AtSign className="h-4 w-4" />
-                    Required Mentions
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {campaign.requiredMentions.map((mention, i) => (
-                      <Badge key={i} variant="secondary">
-                        {mention.startsWith("@") ? mention : `@${mention}`}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {(!campaign.requiredHashtags || campaign.requiredHashtags.length === 0) &&
-                (!campaign.requiredMentions || campaign.requiredMentions.length === 0) && (
-                  <p className="text-sm text-muted-foreground">
-                    No specific hashtags or mentions required. Check the full guidelines for details.
-                  </p>
-                )}
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Apply Section */}
+        {/* Amazon Link */}
+        {campaign.amazonUrl && (
+          <div className="mb-6 text-center">
+            <Button variant="outline" asChild>
+              <a
+                href={campaign.amazonUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-amazon"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                View Product on Amazon
+              </a>
+            </Button>
+          </div>
+        )}
+
+        {/* Apply Section - Always at bottom */}
         <Card className="bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -422,23 +439,6 @@ export default function CampaignDetailPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Amazon Link */}
-        {campaign.amazonUrl && (
-          <div className="mt-6 text-center">
-            <Button variant="outline" asChild>
-              <a
-                href={campaign.amazonUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-amazon"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                View Product on Amazon
-              </a>
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Apply Confirmation Dialog */}
