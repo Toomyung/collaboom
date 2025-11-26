@@ -433,11 +433,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (application.status !== "pending") {
-        return res.status(400).json({ message: "Only pending applications can be cancelled" });
+        return res.status(400).json({ message: "Only pending applications can be cancelled. Once approved, applications cannot be cancelled." });
       }
 
-      // For now, we'll just delete the application from the in-memory storage
-      // In a real DB, you might want to keep a record with cancelled status
+      // Delete the application from the database
+      await storage.deleteApplication(application.id);
+
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
