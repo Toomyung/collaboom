@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { VideoGuidelinesSheet } from "@/components/VideoGuidelinesSheet";
+import { Video } from "lucide-react";
 
 function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -433,6 +435,33 @@ export default function CampaignDetailPage() {
               </h2>
               <p className="text-sm text-muted-foreground whitespace-pre-line">
                 {(campaign as any).eligibilityRequirements}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Video Guidelines */}
+        {(campaign.videoEssentialCuts || 
+          campaign.videoAboutProduct || 
+          campaign.videoDetails || 
+          campaign.videoKeyPoints || 
+          (campaign.videoReferenceUrls && campaign.videoReferenceUrls.length > 0)) && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold flex items-center gap-2">
+                  <Video className="h-5 w-5 text-primary" />
+                  Video Guidelines
+                </h2>
+                <VideoGuidelinesSheet campaign={campaign}>
+                  <Button variant="outline" size="sm" data-testid="button-view-video-guidelines">
+                    <Video className="h-4 w-4 mr-2" />
+                    View Guidelines
+                  </Button>
+                </VideoGuidelinesSheet>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Detailed video creation guidelines including essential cuts, product information, and reference videos.
               </p>
             </CardContent>
           </Card>
