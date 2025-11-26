@@ -468,10 +468,13 @@ export default function AdminCampaignFormPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="draft">Draft (Hidden)</SelectItem>
+                          <SelectItem value="active">Active (Visible to Influencers)</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        Draft campaigns are hidden. Set to Active to show in Discover Campaigns.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
