@@ -172,11 +172,13 @@ export default function AdminCampaignFormPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      console.log('[DEBUG] createMutation - videoReferenceUrls:', data.videoReferenceUrls);
       const payload = { 
         ...data, 
         applicationDeadline: new Date(data.applicationDeadline),
         deadline: new Date(data.deadline) 
       };
+      console.log('[DEBUG] createMutation - payload videoReferenceUrls:', payload.videoReferenceUrls);
       const res = await apiRequest("POST", "/api/admin/campaigns", payload);
       return res.json();
     },
@@ -305,8 +307,11 @@ export default function AdminCampaignFormPage() {
     if (!referenceUrlInput.trim()) return;
     const url = referenceUrlInput.trim();
     const current = form.getValues("videoReferenceUrls") || [];
+    console.log('[DEBUG] addReferenceUrl - current:', current, 'adding:', url);
     if (!current.includes(url)) {
-      form.setValue("videoReferenceUrls", [...current, url], { shouldDirty: true, shouldValidate: true });
+      const newUrls = [...current, url];
+      console.log('[DEBUG] addReferenceUrl - newUrls:', newUrls);
+      form.setValue("videoReferenceUrls", newUrls, { shouldDirty: true, shouldValidate: true });
     }
     setReferenceUrlInput("");
   };
