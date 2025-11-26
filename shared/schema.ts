@@ -93,6 +93,7 @@ export const campaigns = pgTable("campaigns", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   brandName: text("brand_name").notNull(),
+  productName: text("product_name"), // Product name for the campaign
   category: text("category").notNull(), // 'beauty' | 'food' | 'lifestyle'
   rewardType: text("reward_type").notNull(), // 'gift' | 'paid'
   rewardAmount: integer("reward_amount"), // Amount in USD for 'paid' type (e.g., 20, 50, 100)
