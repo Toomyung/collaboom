@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail } from "./emailService";
 
 // Session types
 declare module "express-session" {
@@ -88,6 +89,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             supabaseId: user.id,
             name: user.user_metadata?.full_name || user.user_metadata?.name || null,
             profileImageUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+          });
+          
+          // Send welcome email for new signups
+          const influencerName = influencer.name || user.user_metadata?.full_name || "Creator";
+          sendWelcomeEmail(user.email, influencerName).catch(err => {
+            console.error("Failed to send welcome email:", err);
           });
         } else {
           // Update existing influencer with Supabase info
@@ -201,6 +208,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.userId = influencer.id;
       req.session.userType = "influencer";
+
+      // Send welcome email for new signups
+      sendWelcomeEmail(email, "Creator").catch(err => {
+        console.error("Failed to send welcome email:", err);
+      });
 
       return res.json({ success: true });
     } catch (error: any) {
@@ -667,6 +679,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "approved",
       });
 
+      // Send approval email
+      const influencer = await storage.getInfluencer(application.influencerId);
+      if (influencer?.email) {
+        sendApplicationApprovedEmail(
+          influencer.email,
+          influencer.name || "Creator",
+          campaign.name,
+          campaign.brandName
+        ).catch(err => {
+          console.error("Failed to send approval email:", err);
+        });
+      }
+
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -902,6 +927,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         applicationId: application.id,
         type: "shipping_shipped",
       });
+
+      // Send shipping notification email
+      const influencer = await storage.getInfluencer(application.influencerId);
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (influencer?.email && campaign) {
+        sendShippingNotificationEmail(
+          influencer.email,
+          influencer.name || "Creator",
+          campaign.name,
+          campaign.brandName,
+          courier,
+          trackingNumber,
+          trackingUrl
+        ).catch(err => {
+          console.error("Failed to send shipping notification:", err);
+        });
+      }
 
       return res.json({ success: true });
     } catch (error: any) {
