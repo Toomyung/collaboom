@@ -43,7 +43,6 @@ Preferred communication style: Simple, everyday language.
   - **Eligibility and Requirements**: `eligibilityRequirements` field for participation criteria
 - **Video Guidelines System:** Comprehensive video creation guidance for influencers:
   - **Essential Cuts**: Required scenes/cuts for the video (`videoEssentialCuts`)
-  - **About Product**: How to present the product in video (`videoAboutProduct`)
   - **Video Details**: Technical requirements and filming details (`videoDetails`)
   - **Key Points**: Key messages to highlight (`videoKeyPoints`)
   - **Reference Videos**: TikTok video URLs as examples (`videoReferenceUrls` array) with embedded playback

@@ -7,7 +7,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Video, Play, Package, FileText, Key, Link as LinkIcon, ExternalLink } from "lucide-react";
+import { Video, Play, FileText, Key, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { TikTokEmbed } from "./TikTokEmbed";
 import { Campaign } from "@shared/schema";
 
@@ -19,7 +19,6 @@ interface VideoGuidelinesSheetProps {
 export function VideoGuidelinesSheet({ campaign, children }: VideoGuidelinesSheetProps) {
   const hasVideoGuidelines =
     campaign.videoEssentialCuts ||
-    campaign.videoAboutProduct ||
     campaign.videoDetails ||
     campaign.videoKeyPoints ||
     (campaign.videoReferenceUrls && campaign.videoReferenceUrls.length > 0);
@@ -58,18 +57,6 @@ export function VideoGuidelinesSheet({ campaign, children }: VideoGuidelinesShee
               </h3>
               <div className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 p-3 rounded-md">
                 {campaign.videoEssentialCuts}
-              </div>
-            </div>
-          )}
-
-          {campaign.videoAboutProduct && (
-            <div className="space-y-2">
-              <h3 className="flex items-center gap-2 font-semibold text-sm">
-                <Package className="h-4 w-4 text-primary" />
-                About Product
-              </h3>
-              <div className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 p-3 rounded-md">
-                {campaign.videoAboutProduct}
               </div>
             </div>
           )}

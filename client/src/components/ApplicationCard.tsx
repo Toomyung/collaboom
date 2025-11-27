@@ -191,20 +191,6 @@ export function ApplicationCard({
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2 pt-2">
-              {campaign.guidelinesUrl && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  data-testid={`button-guidelines-${application.id}`}
-                >
-                  <a href={campaign.guidelinesUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    View Guidelines
-                  </a>
-                </Button>
-              )}
-
               {application.status === "pending" && (
                 <>
                   <Link href={`/campaigns/${campaign.id}`}>

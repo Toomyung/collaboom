@@ -52,7 +52,6 @@ const formSchema = insertCampaignSchema.extend({
   eligibilityRequirements: z.string().optional(),
   // Video Guidelines
   videoEssentialCuts: z.string().optional(),
-  videoAboutProduct: z.string().optional(),
   videoDetails: z.string().optional(),
   videoReferenceUrls: z.array(z.string()).optional(),
   videoKeyPoints: z.string().optional(),
@@ -114,7 +113,6 @@ export default function AdminCampaignFormPage() {
       imageUrls: [],
       amazonUrl: "",
       guidelinesSummary: "",
-      guidelinesUrl: "",
       contentOverview: "",
       requiredHashtags: [],
       requiredMentions: [],
@@ -122,7 +120,6 @@ export default function AdminCampaignFormPage() {
       stepByStepProcess: "",
       eligibilityRequirements: "",
       videoEssentialCuts: "",
-      videoAboutProduct: "",
       videoDetails: "",
       videoReferenceUrls: [],
       videoKeyPoints: "",
@@ -144,7 +141,6 @@ export default function AdminCampaignFormPage() {
             imageUrls: campaign.imageUrls || (campaign.imageUrl ? [campaign.imageUrl] : []),
             amazonUrl: campaign.amazonUrl || "",
             guidelinesSummary: campaign.guidelinesSummary || "",
-            guidelinesUrl: campaign.guidelinesUrl || "",
             contentOverview: (campaign as any).contentOverview || "",
             requiredHashtags: campaign.requiredHashtags || [],
             requiredMentions: campaign.requiredMentions || [],
@@ -152,7 +148,6 @@ export default function AdminCampaignFormPage() {
             stepByStepProcess: (campaign as any).stepByStepProcess || "",
             eligibilityRequirements: (campaign as any).eligibilityRequirements || "",
             videoEssentialCuts: (campaign as any).videoEssentialCuts || "",
-            videoAboutProduct: (campaign as any).videoAboutProduct || "",
             videoDetails: (campaign as any).videoDetails || "",
             videoReferenceUrls: (campaign as any).videoReferenceUrls || [],
             videoKeyPoints: (campaign as any).videoKeyPoints || "",
@@ -587,28 +582,6 @@ export default function AdminCampaignFormPage() {
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="guidelinesUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Guidelines URL (Notion)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://notion.so/..."
-                          {...field}
-                          value={field.value || ""}
-                          data-testid="input-guidelines-url"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Link to the full campaign guidelines document
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="guidelinesSummary"
                   render={({ field }) => (
                     <FormItem>
@@ -837,29 +810,6 @@ export default function AdminCampaignFormPage() {
                       </FormControl>
                       <FormDescription>
                         Required scenes or cuts that influencers must include in their video
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="videoAboutProduct"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>About Product</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="How to present the product in the video...&#10;• Key features to highlight&#10;• Benefits to mention&#10;• How to showcase texture/packaging"
-                          rows={5}
-                          {...field}
-                          value={field.value || ""}
-                          data-testid="textarea-about-product"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        How influencers should present and talk about the product
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

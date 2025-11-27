@@ -370,26 +370,13 @@ export default function CampaignDetailPage() {
             <CardContent className="p-6">
               <h2 className="font-semibold mb-4">Campaign Guidelines</h2>
               {campaign.guidelinesSummary ? (
-                <p className="text-sm text-muted-foreground whitespace-pre-line mb-4">
+                <p className="text-sm text-muted-foreground whitespace-pre-line">
                   {campaign.guidelinesSummary}
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground">
                   Create authentic TikTok content featuring the product.
                 </p>
-              )}
-              {campaign.guidelinesUrl && (
-                <Button variant="outline" size="sm" asChild>
-                  <a
-                    href={campaign.guidelinesUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-testid="link-full-guidelines"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View Full Guidelines
-                  </a>
-                </Button>
               )}
             </CardContent>
           </Card>
@@ -442,7 +429,6 @@ export default function CampaignDetailPage() {
 
         {/* Video Guidelines */}
         {(campaign.videoEssentialCuts || 
-          campaign.videoAboutProduct || 
           campaign.videoDetails || 
           campaign.videoKeyPoints || 
           (campaign.videoReferenceUrls && campaign.videoReferenceUrls.length > 0)) && (

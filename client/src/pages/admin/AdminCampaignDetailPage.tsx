@@ -484,19 +484,6 @@ export default function AdminCampaignDetailPage() {
                       </div>
                     </div>
                   )}
-                  {campaign.guidelinesUrl && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Full Guidelines</p>
-                      <a
-                        href={campaign.guidelinesUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline text-sm"
-                      >
-                        View on Notion
-                      </a>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
