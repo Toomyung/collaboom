@@ -577,7 +577,7 @@ export default function AdminCampaignFormPage() {
             {/* Guidelines */}
             <Card>
               <CardHeader>
-                <CardTitle>Content Guidelines</CardTitle>
+                <CardTitle>About Campaign</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -585,10 +585,10 @@ export default function AdminCampaignFormPage() {
                   name="guidelinesSummary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Guidelines Summary</FormLabel>
+                      <FormLabel>Campaign Summary</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Brief summary of content requirements (5-10 lines)..."
+                          placeholder="Brief summary of campaign details (5-10 lines)..."
                           rows={5}
                           {...field}
                           value={field.value || ""}
@@ -603,16 +603,16 @@ export default function AdminCampaignFormPage() {
                   )}
                 />
 
-                {/* Content Overview */}
+                {/* Campaign Overview */}
                 <FormField
                   control={form.control}
                   name="contentOverview"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Content Overview</FormLabel>
+                      <FormLabel>Campaign Overview</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Brief overview of content expectations for influencers..."
+                          placeholder="Brief overview of campaign expectations for influencers..."
                           rows={4}
                           {...field}
                           value={field.value || ""}
@@ -620,74 +620,12 @@ export default function AdminCampaignFormPage() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Describes content requirements shown on the campaign detail page
+                        Describes campaign requirements shown on the campaign detail page
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                {/* Hashtags */}
-                <div>
-                  <FormLabel>Required Hashtags</FormLabel>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      placeholder="#hashtag"
-                      value={hashtagInput}
-                      onChange={(e) => setHashtagInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addHashtag())}
-                      data-testid="input-hashtag"
-                    />
-                    <Button type="button" variant="outline" onClick={addHashtag}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {form.watch("requiredHashtags")?.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="gap-1">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeHashtag(tag)}
-                          className="hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Mentions */}
-                <div>
-                  <FormLabel>Required Mentions</FormLabel>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      placeholder="@username"
-                      value={mentionInput}
-                      onChange={(e) => setMentionInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addMention())}
-                      data-testid="input-mention"
-                    />
-                    <Button type="button" variant="outline" onClick={addMention}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {form.watch("requiredMentions")?.map((mention, i) => (
-                      <Badge key={i} variant="secondary" className="gap-1">
-                        {mention}
-                        <button
-                          type="button"
-                          onClick={() => removeMention(mention)}
-                          className="hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -861,6 +799,68 @@ export default function AdminCampaignFormPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Hashtags */}
+                <div>
+                  <FormLabel>Required Hashtags</FormLabel>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="#hashtag"
+                      value={hashtagInput}
+                      onChange={(e) => setHashtagInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addHashtag())}
+                      data-testid="input-hashtag"
+                    />
+                    <Button type="button" variant="outline" onClick={addHashtag}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {form.watch("requiredHashtags")?.map((tag, i) => (
+                      <Badge key={i} variant="secondary" className="gap-1">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeHashtag(tag)}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mentions */}
+                <div>
+                  <FormLabel>Required Mentions</FormLabel>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="@username"
+                      value={mentionInput}
+                      onChange={(e) => setMentionInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addMention())}
+                      data-testid="input-mention"
+                    />
+                    <Button type="button" variant="outline" onClick={addMention}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {form.watch("requiredMentions")?.map((mention, i) => (
+                      <Badge key={i} variant="secondary" className="gap-1">
+                        {mention}
+                        <button
+                          type="button"
+                          onClick={() => removeMention(mention)}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Reference Videos */}
                 <div>
