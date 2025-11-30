@@ -886,7 +886,7 @@ export default function AdminCampaignFormPage() {
                       <FormLabel>Eligibility Criteria</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="• Minimum 1,000 TikTok followers&#10;• US-based creators only&#10;• Must be 18 years or older&#10;• Must post within deadline&#10;• Active engagement on recent posts"
+                          placeholder="Enter eligibility criteria or click 'Use Preset' below..."
                           rows={6}
                           {...field}
                           value={field.value || ""}
