@@ -105,6 +105,16 @@ export function useAuth() {
           
           if (event === 'SIGNED_IN' && session) {
             try {
+              // Check if user is already logged in as admin - don't overwrite admin session
+              const currentAuth = await fetch("/api/auth/me", { credentials: "include" });
+              if (currentAuth.ok) {
+                const authData = await currentAuth.json();
+                if (authData.user?.role === 'admin') {
+                  // Already logged in as admin, don't overwrite with influencer session
+                  return;
+                }
+              }
+              
               const res = await fetch("/api/auth/supabase/callback", {
                 method: "POST",
                 headers: { 
