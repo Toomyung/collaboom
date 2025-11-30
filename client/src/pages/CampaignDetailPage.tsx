@@ -365,10 +365,10 @@ export default function CampaignDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Campaign Guidelines - Second */}
+          {/* Campaign Summary - Second */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="font-semibold mb-4">Campaign Guidelines</h2>
+              <h2 className="font-semibold mb-4">Campaign Summary</h2>
               {campaign.guidelinesSummary ? (
                 <p className="text-sm text-muted-foreground whitespace-pre-line">
                   {campaign.guidelinesSummary}
@@ -382,13 +382,13 @@ export default function CampaignDetailPage() {
           </Card>
         </div>
 
-        {/* Product Information */}
+        {/* Product Detail */}
         {(campaign as any).productDetail && (
           <Card className="mb-6">
             <CardContent className="p-6">
               <h2 className="font-semibold mb-4 flex items-center gap-2">
                 <Info className="h-5 w-5 text-primary" />
-                Product Information
+                Product Detail
               </h2>
               <p className="text-sm text-muted-foreground whitespace-pre-line">
                 {(campaign as any).productDetail}

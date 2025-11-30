@@ -7,7 +7,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Video, Play, FileText, Key, Link as LinkIcon, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Video, Play, FileText, Key, Link as LinkIcon, ExternalLink, Hash, AtSign } from "lucide-react";
 import { TikTokEmbed } from "./TikTokEmbed";
 import { Campaign } from "@shared/schema";
 
@@ -21,7 +22,9 @@ export function VideoGuidelinesSheet({ campaign, children }: VideoGuidelinesShee
     campaign.videoEssentialCuts ||
     campaign.videoDetails ||
     campaign.videoKeyPoints ||
-    (campaign.videoReferenceUrls && campaign.videoReferenceUrls.length > 0);
+    (campaign.videoReferenceUrls && campaign.videoReferenceUrls.length > 0) ||
+    (campaign.requiredHashtags && campaign.requiredHashtags.length > 0) ||
+    (campaign.requiredMentions && campaign.requiredMentions.length > 0);
 
   if (!hasVideoGuidelines) {
     return null;
@@ -49,6 +52,40 @@ export function VideoGuidelinesSheet({ campaign, children }: VideoGuidelinesShee
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* Required Hashtags */}
+          {campaign.requiredHashtags && campaign.requiredHashtags.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="flex items-center gap-2 font-semibold text-sm">
+                <Hash className="h-4 w-4 text-primary" />
+                Required Hashtags
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {campaign.requiredHashtags.map((tag, i) => (
+                  <Badge key={i} variant="secondary">
+                    {tag.startsWith("#") ? tag : `#${tag}`}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Required Mentions */}
+          {campaign.requiredMentions && campaign.requiredMentions.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="flex items-center gap-2 font-semibold text-sm">
+                <AtSign className="h-4 w-4 text-primary" />
+                Required Mentions
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {campaign.requiredMentions.map((mention, i) => (
+                  <Badge key={i} variant="secondary">
+                    {mention.startsWith("@") ? mention : `@${mention}`}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {campaign.videoEssentialCuts && (
             <div className="space-y-2">
               <h3 className="flex items-center gap-2 font-semibold text-sm">

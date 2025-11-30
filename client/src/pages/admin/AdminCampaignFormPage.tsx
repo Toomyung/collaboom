@@ -302,10 +302,19 @@ export default function AdminCampaignFormPage() {
     if (!referenceUrlInput.trim()) return;
     const url = referenceUrlInput.trim();
     const current = form.getValues("videoReferenceUrls") || [];
-    console.log('[DEBUG] addReferenceUrl - current:', current, 'adding:', url);
+    
+    // Limit to 2 reference videos
+    if (current.length >= 2) {
+      toast({
+        title: "Maximum reached",
+        description: "You can only add up to 2 reference videos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!current.includes(url)) {
       const newUrls = [...current, url];
-      console.log('[DEBUG] addReferenceUrl - newUrls:', newUrls);
       form.setValue("videoReferenceUrls", newUrls, { shouldDirty: true, shouldValidate: true });
     }
     setReferenceUrlInput("");
