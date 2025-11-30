@@ -61,6 +61,8 @@ function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
           src={images[selectedIndex]}
           alt={`${alt} - Image ${selectedIndex + 1}`}
           className="w-full h-full object-cover"
+          loading="eager"
+          decoding="async"
         />
       </div>
       {images.length > 1 && (
@@ -80,6 +82,8 @@ function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
                 src={img}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             </button>
           ))}

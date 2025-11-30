@@ -100,11 +100,12 @@ export function ApplicationCard({
       <div className="flex flex-col sm:flex-row">
         {/* Campaign Image */}
         <div className="relative w-full sm:w-40 h-32 sm:h-auto flex-shrink-0 overflow-hidden bg-muted">
-          {campaign.imageUrl ? (
+          {(campaign.imageUrls?.length || campaign.imageUrl) ? (
             <img
-              src={campaign.imageUrl}
+              src={campaign.imageUrls?.[0] || campaign.imageUrl || ""}
               alt={campaign.name}
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">

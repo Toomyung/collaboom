@@ -318,11 +318,12 @@ export default function AdminCampaignListPage() {
                     <TableRow key={campaign.id} data-testid={`row-campaign-${campaign.id}`}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          {campaign.imageUrl ? (
+                          {(campaign.imageUrls?.length || campaign.imageUrl) ? (
                             <img
-                              src={campaign.imageUrl}
+                              src={campaign.imageUrls?.[0] || campaign.imageUrl || ""}
                               alt=""
                               className="h-10 w-10 rounded-lg object-cover"
+                              loading="lazy"
                             />
                           ) : (
                             <div className="h-10 w-10 rounded-lg bg-muted" />
