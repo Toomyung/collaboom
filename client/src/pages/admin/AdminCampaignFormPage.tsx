@@ -886,7 +886,7 @@ export default function AdminCampaignFormPage() {
                       <FormLabel>Eligibility Criteria</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="• Minimum 1,000 TikTok followers&#10;• US-based creators only&#10;• Must post within deadline&#10;• Active engagement on recent posts"
+                          placeholder="• Minimum 1,000 TikTok followers&#10;• US-based creators only&#10;• Must be 18 years or older&#10;• Must post within deadline&#10;• Active engagement on recent posts"
                           rows={6}
                           {...field}
                           value={field.value || ""}
@@ -897,6 +897,22 @@ export default function AdminCampaignFormPage() {
                         Requirements that influencers must meet to be eligible for this campaign
                       </FormDescription>
                       <FormMessage />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const presetText = `• Minimum 1,000 TikTok followers
+• US-based creators only
+• Must be 18 years or older
+• Must post within deadline
+• Active engagement on recent posts`;
+                          field.onChange(presetText);
+                        }}
+                        data-testid="button-eligibility-preset"
+                      >
+                        Use Preset
+                      </Button>
                     </FormItem>
                   )}
                 />
