@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Campaign } from "@shared/schema";
-import { Search, Sparkles, Filter } from "lucide-react";
+import { Search, Sparkles, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,8 @@ import {
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 
+const ITEMS_PER_PAGE = 12;
+
 const categories = [
   { id: "all", label: "All Campaigns" },
   { id: "beauty", label: "Beauty" },
@@ -32,6 +35,7 @@ const categories = [
 export default function CampaignListPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const { isAuthenticated, influencer } = useAuth();
@@ -83,6 +87,24 @@ export default function CampaignListPage() {
     const isActive = campaign.status === "active" || campaign.status === "full";
     return matchesCategory && matchesSearch && isActive;
   });
+
+  // Pagination logic
+  const totalItems = filteredCampaigns?.length || 0;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedCampaigns = filteredCampaigns?.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   const handleApplyClick = (campaign: Campaign) => {
     if (!isAuthenticated) {
@@ -143,7 +165,7 @@ export default function CampaignListPage() {
             <Input
               placeholder="Search campaigns..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10"
               data-testid="input-search"
             />
@@ -154,7 +176,7 @@ export default function CampaignListPage() {
                 key={category.id}
                 variant={activeCategory === category.id ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveCategory(category.id)}
+                onClick={() => handleCategoryChange(category.id)}
                 className="flex-shrink-0"
                 data-testid={`filter-${category.id}`}
               >
@@ -175,19 +197,88 @@ export default function CampaignListPage() {
               </div>
             ))}
           </div>
-        ) : filteredCampaigns && filteredCampaigns.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCampaigns.map((campaign) => (
-              <CampaignCard
-                key={campaign.id}
-                campaign={campaign}
-                isApplied={appliedCampaignIds.has(campaign.id)}
-                canApply={canApply(campaign)}
-                applyDisabledReason={getApplyDisabledReason(campaign)}
-                onApply={() => handleApplyClick(campaign)}
-              />
-            ))}
-          </div>
+        ) : paginatedCampaigns && paginatedCampaigns.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedCampaigns.map((campaign) => (
+                <CampaignCard
+                  key={campaign.id}
+                  campaign={campaign}
+                  isApplied={appliedCampaignIds.has(campaign.id)}
+                  canApply={canApply(campaign)}
+                  applyDisabledReason={getApplyDisabledReason(campaign)}
+                  onApply={() => handleApplyClick(campaign)}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first, last, current, and adjacent pages
+                    const showPage =
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1;
+                    const showEllipsisBefore =
+                      page === currentPage - 2 && currentPage > 3;
+                    const showEllipsisAfter =
+                      page === currentPage + 2 && currentPage < totalPages - 2;
+
+                    if (showEllipsisBefore || showEllipsisAfter) {
+                      return (
+                        <span key={page} className="px-2 text-muted-foreground">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    if (!showPage) return null;
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="min-w-[36px]"
+                        data-testid={`button-page-${page}`}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  data-testid="button-next-page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            {/* Results info */}
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} campaigns
+            </p>
+          </>
         ) : (
           <div className="text-center py-16">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
