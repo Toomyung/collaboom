@@ -27,6 +27,7 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -94,6 +95,9 @@ export default function AdminCampaignFormPage() {
   const [mentionInput, setMentionInput] = useState("");
   const [referenceUrlInput, setReferenceUrlInput] = useState("");
   const [dateErrorDialogOpen, setDateErrorDialogOpen] = useState(false);
+  const [missingFieldsDialogOpen, setMissingFieldsDialogOpen] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [pendingSubmitAction, setPendingSubmitAction] = useState<(() => void) | null>(null);
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
@@ -234,30 +238,67 @@ export default function AdminCampaignFormPage() {
     return true;
   };
 
-  const onSubmitUpdate = (data: FormData) => {
+  // Check for empty optional fields and warn user
+  const checkMissingFields = (data: FormData): string[] => {
+    const missing: string[] = [];
+    if (!data.requiredHashtags || data.requiredHashtags.length === 0) {
+      missing.push("Required Hashtags");
+    }
+    if (!data.requiredMentions || data.requiredMentions.length === 0) {
+      missing.push("Required Mentions");
+    }
+    return missing;
+  };
+
+  const handleSubmitWithWarning = (data: FormData, submitAction: () => void) => {
     if (!validateDates(data)) return;
-    updateMutation.mutate(data);
+    
+    const missing = checkMissingFields(data);
+    if (missing.length > 0) {
+      setMissingFields(missing);
+      setPendingSubmitAction(() => submitAction);
+      setMissingFieldsDialogOpen(true);
+      return;
+    }
+    
+    submitAction();
+  };
+
+  const onSubmitUpdate = (data: FormData) => {
+    handleSubmitWithWarning(data, () => updateMutation.mutate(data));
   };
 
   const handleCreateDraft = () => {
     form.handleSubmit((data) => {
-      if (!validateDates(data)) return;
-      createMutation.mutate({ ...data, status: "draft" });
+      handleSubmitWithWarning(data, () => createMutation.mutate({ ...data, status: "draft" }));
     })();
   };
 
   const handleCreateActive = () => {
     form.handleSubmit((data) => {
-      if (!validateDates(data)) return;
-      createMutation.mutate({ ...data, status: "active" });
+      handleSubmitWithWarning(data, () => createMutation.mutate({ ...data, status: "active" }));
     })();
   };
 
   const handlePublish = () => {
     form.handleSubmit((data) => {
-      if (!validateDates(data)) return;
-      updateMutation.mutate({ ...data, status: "active" });
+      handleSubmitWithWarning(data, () => updateMutation.mutate({ ...data, status: "active" }));
     })();
+  };
+
+  const handleConfirmSubmit = () => {
+    if (pendingSubmitAction) {
+      pendingSubmitAction();
+    }
+    setMissingFieldsDialogOpen(false);
+    setPendingSubmitAction(null);
+    setMissingFields([]);
+  };
+
+  const handleCancelSubmit = () => {
+    setMissingFieldsDialogOpen(false);
+    setPendingSubmitAction(null);
+    setMissingFields([]);
   };
 
   const addHashtag = () => {
@@ -1000,6 +1041,35 @@ export default function AdminCampaignFormPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogAction data-testid="button-date-error-ok">OK</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Missing Fields Warning Dialog */}
+        <AlertDialog open={missingFieldsDialogOpen} onOpenChange={setMissingFieldsDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                Missing Information
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>The following fields are empty:</p>
+                <ul className="list-disc list-inside text-amber-600 font-medium">
+                  {missingFields.map((field, i) => (
+                    <li key={i}>{field}</li>
+                  ))}
+                </ul>
+                <p className="pt-2">Do you want to save without these fields?</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelSubmit} data-testid="button-missing-cancel">
+                Go Back & Add
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmSubmit} data-testid="button-missing-confirm">
+                Save Anyway
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
