@@ -456,13 +456,13 @@ export default function CampaignDetailPage() {
           </Card>
         )}
 
-        {/* External Links */}
+        {/* Links */}
         {(campaign.amazonUrl || (campaign as any).instagramUrl || (campaign as any).tiktokUrl || (campaign as any).officialWebsiteUrl) && (
           <Card className="mb-6">
             <CardContent className="p-6">
               <h2 className="font-semibold flex items-center gap-2 mb-4">
                 <LinkIcon className="h-5 w-5 text-primary" />
-                External Links
+                Links
               </h2>
               <div className="flex flex-wrap gap-3">
                 {campaign.amazonUrl && (

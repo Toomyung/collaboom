@@ -252,12 +252,34 @@ export default function AdminCampaignFormPage() {
   // Check for empty optional fields and warn user
   const checkMissingFields = (data: FormData): string[] => {
     const missing: string[] = [];
+    
+    // Content requirements
     if (!data.requiredHashtags || data.requiredHashtags.length === 0) {
       missing.push("Required Hashtags");
     }
     if (!data.requiredMentions || data.requiredMentions.length === 0) {
       missing.push("Required Mentions");
     }
+    
+    // Video guidelines
+    if (!data.videoReferenceUrls || data.videoReferenceUrls.length === 0) {
+      missing.push("Reference Videos");
+    }
+    if (!data.videoEssentialCuts?.trim()) {
+      missing.push("Video Essential Cuts");
+    }
+    if (!data.videoDetails?.trim()) {
+      missing.push("Video Details");
+    }
+    if (!data.videoKeyPoints?.trim()) {
+      missing.push("Video Key Points");
+    }
+    
+    // Links
+    if (!data.amazonUrl?.trim() && !data.instagramUrl?.trim() && !data.tiktokUrl?.trim() && !data.officialWebsiteUrl?.trim()) {
+      missing.push("External Links (Amazon, Instagram, TikTok, or Website)");
+    }
+    
     return missing;
   };
 
@@ -614,11 +636,11 @@ export default function AdminCampaignFormPage() {
                   )}
                 />
 
-                {/* External Links Section */}
+                {/* Links Section */}
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
                     <LinkIcon className="h-4 w-4" />
-                    <span>External Links (Optional)</span>
+                    <span>Links (Optional)</span>
                   </div>
                   
                   <FormField
