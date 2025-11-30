@@ -105,12 +105,16 @@ export function useAuth() {
           
           if (event === 'SIGNED_IN' && session) {
             try {
-              // Check if user is already logged in as admin - don't overwrite admin session
+              // Check if user is already logged in - don't unnecessarily refresh session
               const currentAuth = await fetch("/api/auth/me", { credentials: "include" });
               if (currentAuth.ok) {
                 const authData = await currentAuth.json();
+                // If already logged in as admin, don't overwrite
                 if (authData.user?.role === 'admin') {
-                  // Already logged in as admin, don't overwrite with influencer session
+                  return;
+                }
+                // If already logged in as the same influencer, don't refresh
+                if (authData.user?.role === 'influencer' && authData.user?.email === session.user.email) {
                   return;
                 }
               }
