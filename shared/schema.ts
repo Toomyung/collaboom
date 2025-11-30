@@ -121,6 +121,7 @@ export const campaigns = pgTable("campaigns", {
   videoKeyPoints: text("video_key_points"), // Key points to highlight
   applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
   deadline: timestamp("deadline").notNull(), // Upload deadline (content submission deadline)
+  campaignTimeline: text("campaign_timeline"), // Free-form campaign timeline description
   status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'
   createdByAdminId: varchar("created_by_admin_id"),
   createdAt: timestamp("created_at").defaultNow(),

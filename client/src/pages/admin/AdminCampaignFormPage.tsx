@@ -56,6 +56,8 @@ const formSchema = insertCampaignSchema.extend({
   instagramUrl: z.string().optional(),
   tiktokUrl: z.string().optional(),
   officialWebsiteUrl: z.string().optional(),
+  // Timeline
+  campaignTimeline: z.string().optional(),
   // Video Guidelines
   videoEssentialCuts: z.string().optional(),
   videoDetails: z.string().optional(),
@@ -137,6 +139,7 @@ export default function AdminCampaignFormPage() {
       videoKeyPoints: "",
       applicationDeadline: new Date().toISOString().split("T")[0] + "T23:59:00",
       deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] + "T23:59:00",
+      campaignTimeline: "",
       status: "draft",
     },
     values: campaign
@@ -172,6 +175,7 @@ export default function AdminCampaignFormPage() {
             deadline: campaign.deadline 
               ? new Date(campaign.deadline).toISOString().slice(0, 16)
               : new Date().toISOString().split("T")[0] + "T23:59",
+            campaignTimeline: (campaign as any).campaignTimeline || "",
             status: campaign.status,
           };
         })()
@@ -277,7 +281,12 @@ export default function AdminCampaignFormPage() {
     
     // Links
     if (!data.amazonUrl?.trim() && !data.instagramUrl?.trim() && !data.tiktokUrl?.trim() && !data.officialWebsiteUrl?.trim()) {
-      missing.push("External Links (Amazon, Instagram, TikTok, or Website)");
+      missing.push("Links (Amazon, Instagram, TikTok, or Website)");
+    }
+    
+    // Timeline
+    if (!data.campaignTimeline?.trim()) {
+      missing.push("Campaign Timeline");
     }
     
     return missing;
@@ -608,6 +617,30 @@ export default function AdminCampaignFormPage() {
                     )}
                   />
                 </div>
+
+                {/* Campaign Timeline */}
+                <FormField
+                  control={form.control}
+                  name="campaignTimeline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Campaign Timeline</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="e.g., Week 1: Application review&#10;Week 2: Product shipping&#10;Week 3-4: Content creation&#10;Week 5: Upload deadline"
+                          rows={4}
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="textarea-campaign-timeline"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Describe the campaign schedule and milestones for influencers
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
               </CardContent>
             </Card>

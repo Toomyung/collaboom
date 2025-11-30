@@ -385,6 +385,21 @@ export default function CampaignDetailPage() {
           </Card>
         </div>
 
+        {/* Campaign Timeline */}
+        {(campaign as any).campaignTimeline && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Campaign Timeline
+              </h2>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {(campaign as any).campaignTimeline}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Product Detail */}
         {(campaign as any).productDetail && (
           <Card className="mb-6">
