@@ -392,10 +392,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get campaigns (public)
+  // Get campaigns (public) - with optional pagination and field selection
   app.get("/api/campaigns", async (req, res) => {
-    const campaigns = await storage.getActiveCampaigns();
-    return res.json(campaigns);
+    const page = parseInt(req.query.page as string) || undefined;
+    const pageSize = parseInt(req.query.pageSize as string) || 12;
+    const minimal = req.query.minimal === 'true';
+    
+    // If no pagination requested, return all (backward compatible)
+    if (!page) {
+      const campaigns = await storage.getActiveCampaigns();
+      // If minimal, strip heavy fields for list view
+      if (minimal) {
+        const minimalCampaigns = campaigns.map(c => ({
+          id: c.id,
+          name: c.name,
+          brandName: c.brandName,
+          category: c.category,
+          rewardType: c.rewardType,
+          rewardAmount: c.rewardAmount,
+          inventory: c.inventory,
+          approvedCount: c.approvedCount,
+          imageUrl: c.imageUrl,
+          status: c.status,
+          deadline: c.deadline,
+          applicationDeadline: c.applicationDeadline,
+        }));
+        return res.json(minimalCampaigns);
+      }
+      return res.json(campaigns);
+    }
+    
+    // Paginated response
+    const result = await storage.getActiveCampaignsPaginated({ page, pageSize });
+    
+    // If minimal, strip heavy fields
+    if (minimal) {
+      result.items = result.items.map(c => ({
+        id: c.id,
+        name: c.name,
+        brandName: c.brandName,
+        category: c.category,
+        rewardType: c.rewardType,
+        rewardAmount: c.rewardAmount,
+        inventory: c.inventory,
+        approvedCount: c.approvedCount,
+        imageUrl: c.imageUrl,
+        status: c.status,
+        deadline: c.deadline,
+        applicationDeadline: c.applicationDeadline,
+      })) as any;
+    }
+    
+    return res.json(result);
   });
 
   // Get single campaign (public)
@@ -411,6 +459,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/applications", requireAuth("influencer"), async (req, res) => {
     const applications = await storage.getApplicationsByInfluencer(req.session.userId!);
     return res.json(applications);
+  });
+
+  // Get just the campaign IDs the influencer has applied to (lightweight)
+  app.get("/api/applications/my-ids", requireAuth("influencer"), async (req, res) => {
+    const applications = await storage.getApplicationsByInfluencer(req.session.userId!);
+    const campaignIds = applications.map(a => a.campaignId);
+    return res.json(campaignIds);
   });
 
   // Get influencer's applications with details

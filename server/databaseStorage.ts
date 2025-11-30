@@ -238,6 +238,33 @@ export class DatabaseStorage implements IStorage {
     ).orderBy(desc(campaigns.createdAt));
   }
 
+  async getActiveCampaignsPaginated(options: { page: number; pageSize: number }): Promise<PaginatedCampaignsResult> {
+    const page = Math.max(1, options.page);
+    const pageSize = Math.min(50, Math.max(1, options.pageSize));
+    const offset = (page - 1) * pageSize;
+
+    // Get total count of active campaigns
+    const countResult = await db.select({ count: sql<number>`count(*)` })
+      .from(campaigns)
+      .where(sql`${campaigns.status} IN ('active', 'full')`);
+    const totalCount = Number(countResult[0]?.count || 0);
+
+    // Get paginated items
+    const items = await db.select()
+      .from(campaigns)
+      .where(sql`${campaigns.status} IN ('active', 'full')`)
+      .orderBy(desc(campaigns.createdAt))
+      .limit(pageSize)
+      .offset(offset);
+
+    return {
+      items,
+      totalCount,
+      page,
+      pageSize,
+    };
+  }
+
   async getCampaignsPaginated(options: GetCampaignsOptions): Promise<PaginatedCampaignsResult> {
     const page = Math.max(1, options.page || 1);
     const pageSize = Math.min(50, Math.max(1, options.pageSize || 20));

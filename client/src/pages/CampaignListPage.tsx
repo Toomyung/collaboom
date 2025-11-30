@@ -42,16 +42,28 @@ export default function CampaignListPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  // Use minimal=true to get only the fields needed for the list view
   const { data: campaigns, isLoading } = useQuery<Campaign[]>({
-    queryKey: ["/api/campaigns"],
+    queryKey: ["/api/campaigns", { minimal: true }],
+    queryFn: async () => {
+      const res = await fetch("/api/campaigns?minimal=true");
+      if (!res.ok) throw new Error("Failed to fetch campaigns");
+      return res.json();
+    },
   });
 
-  const { data: applications } = useQuery<{ campaignId: string }[]>({
-    queryKey: ["/api/applications"],
+  // Use lightweight endpoint that only returns campaign IDs
+  const { data: appliedCampaignIds } = useQuery<Set<string>>({
+    queryKey: ["/api/applications/my-ids"],
+    queryFn: async () => {
+      const res = await fetch("/api/applications/my-ids");
+      if (!res.ok) throw new Error("Failed to fetch applications");
+      const ids: string[] = await res.json();
+      return new Set(ids);
+    },
     enabled: isAuthenticated,
+    initialData: new Set<string>(),
   });
-
-  const appliedCampaignIds = new Set(applications?.map((a) => a.campaignId) || []);
 
   const applyMutation = useMutation({
     mutationFn: async (campaignId: string) => {
@@ -59,8 +71,8 @@ export default function CampaignListPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/my-ids"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/campaigns", { minimal: true }] });
       toast({
         title: "Application submitted!",
         description: "We'll review your application and get back to you soon.",

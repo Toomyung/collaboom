@@ -100,12 +100,20 @@ export default function CampaignDetailPage() {
     queryKey: ["/api/campaigns", id],
   });
 
-  const { data: applications } = useQuery<{ campaignId: string }[]>({
-    queryKey: ["/api/applications"],
+  // Use lightweight endpoint that only returns campaign IDs
+  const { data: appliedCampaignIds } = useQuery<Set<string>>({
+    queryKey: ["/api/applications/my-ids"],
+    queryFn: async () => {
+      const res = await fetch("/api/applications/my-ids");
+      if (!res.ok) throw new Error("Failed to fetch applications");
+      const ids: string[] = await res.json();
+      return new Set(ids);
+    },
     enabled: isAuthenticated,
+    initialData: new Set<string>(),
   });
 
-  const isApplied = applications?.some((a) => a.campaignId === id);
+  const isApplied = id ? appliedCampaignIds.has(id) : false;
 
   const applyMutation = useMutation({
     mutationFn: async () => {
@@ -113,7 +121,7 @@ export default function CampaignDetailPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/my-ids"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", id] });
       toast({
         title: "Application submitted!",

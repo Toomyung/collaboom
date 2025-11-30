@@ -70,6 +70,7 @@ export interface IStorage {
   getCampaign(id: string): Promise<Campaign | undefined>;
   getAllCampaigns(): Promise<Campaign[]>;
   getActiveCampaigns(): Promise<Campaign[]>;
+  getActiveCampaignsPaginated(options: { page: number; pageSize: number }): Promise<PaginatedCampaignsResult>;
   getCampaignsPaginated(options: GetCampaignsOptions): Promise<PaginatedCampaignsResult>;
   createCampaign(campaign: InsertCampaign): Promise<Campaign>;
   updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign | undefined>;
