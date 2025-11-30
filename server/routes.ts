@@ -6,6 +6,25 @@ import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail } from "./emailService";
+import {
+  authLimiter,
+  strictAuthLimiter,
+  uploadLimiter,
+  loginSchema,
+  registrationSchema,
+  noteSchema,
+  issueReportSchema,
+  scoreAdjustmentSchema,
+  shippingSchema,
+  bulkApproveSchema,
+  csvUploadSchema,
+  issueResponseSchema,
+  sanitizeObject,
+  sanitizeString,
+  paramValidator,
+  validateUUID,
+  logSecurityEvent,
+} from "./security";
 
 // Session types
 declare module "express-session" {
@@ -29,10 +48,9 @@ function requireAuth(userType?: "influencer" | "admin") {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Trust proxy - required for secure cookies behind Replit/GCP proxy
-  if (process.env.NODE_ENV === "production") {
-    app.set("trust proxy", 1);
-  }
+  // Trust proxy - required for secure cookies and rate limiting behind Replit proxy
+  // Replit uses proxies in both development and production
+  app.set("trust proxy", 1);
 
   // Session middleware
   app.use(
@@ -236,87 +254,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Influencer registration
-  app.post("/api/auth/influencer/register", async (req, res) => {
+  app.post("/api/auth/influencer/register", authLimiter, async (req, res) => {
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      const validationResult = registrationSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        logSecurityEvent('registration_validation_failed', { 
+          ip: req.ip, 
+          errors: validationResult.error.errors 
+        });
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationResult.error.errors 
+        });
       }
+
+      const { email, password } = validationResult.data;
 
       const existing = await storage.getInfluencerByEmail(email);
       if (existing) {
+        logSecurityEvent('registration_duplicate_email', { ip: req.ip, email });
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      const passwordHash = await bcrypt.hash(password, 10);
+      const passwordHash = await bcrypt.hash(password, 12);
       const influencer = await storage.createInfluencer(email, passwordHash);
 
       req.session.userId = influencer.id;
       req.session.userType = "influencer";
 
-      // Send welcome email for new signups
+      logSecurityEvent('registration_success', { ip: req.ip, userId: influencer.id });
+
       sendWelcomeEmail(email, "Creator").catch(err => {
         console.error("Failed to send welcome email:", err);
       });
 
       return res.json({ success: true });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message });
+      logSecurityEvent('registration_error', { ip: req.ip, error: error.message });
+      return res.status(500).json({ message: "Registration failed" });
     }
   });
 
   // Influencer login
-  app.post("/api/auth/influencer/login", async (req, res) => {
+  app.post("/api/auth/influencer/login", strictAuthLimiter, async (req, res) => {
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      const validationResult = loginSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        logSecurityEvent('login_validation_failed', { ip: req.ip });
+        return res.status(400).json({ message: "Invalid input" });
       }
+
+      const { email, password } = validationResult.data;
 
       const influencer = await storage.getInfluencerByEmail(email);
       if (!influencer) {
+        logSecurityEvent('login_unknown_email', { ip: req.ip });
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       const valid = await (storage as any).verifyInfluencerPassword(influencer.id, password);
       if (!valid) {
+        logSecurityEvent('login_wrong_password', { ip: req.ip, userId: influencer.id });
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       req.session.userId = influencer.id;
       req.session.userType = "influencer";
 
+      logSecurityEvent('login_success', { ip: req.ip, userId: influencer.id, userType: 'influencer' });
+
       return res.json({ success: true });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message });
+      logSecurityEvent('login_error', { ip: req.ip, error: error.message });
+      return res.status(500).json({ message: "Login failed" });
     }
   });
 
   // Admin login
-  app.post("/api/auth/admin/login", async (req, res) => {
+  app.post("/api/auth/admin/login", strictAuthLimiter, async (req, res) => {
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      const validationResult = loginSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        logSecurityEvent('admin_login_validation_failed', { ip: req.ip });
+        return res.status(400).json({ message: "Invalid input" });
       }
+
+      const { email, password } = validationResult.data;
 
       const admin = await storage.getAdminByEmail(email);
       if (!admin) {
+        logSecurityEvent('admin_login_unknown_email', { ip: req.ip });
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       const valid = await (storage as any).verifyAdminPassword(admin.id, password);
       if (!valid) {
+        logSecurityEvent('admin_login_wrong_password', { ip: req.ip, adminId: admin.id });
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       req.session.userId = admin.id;
       req.session.userType = "admin";
 
-      // Explicitly save session before responding
+      logSecurityEvent('admin_login_success', { ip: req.ip, adminId: admin.id });
+
       req.session.save((err) => {
         if (err) {
           return res.status(500).json({ message: "Session save failed" });
@@ -324,7 +365,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ success: true });
       });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message });
+      logSecurityEvent('admin_login_error', { ip: req.ip, error: error.message });
+      return res.status(500).json({ message: "Login failed" });
     }
   });
 
@@ -563,6 +605,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Report issue
   app.post("/api/applications/:id/report-issue", requireAuth("influencer"), async (req, res) => {
     try {
+      if (!validateUUID(req.params.id)) {
+        return res.status(400).json({ message: "Invalid application ID" });
+      }
+
       const application = await storage.getApplication(req.params.id);
       if (!application) {
         return res.status(404).json({ message: "Application not found" });
@@ -572,17 +618,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      const { message } = req.body;
-      if (!message || typeof message !== "string" || message.trim().length === 0) {
-        return res.status(400).json({ message: "Message is required" });
+      const validationResult = issueReportSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationResult.error.errors 
+        });
       }
 
-      // Create shipping issue in storage
       const issue = await storage.createShippingIssue({
         applicationId: application.id,
         influencerId: application.influencerId,
         campaignId: application.campaignId,
-        message: message.trim(),
+        message: validationResult.data.message,
       });
 
       return res.json({ success: true, issue });
@@ -661,28 +709,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create campaign
   app.post("/api/admin/campaigns", requireAuth("admin"), async (req, res) => {
     try {
+      // Sanitize all text inputs
+      const sanitizedBody = sanitizeObject(req.body);
+      
       // Validate that paid campaigns have a reward amount
-      if (req.body.rewardType === 'paid' && (!req.body.rewardAmount || req.body.rewardAmount <= 0)) {
+      if (sanitizedBody.rewardType === 'paid' && (!sanitizedBody.rewardAmount || sanitizedBody.rewardAmount <= 0)) {
         return res.status(400).json({ message: "Reward amount is required for paid campaigns" });
       }
       
       // Parse deadline strings to Date if provided
-      let deadline = req.body.deadline;
+      let deadline = sanitizedBody.deadline;
       if (deadline && typeof deadline === 'string') {
         deadline = new Date(deadline);
       }
       
-      let applicationDeadline = req.body.applicationDeadline;
+      let applicationDeadline = sanitizedBody.applicationDeadline;
       if (applicationDeadline && typeof applicationDeadline === 'string') {
         applicationDeadline = new Date(applicationDeadline);
       }
       
       const data = insertCampaignSchema.parse({
-        ...req.body,
+        ...sanitizedBody,
         deadline,
         applicationDeadline,
         // Clear rewardAmount if gift type
-        rewardAmount: req.body.rewardType === 'gift' ? null : req.body.rewardAmount,
+        rewardAmount: sanitizedBody.rewardType === 'gift' ? null : sanitizedBody.rewardAmount,
         createdByAdminId: req.session.userId,
       });
       const campaign = await storage.createCampaign(data);
@@ -698,8 +749,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update campaign
   app.put("/api/admin/campaigns/:id", requireAuth("admin"), async (req, res) => {
     try {
+      if (!validateUUID(req.params.id)) {
+        return res.status(400).json({ message: "Invalid campaign ID" });
+      }
+
+      // Sanitize all text inputs
+      const data = sanitizeObject({ ...req.body });
+      
       // Parse deadline strings back to Date if provided
-      const data = { ...req.body };
       if (data.deadline && typeof data.deadline === 'string') {
         data.deadline = new Date(data.deadline);
       }
@@ -1255,10 +1312,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Adjust influencer score
   app.post("/api/admin/influencers/:id/score", requireAuth("admin"), async (req, res) => {
     try {
-      const { delta, reason } = req.body;
-      if (typeof delta !== "number") {
-        return res.status(400).json({ message: "delta must be a number" });
+      if (!validateUUID(req.params.id)) {
+        return res.status(400).json({ message: "Invalid influencer ID" });
       }
+
+      const validationResult = scoreAdjustmentSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const { delta, reason } = validationResult.data;
 
       await storage.addScoreEvent({
         influencerId: req.params.id,
@@ -1276,10 +1342,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Adjust influencer penalty
   app.post("/api/admin/influencers/:id/penalty", requireAuth("admin"), async (req, res) => {
     try {
-      const { delta, reason } = req.body;
-      if (typeof delta !== "number") {
-        return res.status(400).json({ message: "delta must be a number" });
+      if (!validateUUID(req.params.id)) {
+        return res.status(400).json({ message: "Invalid influencer ID" });
       }
+
+      const validationResult = scoreAdjustmentSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const { delta, reason } = validationResult.data;
 
       await storage.addPenaltyEvent({
         influencerId: req.params.id,
@@ -1338,15 +1413,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add admin note for an influencer
   app.post("/api/admin/influencers/:id/notes", requireAuth("admin"), async (req, res) => {
     try {
-      const { note, campaignId, applicationId } = req.body;
-      if (!note || typeof note !== "string" || note.trim().length === 0) {
-        return res.status(400).json({ message: "Note content is required" });
+      if (!validateUUID(req.params.id)) {
+        return res.status(400).json({ message: "Invalid influencer ID" });
       }
+
+      const validationResult = noteSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const { note, campaignId, applicationId } = validationResult.data;
 
       const newNote = await storage.addAdminNote({
         influencerId: req.params.id,
         adminId: req.session.userId!,
-        note: note.trim(),
+        note,
         campaignId: campaignId || undefined,
         applicationId: applicationId || undefined,
       });

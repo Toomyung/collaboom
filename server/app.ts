@@ -9,6 +9,7 @@ import express, {
 
 import { registerRoutes } from "./routes";
 import { seedDatabase } from "./seed";
+import { setupSecurityMiddleware, apiLimiter } from "./security";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -23,6 +24,8 @@ export function log(message: string, source = "express") {
 
 export const app = express();
 
+setupSecurityMiddleware(app);
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
@@ -35,6 +38,8 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+app.use('/api/', apiLimiter);
 
 app.use((req, res, next) => {
   const start = Date.now();
