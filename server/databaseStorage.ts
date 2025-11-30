@@ -295,6 +295,9 @@ export class DatabaseStorage implements IStorage {
       imageUrl: campaign.imageUrl || null,
       imageUrls: campaign.imageUrls || null,
       amazonUrl: campaign.amazonUrl || null,
+      instagramUrl: (campaign as any).instagramUrl || null,
+      tiktokUrl: (campaign as any).tiktokUrl || null,
+      officialWebsiteUrl: (campaign as any).officialWebsiteUrl || null,
       guidelinesSummary: campaign.guidelinesSummary || null,
       guidelinesUrl: campaign.guidelinesUrl || null,
       contentOverview: (campaign as any).contentOverview || null,
@@ -311,6 +314,7 @@ export class DatabaseStorage implements IStorage {
       videoKeyPoints: (campaign as any).videoKeyPoints || null,
       applicationDeadline: campaign.applicationDeadline ? new Date(campaign.applicationDeadline) : null,
       deadline: new Date(campaign.deadline),
+      campaignTimeline: (campaign as any).campaignTimeline || null,
       status: campaign.status || 'draft',
       createdByAdminId: campaign.createdByAdminId || null,
     }).returning();

@@ -257,6 +257,11 @@ export default function AdminCampaignFormPage() {
   const checkMissingFields = (data: FormData): string[] => {
     const missing: string[] = [];
     
+    // Images
+    if (!data.imageUrls || data.imageUrls.length === 0) {
+      missing.push("Placement Images");
+    }
+    
     // Content requirements
     if (!data.requiredHashtags || data.requiredHashtags.length === 0) {
       missing.push("Required Hashtags");
