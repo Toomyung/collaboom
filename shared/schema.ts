@@ -102,6 +102,9 @@ export const campaigns = pgTable("campaigns", {
   imageUrl: text("image_url"), // Legacy single image (deprecated)
   imageUrls: text("image_urls").array(), // Array of image URLs (up to 6)
   amazonUrl: text("amazon_url"),
+  instagramUrl: text("instagram_url"), // Brand Instagram URL
+  tiktokUrl: text("tiktok_url"), // Brand TikTok URL
+  officialWebsiteUrl: text("official_website_url"), // Official website URL
   guidelinesSummary: text("guidelines_summary"),
   guidelinesUrl: text("guidelines_url"),
   contentOverview: text("content_overview"), // Brief overview of content expectations

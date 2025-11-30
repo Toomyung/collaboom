@@ -51,6 +51,11 @@ const formSchema = insertCampaignSchema.extend({
   productDetail: z.string().optional(),
   stepByStepProcess: z.string().optional(),
   eligibilityRequirements: z.string().optional(),
+  // Social/External Links
+  amazonUrl: z.string().optional(),
+  instagramUrl: z.string().optional(),
+  tiktokUrl: z.string().optional(),
+  officialWebsiteUrl: z.string().optional(),
   // Video Guidelines
   videoEssentialCuts: z.string().optional(),
   videoDetails: z.string().optional(),
@@ -116,6 +121,9 @@ export default function AdminCampaignFormPage() {
       inventory: 50,
       imageUrls: [],
       amazonUrl: "",
+      instagramUrl: "",
+      tiktokUrl: "",
+      officialWebsiteUrl: "",
       guidelinesSummary: "",
       contentOverview: "",
       requiredHashtags: [],
@@ -144,6 +152,9 @@ export default function AdminCampaignFormPage() {
             inventory: campaign.inventory,
             imageUrls: campaign.imageUrls || (campaign.imageUrl ? [campaign.imageUrl] : []),
             amazonUrl: campaign.amazonUrl || "",
+            instagramUrl: (campaign as any).instagramUrl || "",
+            tiktokUrl: (campaign as any).tiktokUrl || "",
+            officialWebsiteUrl: (campaign as any).officialWebsiteUrl || "",
             guidelinesSummary: campaign.guidelinesSummary || "",
             contentOverview: (campaign as any).contentOverview || "",
             requiredHashtags: campaign.requiredHashtags || [],
@@ -603,24 +614,89 @@ export default function AdminCampaignFormPage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="amazonUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amazon Product URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="https://amazon.com/..."
-                          {...field}
-                          value={field.value || ""}
-                          data-testid="input-amazon"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* External Links Section */}
+                <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                    <LinkIcon className="h-4 w-4" />
+                    <span>External Links (Optional)</span>
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="amazonUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amazon Product URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://amazon.com/..."
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-amazon"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="instagramUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instagram URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://instagram.com/..."
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-instagram"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tiktokUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>TikTok URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://tiktok.com/@..."
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-tiktok"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="officialWebsiteUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Official Website</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com"
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-website"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
 

@@ -20,7 +20,10 @@ import {
   ListOrdered,
   ShieldCheck,
   Info,
+  Globe,
+  Link as LinkIcon,
 } from "lucide-react";
+import { SiAmazon, SiInstagram, SiTiktok } from "react-icons/si";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -453,21 +456,70 @@ export default function CampaignDetailPage() {
           </Card>
         )}
 
-        {/* Amazon Link */}
-        {campaign.amazonUrl && (
-          <div className="mb-6 text-center">
-            <Button variant="outline" asChild>
-              <a
-                href={campaign.amazonUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-amazon"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                View Product on Amazon
-              </a>
-            </Button>
-          </div>
+        {/* External Links */}
+        {(campaign.amazonUrl || (campaign as any).instagramUrl || (campaign as any).tiktokUrl || (campaign as any).officialWebsiteUrl) && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h2 className="font-semibold flex items-center gap-2 mb-4">
+                <LinkIcon className="h-5 w-5 text-primary" />
+                External Links
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {campaign.amazonUrl && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={campaign.amazonUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="link-amazon"
+                    >
+                      <SiAmazon className="h-4 w-4 mr-2" />
+                      Amazon
+                    </a>
+                  </Button>
+                )}
+                {(campaign as any).instagramUrl && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={(campaign as any).instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="link-instagram"
+                    >
+                      <SiInstagram className="h-4 w-4 mr-2" />
+                      Instagram
+                    </a>
+                  </Button>
+                )}
+                {(campaign as any).tiktokUrl && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={(campaign as any).tiktokUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="link-tiktok"
+                    >
+                      <SiTiktok className="h-4 w-4 mr-2" />
+                      TikTok
+                    </a>
+                  </Button>
+                )}
+                {(campaign as any).officialWebsiteUrl && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={(campaign as any).officialWebsiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="link-website"
+                    >
+                      <Globe className="h-4 w-4 mr-2" />
+                      Official Website
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Apply Section - Always at bottom */}
