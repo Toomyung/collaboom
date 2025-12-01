@@ -84,7 +84,7 @@ export function setupSecurityMiddleware(app: Express): void {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-        connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://ltcfqwtlmtyhcuntnpqs.supabase.co"],
+        connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://ltcfqwtlmtyhcuntnpqs.supabase.co", "https://www.tiktok.com", "https://*.tiktok.com"],
         frameSrc: ["'self'", "https://www.tiktok.com", "https://*.tiktok.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'", "https:", "blob:"],
