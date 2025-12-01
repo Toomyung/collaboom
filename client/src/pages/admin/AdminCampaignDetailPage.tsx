@@ -1278,18 +1278,22 @@ export default function AdminCampaignDetailPage() {
               <CardContent>
                 {shippingApplications.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <Table>
+                    <Table className="text-xs">
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-14 text-center">ID</TableHead>
-                          <TableHead>Influencer</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Shipping Address</TableHead>
-                          <TableHead>Courier</TableHead>
-                          <TableHead>Tracking #</TableHead>
-                          <TableHead>Tracking URL</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Shipped</TableHead>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-14 text-center text-xs">ID</TableHead>
+                          <TableHead className="min-w-[140px] text-xs">Influencer</TableHead>
+                          <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
+                          <TableHead className="min-w-[160px] text-xs">Address</TableHead>
+                          <TableHead className="min-w-[120px] text-xs">Address 2</TableHead>
+                          <TableHead className="min-w-[100px] text-xs">City</TableHead>
+                          <TableHead className="min-w-[60px] text-xs">State</TableHead>
+                          <TableHead className="min-w-[70px] text-xs">Zip</TableHead>
+                          <TableHead className="min-w-[70px] text-xs">Courier</TableHead>
+                          <TableHead className="min-w-[100px] text-xs">Tracking #</TableHead>
+                          <TableHead className="min-w-[80px] text-xs">Tracking URL</TableHead>
+                          <TableHead className="min-w-[70px] text-xs">Status</TableHead>
+                          <TableHead className="min-w-[70px] text-xs">Shipped</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1300,48 +1304,60 @@ export default function AdminCampaignDetailPage() {
                           const city = app.shippingCity || app.influencer?.city;
                           const state = app.shippingState || app.influencer?.state;
                           const zip = app.shippingZipCode || app.influencer?.zipCode;
-                          const fullAddress = [addr1, addr2, city, state, zip].filter(Boolean).join(", ");
                           const seqNum = app.sequenceNumber ? String(app.sequenceNumber).padStart(3, '0') : '-';
                           
                           return (
                             <TableRow key={app.id} className="bg-muted/20">
-                              <TableCell className="text-center">
-                                <span className="font-mono text-sm font-medium">{seqNum}</span>
+                              <TableCell className="text-center p-2">
+                                <span className="font-mono text-xs font-medium">{seqNum}</span>
                               </TableCell>
-                              <TableCell className="font-medium">
-                                <div>{app.influencer?.name}</div>
+                              <TableCell className="p-2">
+                                <div className="font-medium text-xs">{app.influencer?.name}</div>
                                 <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
+                              <TableCell className="text-xs text-muted-foreground p-2">
                                 {phone || "-"}
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground max-w-[200px]" title={fullAddress}>
-                                <div className="truncate">{fullAddress || "-"}</div>
+                              <TableCell className="text-xs text-muted-foreground p-2">
+                                {addr1 || "-"}
                               </TableCell>
-                              <TableCell className="text-sm font-medium">
+                              <TableCell className="text-xs text-muted-foreground p-2">
+                                {addr2 || "-"}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground p-2">
+                                {city || "-"}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground p-2">
+                                {state || "-"}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground p-2">
+                                {zip || "-"}
+                              </TableCell>
+                              <TableCell className="text-xs font-medium p-2">
                                 {app.shipping?.courier || "-"}
                               </TableCell>
-                              <TableCell className="text-sm font-mono">
+                              <TableCell className="text-xs font-mono p-2">
                                 {app.shipping?.trackingNumber || "-"}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="p-2">
                                 {app.shipping?.trackingUrl ? (
                                   <a
                                     href={app.shipping.trackingUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-primary hover:underline text-sm"
+                                    className="flex items-center gap-1 text-primary hover:underline text-xs"
                                   >
                                     Track
                                     <ExternalLink className="h-3 w-3" />
                                   </a>
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <span className="text-muted-foreground text-xs">-</span>
                                 )}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="p-2">
                                 <Badge
                                   className={cn(
+                                    "text-xs",
                                     app.status === "shipped"
                                       ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
                                       : app.status === "delivered"
@@ -1352,7 +1368,7 @@ export default function AdminCampaignDetailPage() {
                                   {app.status}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
+                              <TableCell className="text-xs text-muted-foreground p-2">
                                 {app.shippedAt
                                   ? format(new Date(app.shippedAt), "MMM d")
                                   : "-"}
