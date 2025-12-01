@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { fixImageUrl } from "@/lib/imageUtils";
 import { VideoGuidelinesSheet } from "@/components/VideoGuidelinesSheet";
 import { Video } from "lucide-react";
@@ -103,6 +104,8 @@ export default function CampaignDetailPage() {
   const { isAuthenticated, influencer } = useAuth();
   const { toast } = useToast();
   const [showApplyDialog, setShowApplyDialog] = useState(false);
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+  const [agreementChecked, setAgreementChecked] = useState(false);
 
   const { data: campaign, isLoading } = useQuery<Campaign>({
     queryKey: ["/api/campaigns", id],
@@ -136,6 +139,8 @@ export default function CampaignDetailPage() {
         description: "We'll review your application and get back to you soon.",
       });
       setShowApplyDialog(false);
+      setShowVerificationDialog(false);
+      setAgreementChecked(false);
     },
     onError: (error: Error) => {
       toast({
@@ -595,7 +600,7 @@ export default function CampaignDetailPage() {
         </Card>
       </div>
 
-      {/* Apply Confirmation Dialog */}
+      {/* Step 1: Address Confirmation Dialog */}
       <Dialog open={showApplyDialog} onOpenChange={setShowApplyDialog}>
         <DialogContent>
           <DialogHeader>
@@ -626,20 +631,121 @@ export default function CampaignDetailPage() {
             </div>
           )}
 
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowApplyDialog(false);
+                setLocation("/dashboard");
+              }}
+              data-testid="button-change-address"
+            >
+              Change my address
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowApplyDialog(false)}
+                data-testid="button-cancel-apply"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowApplyDialog(false);
+                  setShowVerificationDialog(true);
+                  setAgreementChecked(false);
+                }}
+                data-testid="button-confirm-address"
+              >
+                Confirm
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 2: TikTok Verification & Agreement Dialog */}
+      <Dialog open={showVerificationDialog} onOpenChange={(open) => {
+        setShowVerificationDialog(open);
+        if (!open) setAgreementChecked(false);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verify Your TikTok Account</DialogTitle>
+            <DialogDescription>
+              Please verify that this is your correct TikTok handle before applying.
+            </DialogDescription>
+          </DialogHeader>
+
+          {influencer && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="font-medium text-sm mb-2">Your TikTok Handle</p>
+                {influencer.tiktokHandle ? (
+                  <>
+                    <a
+                      href={`https://www.tiktok.com/@${influencer.tiktokHandle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1"
+                      data-testid="link-tiktok-verify"
+                    >
+                      <SiTiktok className="h-4 w-4" />
+                      @{influencer.tiktokHandle.replace('@', '')}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Click the link above to verify this is your TikTok account.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-destructive">
+                    No TikTok handle found. Please update your profile first.
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <p className="text-sm text-destructive font-medium">
+                  Important: If you apply and fail to upload content, you may be restricted from participating in future campaigns. Please read all campaign details carefully before applying.
+                </p>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="agreement"
+                  checked={agreementChecked}
+                  onCheckedChange={(checked) => setAgreementChecked(checked === true)}
+                  data-testid="checkbox-agreement"
+                />
+                <label
+                  htmlFor="agreement"
+                  className="text-sm text-muted-foreground leading-relaxed cursor-pointer"
+                >
+                  I have read all the campaign details and I agree that by not following the campaign guidelines, I may be restricted from participating in future campaigns.
+                </label>
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
-              onClick={() => setShowApplyDialog(false)}
-              data-testid="button-cancel-apply"
+              onClick={() => {
+                setShowVerificationDialog(false);
+                setAgreementChecked(false);
+              }}
+              data-testid="button-cancel-verification"
             >
               Cancel
             </Button>
             <Button
               onClick={() => applyMutation.mutate()}
-              disabled={applyMutation.isPending}
+              disabled={!agreementChecked || applyMutation.isPending || !influencer?.tiktokHandle}
               data-testid="button-confirm-apply"
             >
-              {applyMutation.isPending ? "Applying..." : "Confirm & Apply"}
+              {applyMutation.isPending ? "Applying..." : "Apply Now"}
             </Button>
           </DialogFooter>
         </DialogContent>
