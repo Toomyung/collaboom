@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { getCampaignThumbnail } from "@/lib/imageUtils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -318,9 +319,9 @@ export default function AdminCampaignListPage() {
                     <TableRow key={campaign.id} data-testid={`row-campaign-${campaign.id}`}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          {(campaign.imageUrls?.length || campaign.imageUrl) ? (
+                          {getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl) ? (
                             <img
-                              src={campaign.imageUrls?.[0] || campaign.imageUrl || ""}
+                              src={getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl)!}
                               alt=""
                               className="h-10 w-10 rounded-lg object-cover"
                               loading="lazy"

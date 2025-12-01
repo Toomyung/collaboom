@@ -38,13 +38,17 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { fixImageUrl } from "@/lib/imageUtils";
 import { VideoGuidelinesSheet } from "@/components/VideoGuidelinesSheet";
 import { Video } from "lucide-react";
 
 function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   
-  if (!images.length) {
+  // Fix corrupted data URIs
+  const fixedImages = images.map(img => fixImageUrl(img)).filter(Boolean) as string[];
+  
+  if (!fixedImages.length) {
     return (
       <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-muted mb-6">
         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
@@ -58,16 +62,16 @@ function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
     <div className="space-y-3 mb-6">
       <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-muted">
         <img
-          src={images[selectedIndex]}
+          src={fixedImages[selectedIndex]}
           alt={`${alt} - Image ${selectedIndex + 1}`}
           className="w-full h-full object-cover"
           loading="eager"
           decoding="async"
         />
       </div>
-      {images.length > 1 && (
+      {fixedImages.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {images.map((img, index) => (
+          {fixedImages.map((img, index) => (
             <button
               key={index}
               onClick={() => setSelectedIndex(index)}

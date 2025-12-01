@@ -6,11 +6,17 @@ import { z } from 'zod';
 export function sanitizeString(input: string): string {
   if (typeof input !== 'string') return '';
   
+  // Check if it's a valid image data URI - allow these through without modification
+  if (/^data:image\/(jpeg|jpg|png|gif|webp|svg\+xml);base64,/i.test(input)) {
+    return input;
+  }
+  
   return input
     .replace(/[<>]/g, '')
     .replace(/javascript:/gi, '')
     .replace(/on\w+=/gi, '')
-    .replace(/data:/gi, '')
+    // Block dangerous data: URIs but allow image data URIs (checked above)
+    .replace(/data:(?!image\/)/gi, '')
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/<!--[\s\S]*?-->/g, '')

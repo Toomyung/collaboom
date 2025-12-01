@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Link } from "wouter";
+import { getCampaignThumbnail } from "@/lib/imageUtils";
 
 interface ApplicationCardProps {
   application: ApplicationWithDetails;
@@ -100,9 +101,9 @@ export function ApplicationCard({
       <div className="flex flex-col sm:flex-row">
         {/* Campaign Image */}
         <div className="relative w-full sm:w-40 h-32 sm:h-auto flex-shrink-0 overflow-hidden bg-muted">
-          {(campaign.imageUrls?.length || campaign.imageUrl) ? (
+          {getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl) ? (
             <img
-              src={campaign.imageUrls?.[0] || campaign.imageUrl || ""}
+              src={getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl)!}
               alt={campaign.name}
               className="w-full h-full object-cover"
               loading="lazy"

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, Users, Gift, DollarSign } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { getCampaignThumbnail } from "@/lib/imageUtils";
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -122,9 +123,9 @@ export function CampaignCard({
         "relative aspect-[16/9] overflow-hidden bg-muted",
         isDisabled && "grayscale-[30%]"
       )}>
-        {(campaign.imageUrls?.length || campaign.imageUrl) ? (
+        {getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl) ? (
           <img
-            src={campaign.imageUrls?.[0] || campaign.imageUrl || ""}
+            src={getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl)!}
             alt={campaign.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
