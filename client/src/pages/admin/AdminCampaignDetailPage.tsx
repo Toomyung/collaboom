@@ -103,6 +103,7 @@ export default function AdminCampaignDetailPage() {
   const [influencerDetailTab, setInfluencerDetailTab] = useState("profile");
   const [newNote, setNewNote] = useState("");
   const [contentUrlForms, setContentUrlForms] = useState<Record<string, string>>({});
+  const [editingContentUrl, setEditingContentUrl] = useState<Set<string>>(new Set());
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
   const [approvedPage, setApprovedPage] = useState(1);
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
@@ -1587,9 +1588,8 @@ export default function AdminCampaignDetailPage() {
                               {String(app.sequenceNumber || 0).padStart(3, "0")}
                             </TableCell>
                             <TableCell>
-                              <Button
-                                variant="link"
-                                className="p-0 h-auto font-medium text-foreground hover:text-primary"
+                              <button
+                                className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
                                 onClick={() => {
                                   if (app.influencer) {
                                     setSelectedInfluencer(app.influencer);
@@ -1599,7 +1599,7 @@ export default function AdminCampaignDetailPage() {
                                 data-testid={`link-influencer-${app.id}`}
                               >
                                 {app.influencer?.name}
-                              </Button>
+                              </button>
                             </TableCell>
                             <TableCell>
                               {app.influencer?.tiktokHandle && (
@@ -1616,40 +1616,92 @@ export default function AdminCampaignDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <Input
-                                  placeholder="Paste TikTok video URL"
-                                  value={currentContentUrl}
-                                  onChange={(e) => setContentUrlForms(prev => ({
-                                    ...prev,
-                                    [app.id]: e.target.value
-                                  }))}
-                                  className="h-8 text-xs w-48"
-                                  data-testid={`input-content-url-${app.id}`}
-                                />
-                                {currentContentUrl && currentContentUrl !== (app.contentUrl ?? "") && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8"
-                                    onClick={() => saveContentUrlMutation.mutate({
-                                      applicationId: app.id,
-                                      contentUrl: currentContentUrl
-                                    })}
-                                    disabled={saveContentUrlMutation.isPending}
-                                    data-testid={`button-save-url-${app.id}`}
-                                  >
-                                    Save
-                                  </Button>
-                                )}
-                                {app.contentUrl && (
-                                  <a
-                                    href={app.contentUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline"
-                                  >
-                                    <Video className="h-4 w-4" />
-                                  </a>
+                                {app.contentUrl && !editingContentUrl.has(app.id) ? (
+                                  <>
+                                    <a
+                                      href={app.contentUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-muted-foreground bg-muted px-2 py-1.5 rounded truncate max-w-[180px] hover:text-primary"
+                                      title={app.contentUrl}
+                                      data-testid={`link-content-url-${app.id}`}
+                                    >
+                                      {app.contentUrl}
+                                    </a>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                      onClick={() => {
+                                        setEditingContentUrl(prev => new Set(prev).add(app.id));
+                                        setContentUrlForms(prev => ({
+                                          ...prev,
+                                          [app.id]: app.contentUrl || ""
+                                        }));
+                                      }}
+                                      data-testid={`button-edit-url-${app.id}`}
+                                    >
+                                      Edit
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Input
+                                      placeholder="Paste TikTok video URL"
+                                      value={currentContentUrl}
+                                      onChange={(e) => setContentUrlForms(prev => ({
+                                        ...prev,
+                                        [app.id]: e.target.value
+                                      }))}
+                                      className="h-8 text-xs w-48"
+                                      data-testid={`input-content-url-${app.id}`}
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8"
+                                      onClick={() => {
+                                        saveContentUrlMutation.mutate({
+                                          applicationId: app.id,
+                                          contentUrl: currentContentUrl
+                                        }, {
+                                          onSuccess: () => {
+                                            setEditingContentUrl(prev => {
+                                              const next = new Set(prev);
+                                              next.delete(app.id);
+                                              return next;
+                                            });
+                                          }
+                                        });
+                                      }}
+                                      disabled={!currentContentUrl.trim() || saveContentUrlMutation.isPending}
+                                      data-testid={`button-save-url-${app.id}`}
+                                    >
+                                      Save
+                                    </Button>
+                                    {editingContentUrl.has(app.id) && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 text-xs"
+                                        onClick={() => {
+                                          setEditingContentUrl(prev => {
+                                            const next = new Set(prev);
+                                            next.delete(app.id);
+                                            return next;
+                                          });
+                                          setContentUrlForms(prev => {
+                                            const next = { ...prev };
+                                            delete next[app.id];
+                                            return next;
+                                          });
+                                        }}
+                                        data-testid={`button-cancel-url-${app.id}`}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </TableCell>
