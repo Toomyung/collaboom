@@ -64,6 +64,7 @@ import {
   AlertTriangle,
   UploadCloud,
   Download,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -143,6 +144,19 @@ export default function AdminCampaignDetailPage() {
     },
     onError: (error: Error) => {
       toast({ title: "Failed to mark as delivered", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const undoDeliveredMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/undo-delivered`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Reverted to shipped" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to undo", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1306,8 +1320,7 @@ export default function AdminCampaignDetailPage() {
                           <TableHead className="min-w-[100px] text-xs">Tracking #</TableHead>
                           <TableHead className="min-w-[80px] text-xs">Tracking URL</TableHead>
                           <TableHead className="min-w-[70px] text-xs">Status</TableHead>
-                          <TableHead className="min-w-[80px] text-xs">Delivered</TableHead>
-                          <TableHead className="min-w-[70px] text-xs">Action</TableHead>
+                          <TableHead className="min-w-[90px] text-xs">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1382,11 +1395,6 @@ export default function AdminCampaignDetailPage() {
                                   {app.status}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-xs text-muted-foreground p-2">
-                                {app.deliveredAt
-                                  ? format(new Date(app.deliveredAt), "MMM d")
-                                  : "-"}
-                              </TableCell>
                               <TableCell className="p-2">
                                 {app.status === "shipped" ? (
                                   <Button
@@ -1401,7 +1409,17 @@ export default function AdminCampaignDetailPage() {
                                     Delivered
                                   </Button>
                                 ) : (
-                                  <span className="text-xs text-muted-foreground">Done</span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 text-xs text-muted-foreground"
+                                    onClick={() => undoDeliveredMutation.mutate(app.id)}
+                                    disabled={undoDeliveredMutation.isPending}
+                                    data-testid={`button-undo-delivered-${app.id}`}
+                                  >
+                                    <RotateCcw className="h-3 w-3 mr-1" />
+                                    Undo
+                                  </Button>
                                 )}
                               </TableCell>
                             </TableRow>
