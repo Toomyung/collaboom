@@ -70,9 +70,6 @@ interface ShippingFormData {
   courier: string;
   trackingNumber: string;
   trackingUrl: string;
-}
-
-interface AddressFormData {
   addressLine1: string;
   addressLine2: string;
   city: string;
@@ -186,7 +183,12 @@ export default function AdminCampaignDetailPage() {
     });
 
     let matchedCount = 0;
-    const newForms: Record<string, ShippingFormData> = { ...shippingForms };
+    const newForms: Record<string, ShippingFormData> = {};
+    
+    // Preserve existing form data with full structure
+    Object.entries(shippingForms).forEach(([appId, form]) => {
+      newForms[appId] = { ...form };
+    });
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
@@ -195,8 +197,12 @@ export default function AdminCampaignDetailPage() {
       
       if (appId) {
         matchedCount++;
-        const existing = newForms[appId] || { courier: "", trackingNumber: "", trackingUrl: "" };
+        const existing = newForms[appId] || { 
+          courier: "", trackingNumber: "", trackingUrl: "",
+          addressLine1: "", addressLine2: "", city: "", state: "", zipCode: "", country: "United States"
+        };
         newForms[appId] = {
+          ...existing,
           courier: courierIdx !== -1 && values[courierIdx] ? values[courierIdx].toUpperCase() : existing.courier,
           trackingNumber: trackingNumberIdx !== -1 && values[trackingNumberIdx] ? values[trackingNumberIdx] : existing.trackingNumber,
           trackingUrl: trackingUrlIdx !== -1 && values[trackingUrlIdx] ? values[trackingUrlIdx] : existing.trackingUrl,
@@ -233,7 +239,20 @@ export default function AdminCampaignDetailPage() {
 
     for (const app of readyToSend) {
       try {
-        await apiRequest("POST", `/api/admin/applications/${app.id}/ship`, shippingForms[app.id]);
+        const defaultData = getFormDataFromApp(app);
+        const formData = shippingForms[app.id] || defaultData;
+        
+        // Save address to application shipping fields first
+        await apiRequest("PATCH", `/api/admin/applications/${app.id}/shipping-address`, {
+          addressLine1: formData.addressLine1,
+          addressLine2: formData.addressLine2,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          country: formData.country,
+        });
+        
+        await apiRequest("POST", `/api/admin/applications/${app.id}/ship`, formData);
         successCount++;
       } catch (error) {
         errorCount++;
@@ -300,9 +319,29 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  const updateShippingForm = (applicationId: string, field: keyof ShippingFormData, value: string) => {
+  const getDefaultFormData = (): ShippingFormData => ({
+    courier: "", trackingNumber: "", trackingUrl: "",
+    addressLine1: "", addressLine2: "", city: "", state: "", zipCode: "", country: "United States"
+  });
+
+  const getFormDataFromApp = (app: ApplicationWithDetails): ShippingFormData => {
+    const inf = app.influencer;
+    return {
+      courier: "",
+      trackingNumber: "",
+      trackingUrl: "",
+      addressLine1: app.shippingAddressLine1 || inf?.addressLine1 || "",
+      addressLine2: app.shippingAddressLine2 || inf?.addressLine2 || "",
+      city: app.shippingCity || inf?.city || "",
+      state: app.shippingState || inf?.state || "",
+      zipCode: app.shippingZipCode || inf?.zipCode || "",
+      country: app.shippingCountry || inf?.country || "United States",
+    };
+  };
+
+  const updateShippingForm = (applicationId: string, field: keyof ShippingFormData, value: string, app?: ApplicationWithDetails) => {
     setShippingForms((prev) => {
-      const existing = prev[applicationId] || { courier: "", trackingNumber: "", trackingUrl: "" };
+      const existing = prev[applicationId] || (app ? getFormDataFromApp(app) : getDefaultFormData());
       return {
         ...prev,
         [applicationId]: {
@@ -313,25 +352,32 @@ export default function AdminCampaignDetailPage() {
     });
   };
 
-  const handleShip = (applicationId: string) => {
-    const formData = shippingForms[applicationId];
+  const handleShip = async (applicationId: string) => {
+    // Find the application to get fallback address data
+    const app = applications?.find(a => a.id === applicationId);
+    const defaultData = app ? getFormDataFromApp(app) : getDefaultFormData();
+    const formData = shippingForms[applicationId] || defaultData;
+    
     if (!formData?.courier || !formData?.trackingNumber) {
       toast({ title: "Please fill in courier and tracking number", variant: "destructive" });
       return;
     }
+    
+    // First save the address to application shipping fields (uses form data or fallback)
+    try {
+      await apiRequest("PATCH", `/api/admin/applications/${applicationId}/shipping-address`, {
+        addressLine1: formData.addressLine1,
+        addressLine2: formData.addressLine2,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        country: formData.country,
+      });
+    } catch (error) {
+      // Address save is optional, continue with shipping
+    }
+    
     shipMutation.mutate({ applicationId, data: formData });
-  };
-
-  const getAddressFromApp = (app: ApplicationWithDetails): AddressFormData => {
-    const inf = app.influencer;
-    return {
-      addressLine1: app.shippingAddressLine1 || inf?.addressLine1 || "",
-      addressLine2: app.shippingAddressLine2 || inf?.addressLine2 || "",
-      city: app.shippingCity || inf?.city || "",
-      state: app.shippingState || inf?.state || "",
-      zipCode: app.shippingZipCode || inf?.zipCode || "",
-      country: app.shippingCountry || inf?.country || "United States",
-    };
   };
 
   const handleDownloadCsv = () => {
@@ -793,9 +839,9 @@ export default function AdminCampaignDetailPage() {
                       </TableHeader>
                       <TableBody>
                         {approvedApplications.map((app) => {
-                          const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", trackingUrl: "" };
+                          const defaultData = getFormDataFromApp(app);
+                          const formData = shippingForms[app.id] || defaultData;
                           const hasShippingInfo = formData.courier && formData.trackingNumber;
-                          const addr = getAddressFromApp(app);
                           
                           return (
                             <TableRow key={app.id} className="hover:bg-muted/30">
@@ -829,23 +875,46 @@ export default function AdminCampaignDetailPage() {
                                   <span className="text-muted-foreground text-xs">-</span>
                                 )}
                               </TableCell>
-                              <TableCell className="p-2 text-xs" data-testid={`text-address-${app.id}`}>
-                                {addr.addressLine1 || "-"}
-                                {addr.addressLine2 && <span className="text-muted-foreground"> {addr.addressLine2}</span>}
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.addressLine1}
+                                  onChange={(e) => updateShippingForm(app.id, "addressLine1", e.target.value, app)}
+                                  placeholder="Address"
+                                  className="h-7 text-xs"
+                                  data-testid={`input-address-${app.id}`}
+                                />
                               </TableCell>
-                              <TableCell className="p-2 text-xs" data-testid={`text-city-${app.id}`}>
-                                {addr.city || "-"}
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.city}
+                                  onChange={(e) => updateShippingForm(app.id, "city", e.target.value, app)}
+                                  placeholder="City"
+                                  className="h-7 text-xs"
+                                  data-testid={`input-city-${app.id}`}
+                                />
                               </TableCell>
-                              <TableCell className="p-2 text-xs" data-testid={`text-state-${app.id}`}>
-                                {addr.state || "-"}
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.state}
+                                  onChange={(e) => updateShippingForm(app.id, "state", e.target.value, app)}
+                                  placeholder="State"
+                                  className="h-7 text-xs w-16"
+                                  data-testid={`input-state-${app.id}`}
+                                />
                               </TableCell>
-                              <TableCell className="p-2 text-xs" data-testid={`text-zip-${app.id}`}>
-                                {addr.zipCode || "-"}
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.zipCode}
+                                  onChange={(e) => updateShippingForm(app.id, "zipCode", e.target.value, app)}
+                                  placeholder="Zip"
+                                  className="h-7 text-xs w-20"
+                                  data-testid={`input-zip-${app.id}`}
+                                />
                               </TableCell>
                               <TableCell className="p-1">
                                 <Select
                                   value={formData.courier}
-                                  onValueChange={(value) => updateShippingForm(app.id, "courier", value)}
+                                  onValueChange={(value) => updateShippingForm(app.id, "courier", value, app)}
                                 >
                                   <SelectTrigger className="h-7 text-xs" data-testid={`select-courier-${app.id}`}>
                                     <SelectValue placeholder="Select" />
@@ -862,7 +931,7 @@ export default function AdminCampaignDetailPage() {
                               <TableCell className="p-1">
                                 <Input
                                   value={formData.trackingNumber}
-                                  onChange={(e) => updateShippingForm(app.id, "trackingNumber", e.target.value)}
+                                  onChange={(e) => updateShippingForm(app.id, "trackingNumber", e.target.value, app)}
                                   placeholder="Tracking #"
                                   className="h-7 text-xs"
                                   data-testid={`input-tracking-${app.id}`}
