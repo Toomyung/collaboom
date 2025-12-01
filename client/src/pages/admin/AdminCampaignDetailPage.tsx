@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, Link, Redirect } from "wouter";
+import * as XLSX from "xlsx";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -153,34 +154,57 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  const handleCsvUpload = async () => {
+  const handleFileUpload = async () => {
     if (!csvFile || !applications) return;
     
-    let text = await csvFile.text();
+    const fileName = csvFile.name.toLowerCase();
+    const isXlsx = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
     
-    // Remove BOM (Byte Order Mark) that Excel adds
-    if (text.charCodeAt(0) === 0xFEFF) {
-      text = text.slice(1);
+    let rows: string[][] = [];
+    
+    try {
+      if (isXlsx) {
+        // Parse Excel file
+        const arrayBuffer = await csvFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, defval: "" });
+        rows = jsonData.filter(row => row.some(cell => cell && String(cell).trim()));
+      } else {
+        // Parse CSV file
+        let text = await csvFile.text();
+        
+        // Remove BOM (Byte Order Mark) that Excel adds
+        if (text.charCodeAt(0) === 0xFEFF) {
+          text = text.slice(1);
+        }
+        if (text.startsWith('\uFEFF')) {
+          text = text.slice(1);
+        }
+        
+        // Normalize line endings (Excel uses \r\n)
+        text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        
+        const lines = text.split("\n").map(line => line.trim()).filter(line => line);
+        
+        // Detect delimiter (Excel in some locales uses semicolons)
+        const firstLine = lines[0];
+        const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
+        
+        rows = lines.map(line => line.split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, "")));
+      }
+    } catch (error) {
+      toast({ title: "Failed to read file", description: "Please make sure the file is a valid CSV or Excel file", variant: "destructive" });
+      return;
     }
-    // Also check for UTF-8 BOM bytes
-    if (text.startsWith('\uFEFF')) {
-      text = text.slice(1);
-    }
     
-    // Normalize line endings (Excel uses \r\n)
-    text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    
-    const lines = text.split("\n").map(line => line.trim()).filter(line => line);
-    if (lines.length < 2) {
-      toast({ title: "Invalid CSV", description: "CSV must have header and at least one row", variant: "destructive" });
+    if (rows.length < 2) {
+      toast({ title: "Invalid file", description: "File must have header and at least one row", variant: "destructive" });
       return;
     }
 
-    // Detect delimiter (Excel in some locales uses semicolons)
-    const firstLine = lines[0];
-    const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
-    
-    const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+    const headers = rows[0].map(h => String(h).trim().toLowerCase().replace(/['"]/g, ""));
     const emailIdx = headers.findIndex(h => h === "email");
     const courierIdx = headers.findIndex(h => h === "courier");
     const trackingNumberIdx = headers.findIndex(h => h.includes("tracking") && (h.includes("number") || h.includes("#")));
@@ -188,7 +212,7 @@ export default function AdminCampaignDetailPage() {
 
     if (emailIdx === -1) {
       toast({ 
-        title: "Invalid CSV format", 
+        title: "Invalid file format", 
         description: `Email column not found. Found columns: ${headers.join(", ")}`, 
         variant: "destructive" 
       });
@@ -211,8 +235,8 @@ export default function AdminCampaignDetailPage() {
       newForms[appId] = { ...form };
     });
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ""));
+    for (let i = 1; i < rows.length; i++) {
+      const values = rows[i].map(v => String(v).trim());
       const email = values[emailIdx]?.toLowerCase();
       const appId = emailToAppId.get(email);
       
@@ -235,8 +259,8 @@ export default function AdminCampaignDetailPage() {
     setShowCsvDialog(false);
     setCsvFile(null);
     toast({ 
-      title: "CSV imported", 
-      description: `Matched ${matchedCount} of ${lines.length - 1} rows. Review and click Send All or individual ship buttons.` 
+      title: "File imported", 
+      description: `Matched ${matchedCount} of ${rows.length - 1} rows. Review and click Send All or individual ship buttons.` 
     });
   };
 
@@ -1284,9 +1308,9 @@ export default function AdminCampaignDetailPage() {
       }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Upload Shipping CSV</DialogTitle>
+            <DialogTitle>Upload Shipping File</DialogTitle>
             <DialogDescription>
-              Upload a CSV file with columns: Email, Courier, Tracking Number, Tracking URL. 
+              Upload a CSV or Excel (.xlsx) file with columns: Email, Courier, Tracking Number, Tracking URL. 
               Use "Download CSV" first to get the template with your influencer data.
             </DialogDescription>
           </DialogHeader>
@@ -1294,7 +1318,7 @@ export default function AdminCampaignDetailPage() {
             <div className="border-2 border-dashed rounded-lg p-6 text-center">
               <input
                 type="file"
-                accept=".csv,.CSV,text/csv,application/csv,application/vnd.ms-excel"
+                accept=".csv,.CSV,.xlsx,.xls,text/csv,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
                 className="hidden"
                 id="csv-upload-input"
@@ -1308,7 +1332,7 @@ export default function AdminCampaignDetailPage() {
                 {csvFile ? (
                   <span className="text-sm font-medium">{csvFile.name}</span>
                 ) : (
-                  <span className="text-sm text-muted-foreground">Click to select CSV file</span>
+                  <span className="text-sm text-muted-foreground">Click to select CSV or Excel file</span>
                 )}
               </label>
             </div>
@@ -1322,7 +1346,7 @@ export default function AdminCampaignDetailPage() {
               Cancel
             </Button>
             <Button
-              onClick={handleCsvUpload}
+              onClick={handleFileUpload}
               disabled={!csvFile}
               data-testid="button-submit-csv"
             >
