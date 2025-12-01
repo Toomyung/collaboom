@@ -222,40 +222,93 @@ export default function AdminCampaignDetailPage() {
     });
 
     let matchedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    const unmatchedEmails: string[] = [];
+    
     const newForms: Record<string, ShippingFormData> = {};
     
-    // Preserve existing form data with full structure
+    // SAFETY: Preserve ALL existing form data first
     Object.entries(shippingForms).forEach(([appId, form]) => {
       newForms[appId] = { ...form };
     });
 
+    const totalDataRows = rows.length - 1;
+    
     for (let i = 1; i < rows.length; i++) {
       const values = rows[i].map(v => String(v).trim());
       const email = values[emailIdx]?.toLowerCase();
+      
+      if (!email) {
+        skippedCount++;
+        continue;
+      }
+      
       const app = emailToApp.get(email);
       
       if (app) {
         matchedCount++;
-        // Always get address from application/influencer data, never from file
-        // Only import: courier, tracking number, tracking URL
+        
+        // SAFETY: Always get phone/address from application/influencer data, NEVER from file
+        // Only import these 3 shipping fields: courier, tracking number, tracking URL
         const existingOrDefault = newForms[app.id] || getFormDataFromApp(app);
-        newForms[app.id] = {
-          ...existingOrDefault,
-          // Only update these 3 fields from file, preserve all address fields
-          courier: courierIdx !== -1 && values[courierIdx] ? values[courierIdx].toUpperCase() : existingOrDefault.courier,
-          trackingNumber: trackingNumberIdx !== -1 && values[trackingNumberIdx] ? values[trackingNumberIdx] : existingOrDefault.trackingNumber,
-          trackingUrl: trackingUrlIdx !== -1 && values[trackingUrlIdx] ? values[trackingUrlIdx] : existingOrDefault.trackingUrl,
-        };
+        
+        // Extract values, but ONLY if they are non-empty in the file
+        const newCourier = courierIdx !== -1 && values[courierIdx] ? values[courierIdx].toUpperCase() : "";
+        const newTrackingNumber = trackingNumberIdx !== -1 && values[trackingNumberIdx] ? values[trackingNumberIdx] : "";
+        const newTrackingUrl = trackingUrlIdx !== -1 && values[trackingUrlIdx] ? values[trackingUrlIdx] : "";
+        
+        // Only update if there's actual data to import (don't overwrite with empty)
+        const hasNewData = newCourier || newTrackingNumber || newTrackingUrl;
+        
+        if (hasNewData) {
+          updatedCount++;
+          newForms[app.id] = {
+            ...existingOrDefault,
+            // ONLY update these 3 fields, preserve phone and all address fields
+            courier: newCourier || existingOrDefault.courier,
+            trackingNumber: newTrackingNumber || existingOrDefault.trackingNumber,
+            trackingUrl: newTrackingUrl || existingOrDefault.trackingUrl,
+          };
+        }
+      } else {
+        // Track unmatched emails for debugging
+        if (unmatchedEmails.length < 5) {
+          unmatchedEmails.push(email);
+        }
       }
     }
 
+    // SAFETY: Only update state if we successfully processed the file
     setShippingForms(newForms);
     setShowCsvDialog(false);
     setCsvFile(null);
+    
+    // Provide detailed feedback
+    const unmatchedCount = totalDataRows - matchedCount - skippedCount;
+    let description = `✅ Matched: ${matchedCount}, Updated: ${updatedCount}`;
+    if (unmatchedCount > 0) {
+      description += ` | ⚠️ Not found: ${unmatchedCount}`;
+    }
+    if (skippedCount > 0) {
+      description += ` | Skipped (no email): ${skippedCount}`;
+    }
+    
     toast({ 
-      title: "File imported", 
-      description: `Matched ${matchedCount} of ${rows.length - 1} rows. Review and click Send All or individual ship buttons.` 
+      title: "File imported successfully", 
+      description,
     });
+    
+    // Show warning if many rows weren't matched
+    if (unmatchedCount > 0 && unmatchedEmails.length > 0) {
+      setTimeout(() => {
+        toast({
+          title: `${unmatchedCount} emails not found in approved list`,
+          description: `Examples: ${unmatchedEmails.slice(0, 3).join(", ")}${unmatchedCount > 3 ? "..." : ""}`,
+          variant: "destructive",
+        });
+      }, 1000);
+    }
   };
 
   const handleBulkSend = async () => {
