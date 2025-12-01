@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { ExternalLink, Play } from "lucide-react";
+import { ExternalLink, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SiTiktok } from "react-icons/si";
 
 interface TikTokEmbedProps {
   url: string;
@@ -12,15 +11,11 @@ function extractVideoId(url: string): string | null {
   return match ? match[1] : null;
 }
 
-function extractUsername(url: string): string | null {
-  const match = url.match(/@([^/]+)/);
-  return match ? match[1] : null;
-}
-
 export function TikTokEmbed({ url }: TikTokEmbedProps) {
   const videoId = extractVideoId(url);
-  const username = extractUsername(url);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [key, setKey] = useState(0);
 
   if (!videoId) {
     return (
@@ -35,43 +30,64 @@ export function TikTokEmbed({ url }: TikTokEmbedProps) {
     );
   }
 
+  const embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
+
+  const handleRetry = () => {
+    setIsLoading(true);
+    setHasError(false);
+    setKey(prev => prev + 1);
+  };
+
   return (
-    <a 
-      href={url} 
-      target="_blank" 
-      rel="noopener noreferrer"
-      className="block"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div 
-        className="relative aspect-[9/16] max-w-[200px] rounded-xl overflow-hidden bg-gradient-to-br from-[#ff0050] via-[#00f2ea] to-[#000] cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
-        style={{ boxShadow: isHovered ? "0 8px 30px rgba(0,0,0,0.3)" : "0 4px 15px rgba(0,0,0,0.2)" }}
-      >
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
-          <div className="bg-black/30 backdrop-blur-sm rounded-full p-4 mb-3">
-            <SiTiktok className="h-8 w-8" />
-          </div>
-          
-          <div className="text-center">
-            {username && (
-              <p className="text-xs opacity-80 mb-1">@{username}</p>
-            )}
-            <p className="text-sm font-medium mb-3">TikTok Video</p>
-          </div>
-          
-          <div className={`flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${isHovered ? "scale-105" : ""}`}>
-            <Play className="h-4 w-4 fill-current" />
-            Watch on TikTok
+    <div className="relative">
+      {isLoading && !hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-xl z-10">
+          <div className="flex flex-col items-center gap-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="text-sm text-muted-foreground">Loading TikTok video...</span>
           </div>
         </div>
-        
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center">
-          <span className="text-[10px] text-white/60 truncate max-w-full">
-            ID: {videoId.slice(0, 10)}...
-          </span>
+      )}
+      
+      {hasError ? (
+        <div className="flex flex-col items-center justify-center p-6 bg-muted rounded-xl min-h-[400px]">
+          <AlertCircle className="h-10 w-10 text-muted-foreground mb-3" />
+          <p className="text-sm text-muted-foreground mb-4 text-center">
+            Unable to load TikTok video
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleRetry}>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Try Again
+            </Button>
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              <Button variant="default" size="sm">
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Open in TikTok
+              </Button>
+            </a>
+          </div>
         </div>
-      </div>
-    </a>
+      ) : (
+        <iframe
+          key={key}
+          src={embedUrl}
+          className="rounded-xl"
+          style={{
+            width: "325px",
+            height: "575px",
+            border: "none",
+            overflow: "hidden",
+          }}
+          allow="encrypted-media"
+          allowFullScreen
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
+        />
+      )}
+    </div>
   );
 }
