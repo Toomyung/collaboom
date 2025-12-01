@@ -639,9 +639,9 @@ export default function AdminCampaignDetailPage() {
             <TabsTrigger value="applicants" data-testid="tab-applicants">
               <Users className="h-4 w-4 mr-2" />
               Applicants
-              {allApplicants.length > 0 && (
+              {pendingApplications.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {pendingApplications.length > 0 ? `${pendingApplications.length}/${allApplicants.length}` : allApplicants.length}
+                  {pendingApplications.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -761,7 +761,19 @@ export default function AdminCampaignDetailPage() {
           <TabsContent value="applicants" className="mt-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-4">
-                <CardTitle>Applicants ({allApplicants.length})</CardTitle>
+                <CardTitle>
+                  Applicants
+                  {pendingApplications.length > 0 && (
+                    <span className="text-muted-foreground font-normal text-base ml-2">
+                      ({pendingApplications.length} pending{allApprovedApplications.length > 0 ? `, ${allApprovedApplications.length} approved` : ""})
+                    </span>
+                  )}
+                  {pendingApplications.length === 0 && allApprovedApplications.length > 0 && (
+                    <span className="text-muted-foreground font-normal text-base ml-2">
+                      ({allApprovedApplications.length} approved)
+                    </span>
+                  )}
+                </CardTitle>
                 {selectedApplications.size > 0 && (
                   <Button
                     onClick={() => bulkApproveMutation.mutate(Array.from(selectedApplications))}
