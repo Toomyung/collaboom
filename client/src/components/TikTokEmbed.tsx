@@ -30,7 +30,7 @@ export function TikTokEmbed({ url }: TikTokEmbedProps) {
     );
   }
 
-  const embedUrl = `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1`;
+  const embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
 
   const handleRetry = () => {
     setIsLoading(true);
@@ -79,7 +79,7 @@ export function TikTokEmbed({ url }: TikTokEmbedProps) {
             border: "none",
             overflow: "hidden",
           }}
-          allow="autoplay; encrypted-media"
+          allow="encrypted-media"
           allowFullScreen
           onLoad={() => setIsLoading(false)}
           onError={() => {
