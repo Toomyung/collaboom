@@ -197,9 +197,17 @@ export default function AdminCampaignDetailPage() {
   const adjustScoreMutation = useMutation({
     mutationFn: async ({ influencerId, delta, reason }: { influencerId: string; delta: number; reason: string }) => {
       await apiRequest("POST", `/api/admin/influencers/${influencerId}/adjust-score`, { delta, reason });
+      return delta;
     },
-    onSuccess: () => {
+    onSuccess: (delta) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "score-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      if (selectedInfluencer) {
+        setSelectedInfluencer({
+          ...selectedInfluencer,
+          score: (selectedInfluencer.score ?? 0) + delta
+        });
+      }
       toast({ title: "Score adjusted" });
     },
     onError: (error: Error) => {
@@ -210,9 +218,17 @@ export default function AdminCampaignDetailPage() {
   const adjustPenaltyMutation = useMutation({
     mutationFn: async ({ influencerId, delta, reason }: { influencerId: string; delta: number; reason: string }) => {
       await apiRequest("POST", `/api/admin/influencers/${influencerId}/adjust-penalty`, { delta, reason });
+      return delta;
     },
-    onSuccess: () => {
+    onSuccess: (delta) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "penalty-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      if (selectedInfluencer) {
+        setSelectedInfluencer({
+          ...selectedInfluencer,
+          penalty: (selectedInfluencer.penalty ?? 0) + delta
+        });
+      }
       toast({ title: "Penalty adjusted" });
     },
     onError: (error: Error) => {
@@ -221,8 +237,8 @@ export default function AdminCampaignDetailPage() {
   });
 
   const addNoteMutation = useMutation({
-    mutationFn: async ({ influencerId, content }: { influencerId: string; content: string }) => {
-      await apiRequest("POST", `/api/admin/influencers/${influencerId}/notes`, { content });
+    mutationFn: async ({ influencerId, note }: { influencerId: string; note: string }) => {
+      await apiRequest("POST", `/api/admin/influencers/${influencerId}/notes`, { note });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "notes"] });
@@ -2016,7 +2032,7 @@ export default function AdminCampaignDetailPage() {
                         if (newNote.trim()) {
                           addNoteMutation.mutate({
                             influencerId: selectedInfluencer.id,
-                            content: newNote.trim()
+                            note: newNote.trim()
                           });
                         }
                       }}
@@ -2030,7 +2046,7 @@ export default function AdminCampaignDetailPage() {
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                       {influencerNotes.map((note) => (
                         <div key={note.id} className="p-3 bg-muted/50 rounded-lg">
-                          <p className="text-sm">{note.content}</p>
+                          <p className="text-sm">{note.note}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {format(new Date(note.createdAt!), "MMM d, yyyy 'at' h:mm a")}
                           </p>
