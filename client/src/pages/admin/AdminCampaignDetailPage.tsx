@@ -41,6 +41,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Campaign, ApplicationWithDetails, Influencer } from "@shared/schema";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { ExternalLink } from "lucide-react";
@@ -100,21 +105,12 @@ export default function AdminCampaignDetailPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
+  const [addressForms, setAddressForms] = useState<Record<string, AddressFormData>>({});
+  const [openAddressPopover, setOpenAddressPopover] = useState<string | null>(null);
   const [approvedPage, setApprovedPage] = useState(1);
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
-  const [showShippingSheet, setShowShippingSheet] = useState(false);
-  const [editShippingApp, setEditShippingApp] = useState<ApplicationWithDetails | null>(null);
   const [bulkSending, setBulkSending] = useState(false);
   const APPROVED_PAGE_SIZE = 20;
-  const [editingAddressApp, setEditingAddressApp] = useState<ApplicationWithDetails | null>(null);
-  const [addressForm, setAddressForm] = useState<AddressFormData>({
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    country: "United States",
-  });
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
@@ -337,10 +333,16 @@ export default function AdminCampaignDetailPage() {
   const updateAddressMutation = useMutation({
     mutationFn: async ({ applicationId, data }: { applicationId: string; data: AddressFormData }) => {
       await apiRequest("PATCH", `/api/admin/applications/${applicationId}/shipping-address`, data);
+      return applicationId;
     },
-    onSuccess: () => {
+    onSuccess: (applicationId) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      setEditingAddressApp(null);
+      setOpenAddressPopover(null);
+      setAddressForms((prev) => {
+        const updated = { ...prev };
+        delete updated[applicationId];
+        return updated;
+      });
       toast({ title: "Address updated" });
     },
     onError: (error: Error) => {
@@ -348,43 +350,73 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  const openAddressDialog = (app: ApplicationWithDetails) => {
+  const getAddressFromApp = (app: ApplicationWithDetails): AddressFormData => {
     const inf = app.influencer;
-    setAddressForm({
+    return {
       addressLine1: app.shippingAddressLine1 || inf?.addressLine1 || "",
       addressLine2: app.shippingAddressLine2 || inf?.addressLine2 || "",
       city: app.shippingCity || inf?.city || "",
       state: app.shippingState || inf?.state || "",
       zipCode: app.shippingZipCode || inf?.zipCode || "",
       country: app.shippingCountry || inf?.country || "United States",
-    });
-    setEditingAddressApp(app);
+    };
   };
 
-  const handleSaveAddress = () => {
-    if (!editingAddressApp) return;
-    updateAddressMutation.mutate({ applicationId: editingAddressApp.id, data: addressForm });
+  const getAddressDisplay = (app: ApplicationWithDetails): string => {
+    const addr = getAddressFromApp(app);
+    if (!addr.addressLine1) return "No address";
+    const parts = [addr.addressLine1];
+    if (addr.city || addr.state) {
+      parts.push(`${addr.city}, ${addr.state} ${addr.zipCode}`.trim());
+    }
+    return parts.join(", ");
+  };
+
+  const openAddressEdit = (app: ApplicationWithDetails) => {
+    setAddressForms((prev) => ({
+      ...prev,
+      [app.id]: getAddressFromApp(app),
+    }));
+    setOpenAddressPopover(app.id);
+  };
+
+  const closeAddressEdit = () => {
+    const appId = openAddressPopover;
+    setOpenAddressPopover(null);
+    if (appId) {
+      setAddressForms((prev) => {
+        const updated = { ...prev };
+        delete updated[appId];
+        return updated;
+      });
+    }
+  };
+
+  const updateAddressFormField = (applicationId: string, field: keyof AddressFormData, value: string) => {
+    setAddressForms((prev) => {
+      const existing = prev[applicationId];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [applicationId]: {
+          ...existing,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const handleSaveAddress = (applicationId: string) => {
+    const addressData = addressForms[applicationId];
+    if (!addressData?.addressLine1) {
+      toast({ title: "Please enter an address", variant: "destructive" });
+      return;
+    }
+    updateAddressMutation.mutate({ applicationId, data: addressData });
   };
 
   const handleDownloadCsv = () => {
     window.open(`/api/admin/campaigns/${id}/export-csv`, "_blank");
-  };
-
-  const getDisplayAddress = (app: ApplicationWithDetails) => {
-    const inf = app.influencer;
-    const line1 = app.shippingAddressLine1 || inf?.addressLine1 || "";
-    const line2 = app.shippingAddressLine2 || inf?.addressLine2 || "";
-    const city = app.shippingCity || inf?.city || "";
-    const state = app.shippingState || inf?.state || "";
-    const zipCode = app.shippingZipCode || inf?.zipCode || "";
-    
-    if (!line1) return null;
-    
-    const parts = [line1];
-    if (line2) parts.push(line2);
-    parts.push(`${city}, ${state} ${zipCode}`);
-    
-    return parts;
   };
 
   if (authLoading || campaignLoading) {
@@ -822,101 +854,180 @@ export default function AdminCampaignDetailPage() {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {approvedApplications.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Influencer</TableHead>
-                        <TableHead>TikTok</TableHead>
-                        <TableHead>Shipping Status</TableHead>
-                        <TableHead>Approved</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {approvedApplications.map((app) => {
-                        const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", trackingUrl: "" };
-                        const hasShippingInfo = formData.courier && formData.trackingNumber;
-                        
-                        return (
-                          <TableRow key={app.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-[180px] min-w-[180px] sticky left-0 bg-muted/50 z-10">Influencer</TableHead>
+                          <TableHead className="w-[100px] min-w-[100px]">TikTok</TableHead>
+                          <TableHead className="w-[220px] min-w-[220px]">Shipping Address</TableHead>
+                          <TableHead className="w-[100px] min-w-[100px]">Courier</TableHead>
+                          <TableHead className="w-[140px] min-w-[140px]">Tracking #</TableHead>
+                          <TableHead className="w-[80px] min-w-[80px]">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {approvedApplications.map((app) => {
+                          const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", trackingUrl: "" };
+                          const hasShippingInfo = formData.courier && formData.trackingNumber;
+                          const addressData = addressForms[app.id];
+                          const isAddressOpen = openAddressPopover === app.id;
+                          
+                          return (
+                            <TableRow key={app.id} className="hover:bg-muted/30">
+                              <TableCell className="sticky left-0 bg-background z-10 border-r">
+                                <div className="min-w-0">
                                   <button
-                                    className="text-left hover:underline font-medium"
+                                    className="text-left hover:underline font-medium text-sm truncate block max-w-full"
                                     onClick={() => setSelectedInfluencer(app.influencer || null)}
+                                    data-testid={`influencer-name-${app.id}`}
                                   >
                                     {app.influencer?.name}
                                   </button>
-                                  <div className="text-sm text-muted-foreground">{app.influencer?.email}</div>
+                                  <div className="text-xs text-muted-foreground truncate">{app.influencer?.email}</div>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {app.influencer?.tiktokHandle ? (
-                                <a 
-                                  href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline"
+                              </TableCell>
+                              <TableCell>
+                                {app.influencer?.tiktokHandle ? (
+                                  <a 
+                                    href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline text-xs"
+                                    data-testid={`tiktok-link-${app.id}`}
+                                  >
+                                    @{app.influencer.tiktokHandle}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Popover open={isAddressOpen} onOpenChange={(open) => {
+                                  if (open) openAddressEdit(app);
+                                  else closeAddressEdit();
+                                }}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className="h-8 w-full justify-start text-xs font-normal truncate"
+                                      data-testid={`button-address-${app.id}`}
+                                    >
+                                      <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                                      <span className="truncate">{getAddressDisplay(app)}</span>
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-80 p-3" align="start">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Edit Address</h4>
+                                      <div className="space-y-2">
+                                        <Input
+                                          placeholder="Street address"
+                                          value={addressData?.addressLine1 || ""}
+                                          onChange={(e) => updateAddressFormField(app.id, "addressLine1", e.target.value)}
+                                          className="h-8 text-xs"
+                                          data-testid={`input-address-line1-${app.id}`}
+                                        />
+                                        <Input
+                                          placeholder="Apt, suite (optional)"
+                                          value={addressData?.addressLine2 || ""}
+                                          onChange={(e) => updateAddressFormField(app.id, "addressLine2", e.target.value)}
+                                          className="h-8 text-xs"
+                                          data-testid={`input-address-line2-${app.id}`}
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <Input
+                                            placeholder="City"
+                                            value={addressData?.city || ""}
+                                            onChange={(e) => updateAddressFormField(app.id, "city", e.target.value)}
+                                            className="h-8 text-xs"
+                                            data-testid={`input-city-${app.id}`}
+                                          />
+                                          <Input
+                                            placeholder="State"
+                                            value={addressData?.state || ""}
+                                            onChange={(e) => updateAddressFormField(app.id, "state", e.target.value)}
+                                            className="h-8 text-xs"
+                                            data-testid={`input-state-${app.id}`}
+                                          />
+                                        </div>
+                                        <Input
+                                          placeholder="ZIP Code"
+                                          value={addressData?.zipCode || ""}
+                                          onChange={(e) => updateAddressFormField(app.id, "zipCode", e.target.value)}
+                                          className="h-8 text-xs"
+                                          data-testid={`input-zipcode-${app.id}`}
+                                        />
+                                      </div>
+                                      <div className="flex gap-2 pt-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="flex-1 h-7 text-xs"
+                                          onClick={closeAddressEdit}
+                                        >
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          className="flex-1 h-7 text-xs"
+                                          onClick={() => handleSaveAddress(app.id)}
+                                          disabled={updateAddressMutation.isPending}
+                                          data-testid={`button-save-address-${app.id}`}
+                                        >
+                                          {updateAddressMutation.isPending ? "..." : "Save"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Select
+                                  value={formData.courier}
+                                  onValueChange={(value) => updateShippingForm(app.id, "courier", value)}
                                 >
-                                  @{app.influencer.tiktokHandle}
-                                </a>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {hasShippingInfo ? (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Ready
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-muted-foreground">
-                                  Pending
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {app.approvedAt
-                                ? format(new Date(app.approvedAt), "MMM d")
-                                : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
+                                  <SelectTrigger className="h-8 text-xs" data-testid={`select-courier-${app.id}`}>
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {COURIER_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.trackingNumber}
+                                  onChange={(e) => updateShippingForm(app.id, "trackingNumber", e.target.value)}
+                                  placeholder="Tracking #"
+                                  className="h-8 text-xs"
+                                  data-testid={`input-tracking-${app.id}`}
+                                />
+                              </TableCell>
+                              <TableCell className="p-1">
                                 <Button
                                   size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditShippingApp(app);
-                                    setShowShippingSheet(true);
-                                  }}
-                                  data-testid={`button-edit-shipping-${app.id}`}
+                                  onClick={() => handleShip(app.id)}
+                                  disabled={shipMutation.isPending || !hasShippingInfo}
+                                  className="h-8 text-xs"
+                                  data-testid={`button-ship-${app.id}`}
                                 >
-                                  <Edit className="h-4 w-4 mr-1" />
-                                  Edit
+                                  <Truck className="h-3 w-3 mr-1" />
+                                  Send
                                 </Button>
-                                {hasShippingInfo && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleShip(app.id)}
-                                    disabled={shipMutation.isPending}
-                                    data-testid={`button-ship-${app.id}`}
-                                  >
-                                    <Truck className="h-4 w-4 mr-1" />
-                                    Send
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -1285,134 +1396,6 @@ export default function AdminCampaignDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Shipping Edit Sheet */}
-      <Sheet open={showShippingSheet} onOpenChange={(open) => {
-        setShowShippingSheet(open);
-        if (!open) setEditShippingApp(null);
-      }}>
-        <SheetContent className="sm:max-w-md">
-          {editShippingApp && (
-            <>
-              <SheetHeader>
-                <SheetTitle>Edit Shipping Info</SheetTitle>
-                <SheetDescription>
-                  {editShippingApp.influencer?.name} ({editShippingApp.influencer?.email})
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6 space-y-6">
-                {/* Address Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Shipping Address</h4>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        openAddressDialog(editShippingApp);
-                      }}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                  </div>
-                  <div className="bg-muted/50 rounded-lg p-3 text-sm">
-                    {(() => {
-                      const addressParts = getDisplayAddress(editShippingApp);
-                      const phone = editShippingApp.influencer?.phone;
-                      return addressParts ? (
-                        <>
-                          {addressParts.map((part, idx) => (
-                            <div key={idx}>{part}</div>
-                          ))}
-                          {phone && <div className="mt-1 text-muted-foreground">{phone}</div>}
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">No address on file</span>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {/* Shipping Form */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-medium">Tracking Information</h4>
-                  
-                  <div className="space-y-2">
-                    <Label>Courier</Label>
-                    <Select
-                      value={shippingForms[editShippingApp.id]?.courier || ""}
-                      onValueChange={(value) => updateShippingForm(editShippingApp.id, "courier", value)}
-                    >
-                      <SelectTrigger data-testid="select-courier-sheet">
-                        <SelectValue placeholder="Select courier..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COURIER_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Tracking Number</Label>
-                    <Input
-                      placeholder="Enter tracking number..."
-                      value={shippingForms[editShippingApp.id]?.trackingNumber || ""}
-                      onChange={(e) => updateShippingForm(editShippingApp.id, "trackingNumber", e.target.value)}
-                      data-testid="input-tracking-number-sheet"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Tracking URL (optional)</Label>
-                    <Input
-                      placeholder="https://..."
-                      value={shippingForms[editShippingApp.id]?.trackingUrl || ""}
-                      onChange={(e) => updateShippingForm(editShippingApp.id, "trackingUrl", e.target.value)}
-                      data-testid="input-tracking-url-sheet"
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setShowShippingSheet(false);
-                      setEditShippingApp(null);
-                    }}
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => {
-                      handleShip(editShippingApp.id);
-                      setShowShippingSheet(false);
-                      setEditShippingApp(null);
-                    }}
-                    disabled={
-                      shipMutation.isPending || 
-                      !shippingForms[editShippingApp.id]?.courier || 
-                      !shippingForms[editShippingApp.id]?.trackingNumber
-                    }
-                    data-testid="button-ship-sheet"
-                  >
-                    <Truck className="h-4 w-4 mr-2" />
-                    Send Notification
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-
       {/* Influencer Detail Sheet */}
       <Sheet open={!!selectedInfluencer} onOpenChange={(open) => !open && setSelectedInfluencer(null)}>
         <SheetContent className="sm:max-w-md overflow-y-auto">
@@ -1520,90 +1503,6 @@ export default function AdminCampaignDetailPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Address Edit Dialog */}
-      <Dialog open={!!editingAddressApp} onOpenChange={(open) => !open && setEditingAddressApp(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Shipping Address</DialogTitle>
-            <DialogDescription>
-              Update the shipping address for {editingAddressApp?.influencer?.name || "this influencer"}.
-              This will not change the influencer's original address.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Address Line 1</label>
-              <Input
-                value={addressForm.addressLine1}
-                onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
-                placeholder="Street address"
-                data-testid="input-address-line1"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Address Line 2</label>
-              <Input
-                value={addressForm.addressLine2}
-                onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
-                placeholder="Apt, suite, etc. (optional)"
-                data-testid="input-address-line2"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">City</label>
-                <Input
-                  value={addressForm.city}
-                  onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-                  placeholder="City"
-                  data-testid="input-city"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">State</label>
-                <Input
-                  value={addressForm.state}
-                  onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
-                  placeholder="State"
-                  data-testid="input-state"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">ZIP Code</label>
-                <Input
-                  value={addressForm.zipCode}
-                  onChange={(e) => setAddressForm({ ...addressForm, zipCode: e.target.value })}
-                  placeholder="ZIP Code"
-                  data-testid="input-zipcode"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Country</label>
-                <Input
-                  value={addressForm.country}
-                  onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
-                  placeholder="Country"
-                  data-testid="input-country"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingAddressApp(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveAddress}
-              disabled={updateAddressMutation.isPending}
-              data-testid="button-save-address"
-            >
-              {updateAddressMutation.isPending ? "Saving..." : "Save Address"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 }
