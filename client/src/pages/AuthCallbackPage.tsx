@@ -20,7 +20,38 @@ export default function AuthCallbackPage() {
           throw new Error("Authentication service unavailable");
         }
 
-        // Get the session from the URL hash (Supabase puts tokens there)
+        // Check for PKCE flow (code in query params)
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const errorParam = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        // Handle OAuth errors from provider
+        if (errorParam) {
+          throw new Error(errorDescription || `OAuth error: ${errorParam}`);
+        }
+        
+        // If we have a code, exchange it for a session (PKCE flow)
+        if (code) {
+          console.log("[Auth] PKCE flow detected, exchanging code...");
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          if (data.session) {
+            await syncWithBackend(data.session);
+            if (mounted) {
+              setStatus("success");
+              setMessage("Login successful! Redirecting...");
+              await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+              await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+              setTimeout(() => {
+                if (mounted) setLocation("/dashboard");
+              }, 1000);
+            }
+            return;
+          }
+        }
+
+        // Get the session from the URL hash (Supabase puts tokens there for implicit flow)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -28,12 +59,13 @@ export default function AuthCallbackPage() {
         }
 
         if (!session) {
-          // Try to exchange the hash for a session
+          // Try to exchange the hash for a session (implicit flow)
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const accessToken = hashParams.get('access_token');
           const refreshToken = hashParams.get('refresh_token');
           
           if (accessToken && refreshToken) {
+            console.log("[Auth] Implicit flow detected, setting session...");
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
@@ -45,10 +77,13 @@ export default function AuthCallbackPage() {
             // Sync with backend
             await syncWithBackend(data.session);
           } else {
-            throw new Error("No authentication tokens found");
+            // Check if we're on a weird redirect
+            console.error("[Auth] No tokens found. URL:", window.location.href);
+            throw new Error("No authentication tokens found. Please try signing in again.");
           }
         } else {
           // Session already exists, sync with backend
+          console.log("[Auth] Existing session found, syncing...");
           await syncWithBackend(session);
         }
 
