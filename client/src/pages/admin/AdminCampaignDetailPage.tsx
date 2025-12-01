@@ -549,6 +549,7 @@ export default function AdminCampaignDetailPage() {
   const shippingApplications = applications?.filter((a) => 
     ["shipped", "delivered"].includes(a.status)
   ) || [];
+  const shippedOnlyApplications = applications?.filter((a) => a.status === "shipped") || [];
   const deliveredApplications = applications?.filter((a) => a.status === "delivered") || [];
   const uploadedApplications = applications?.filter((a) => 
     ["uploaded", "completed"].includes(a.status)
@@ -649,8 +650,17 @@ export default function AdminCampaignDetailPage() {
             <CardContent className="p-4 flex items-center gap-3">
               <Truck className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-2xl font-bold">{shippingApplications.length}</p>
+                <p className="text-2xl font-bold">{shippedOnlyApplications.length}</p>
                 <p className="text-xs text-muted-foreground">Shipping</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <Upload className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-2xl font-bold">{deliveredApplications.length}</p>
+                <p className="text-xs text-muted-foreground">Uploads</p>
               </div>
             </CardContent>
           </Card>
@@ -693,15 +703,20 @@ export default function AdminCampaignDetailPage() {
             <TabsTrigger value="shipping" data-testid="tab-shipping">
               <Truck className="h-4 w-4 mr-2" />
               Shipping
-              {shippingApplications.length > 0 && (
+              {shippedOnlyApplications.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {shippingApplications.length}
+                  {shippedOnlyApplications.length}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="uploads" data-testid="tab-uploads">
               <Upload className="h-4 w-4 mr-2" />
               Uploads
+              {deliveredApplications.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {deliveredApplications.length}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
