@@ -62,6 +62,7 @@ import {
   Clock,
   Star,
   AlertTriangle,
+  AlertCircle,
   UploadCloud,
   Download,
   RotateCcw,
@@ -668,10 +669,13 @@ export default function AdminCampaignDetailPage() {
   ) || [];
   const shippedOnlyApplications = applications?.filter((a) => a.status === "shipped") || [];
   const deliveredApplications = applications?.filter((a) => 
-    ["delivered", "deadline_missed"].includes(a.status)
+    a.status === "delivered"
   ) || [];
   const uploadedApplications = applications?.filter((a) => 
     ["uploaded", "completed"].includes(a.status)
+  ) || [];
+  const missedApplications = applications?.filter((a) => 
+    a.status === "deadline_missed"
   ) || [];
   
   const readyToSendCount = allApprovedApplications.filter(app => {
@@ -810,15 +814,6 @@ export default function AdminCampaignDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="rejected" data-testid="tab-rejected">
-              <XCircle className="h-4 w-4 mr-2" />
-              Rejected
-              {rejectedApplications.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {rejectedApplications.length}
-                </Badge>
-              )}
-            </TabsTrigger>
             <TabsTrigger value="shipping" data-testid="tab-shipping">
               <Truck className="h-4 w-4 mr-2" />
               Shipping
@@ -843,6 +838,24 @@ export default function AdminCampaignDetailPage() {
               {uploadedApplications.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {uploadedApplications.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="rejected" data-testid="tab-rejected" className="text-muted-foreground/70">
+              <XCircle className="h-4 w-4 mr-2" />
+              Reject
+              {rejectedApplications.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {rejectedApplications.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="missed" data-testid="tab-missed" className="text-muted-foreground/70">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Missed
+              {missedApplications.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {missedApplications.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -1364,77 +1377,6 @@ export default function AdminCampaignDetailPage() {
             </Card>
           </TabsContent>
 
-          {/* Rejected Tab */}
-          <TabsContent value="rejected" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Rejected Applications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {rejectedApplications.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Influencer</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>TikTok</TableHead>
-                        <TableHead>Score</TableHead>
-                        <TableHead>Applied At</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rejectedApplications.map((app) => (
-                        <TableRow key={app.id}>
-                          <TableCell className="font-medium">
-                            <button
-                              className="text-left hover:underline"
-                              onClick={() => setSelectedInfluencer(app.influencer || null)}
-                            >
-                              {app.influencer?.name}
-                            </button>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {app.influencer?.email}
-                          </TableCell>
-                          <TableCell>
-                            {app.influencer?.tiktokHandle && (
-                              <a
-                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                              >
-                                <SiTiktok className="h-3 w-3" />
-                                @{app.influencer.tiktokHandle}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Star className="h-3 w-3 text-yellow-500" />
-                              <span>{app.influencer?.score ?? 0}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {app.appliedAt
-                              ? format(new Date(app.appliedAt), "MMM d, h:mm a")
-                              : "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <XCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No rejected applications</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Shipping Tab - Read-only shipping records */}
           <TabsContent value="shipping" className="mt-6">
             <Card>
@@ -1739,48 +1681,27 @@ export default function AdminCampaignDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2 items-center">
-                                {app.status === "deadline_missed" ? (
-                                  <>
-                                    <Badge variant="destructive" className="text-xs">
-                                      <XCircle className="h-3 w-3 mr-1" />
-                                      Missed
-                                    </Badge>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-7 text-xs"
-                                      onClick={() => undoMissedMutation.mutate(app.id)}
-                                      disabled={undoMissedMutation.isPending}
-                                      data-testid={`undo-missed-${app.id}`}
-                                    >
-                                      Undo
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => markUploadedMutation.mutate(app.id)}
-                                      disabled={markUploadedMutation.isPending || !app.contentUrl}
-                                      title={!app.contentUrl ? "Video link required" : undefined}
-                                      data-testid={`mark-uploaded-${app.id}`}
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-1" />
-                                      Verified
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-red-600"
-                                      onClick={() => markMissedMutation.mutate(app.id)}
-                                      disabled={markMissedMutation.isPending}
-                                      data-testid={`mark-missed-${app.id}`}
-                                    >
-                                      <XCircle className="h-4 w-4 mr-1" />
-                                      Missed
-                                    </Button>
-                                  </>
-                                )}
+                                <Button
+                                  size="sm"
+                                  onClick={() => markUploadedMutation.mutate(app.id)}
+                                  disabled={markUploadedMutation.isPending || !app.contentUrl}
+                                  title={!app.contentUrl ? "Video link required" : undefined}
+                                  data-testid={`mark-uploaded-${app.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Verified
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600"
+                                  onClick={() => markMissedMutation.mutate(app.id)}
+                                  disabled={markMissedMutation.isPending}
+                                  data-testid={`mark-missed-${app.id}`}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Missed
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1860,6 +1781,153 @@ export default function AdminCampaignDetailPage() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No verified results yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Rejected Tab */}
+          <TabsContent value="rejected" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rejected Applications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {rejectedApplications.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Influencer</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>TikTok</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead>Applied At</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rejectedApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell className="font-medium">
+                            <button
+                              className="text-left hover:underline"
+                              onClick={() => setSelectedInfluencer(app.influencer || null)}
+                            >
+                              {app.influencer?.name}
+                            </button>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.influencer?.email}
+                          </TableCell>
+                          <TableCell>
+                            {app.influencer?.tiktokHandle && (
+                              <a
+                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <SiTiktok className="h-3 w-3" />
+                                @{app.influencer.tiktokHandle}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 text-yellow-500" />
+                              <span>{app.influencer?.score ?? 0}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.appliedAt
+                              ? format(new Date(app.appliedAt), "MMM d, h:mm a")
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <XCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No rejected applications</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Missed Tab */}
+          <TabsContent value="missed" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Missed Deadlines</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {missedApplications.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-14">ID</TableHead>
+                        <TableHead>Influencer</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>TikTok</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {missedApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell className="font-mono text-sm text-muted-foreground">
+                            {String(app.sequenceNumber || 0).padStart(3, "0")}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <button
+                              className="text-left hover:underline"
+                              onClick={() => setSelectedInfluencer(app.influencer || null)}
+                            >
+                              {app.influencer?.name}
+                            </button>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.influencer?.email}
+                          </TableCell>
+                          <TableCell>
+                            {app.influencer?.tiktokHandle && (
+                              <a
+                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <SiTiktok className="h-3 w-3" />
+                                @{app.influencer.tiktokHandle}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              onClick={() => undoMissedMutation.mutate(app.id)}
+                              disabled={undoMissedMutation.isPending}
+                              data-testid={`undo-missed-${app.id}`}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Undo
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No missed deadlines</p>
                   </div>
                 )}
               </CardContent>
