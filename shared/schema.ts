@@ -168,6 +168,13 @@ export const applications = pgTable("applications", {
   deadlineMissedAt: timestamp("deadline_missed_at"),
   firstTime: boolean("first_time").default(false),
   notesInternal: text("notes_internal"),
+  // Shipping address (admin-editable, separate from influencer's original address)
+  shippingAddressLine1: text("shipping_address_line1"),
+  shippingAddressLine2: text("shipping_address_line2"),
+  shippingCity: text("shipping_city"),
+  shippingState: text("shipping_state"),
+  shippingZipCode: text("shipping_zip_code"),
+  shippingCountry: text("shipping_country"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

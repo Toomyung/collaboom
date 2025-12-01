@@ -1184,6 +1184,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update shipping address for an application (admin-editable, doesn't modify influencer's original)
+  app.patch("/api/admin/applications/:id/shipping-address", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      const { addressLine1, addressLine2, city, state, zipCode, country } = req.body;
+
+      // Update application with shipping address
+      const updated = await storage.updateApplication(application.id, {
+        shippingAddressLine1: addressLine1 || null,
+        shippingAddressLine2: addressLine2 || null,
+        shippingCity: city || null,
+        shippingState: state || null,
+        shippingZipCode: zipCode || null,
+        shippingCountry: country || "United States",
+      });
+
+      return res.json({ success: true, application: updated });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Export approved influencers to CSV
+  app.get("/api/admin/campaigns/:id/export-csv", requireAuth("admin"), async (req, res) => {
+    try {
+      const campaign = await storage.getCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      // Get all approved applications with influencer data
+      const applications = await storage.getApplicationsWithDetailsByCampaign(req.params.id);
+      const approvedApps = applications.filter((a) => 
+        ["approved", "shipped", "delivered", "uploaded", "completed"].includes(a.status)
+      );
+
+      // Build CSV header
+      const headers = [
+        "Name",
+        "Email",
+        "TikTok Handle",
+        "Instagram Handle",
+        "Phone",
+        "Address Line 1",
+        "Address Line 2",
+        "City",
+        "State",
+        "ZIP Code",
+        "Country",
+        "Status",
+        "Applied At",
+        "Approved At",
+      ];
+
+      // Build CSV rows
+      const rows = approvedApps.map((app) => {
+        const inf = app.influencer;
+        // Use shipping address if set, otherwise fall back to influencer's original address
+        const addressLine1 = app.shippingAddressLine1 || inf?.addressLine1 || "";
+        const addressLine2 = app.shippingAddressLine2 || inf?.addressLine2 || "";
+        const city = app.shippingCity || inf?.city || "";
+        const state = app.shippingState || inf?.state || "";
+        const zipCode = app.shippingZipCode || inf?.zipCode || "";
+        const country = app.shippingCountry || inf?.country || "United States";
+
+        return [
+          inf?.name || "",
+          inf?.email || "",
+          inf?.tiktokHandle || "",
+          inf?.instagramHandle || "",
+          inf?.phone || "",
+          addressLine1,
+          addressLine2,
+          city,
+          state,
+          zipCode,
+          country,
+          app.status,
+          app.appliedAt ? new Date(app.appliedAt).toISOString().split("T")[0] : "",
+          app.approvedAt ? new Date(app.approvedAt).toISOString().split("T")[0] : "",
+        ];
+      });
+
+      // Escape CSV values
+      const escapeCSV = (value: string) => {
+        if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      };
+
+      const csvContent = [
+        headers.map(escapeCSV).join(","),
+        ...rows.map((row) => row.map(escapeCSV).join(",")),
+      ].join("\n");
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${campaign.name.replace(/[^a-z0-9]/gi, "_")}_influencers.csv"`
+      );
+      return res.send(csvContent);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Mark upload as verified
   app.post("/api/admin/uploads/:applicationId/mark-uploaded", requireAuth("admin"), async (req, res) => {
     try {
