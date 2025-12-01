@@ -804,6 +804,7 @@ export default function AdminCampaignDetailPage() {
                               disabled={pendingApplications.length === 0}
                             />
                           </TableHead>
+                          <TableHead className="w-16 text-center">ID</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Influencer</TableHead>
                           <TableHead>TikTok</TableHead>
@@ -821,6 +822,7 @@ export default function AdminCampaignDetailPage() {
                         {allApplicants.map((app) => {
                           const inf = app.influencer;
                           const isPending = app.status === "pending";
+                          const seqNum = app.sequenceNumber ? String(app.sequenceNumber).padStart(3, '0') : '-';
                           return (
                             <TableRow key={app.id} className={!isPending ? "bg-muted/30" : ""}>
                               <TableCell>
@@ -832,6 +834,9 @@ export default function AdminCampaignDetailPage() {
                                 ) : (
                                   <span className="text-muted-foreground">-</span>
                                 )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <span className="font-mono text-sm font-medium">{seqNum}</span>
                               </TableCell>
                               <TableCell>
                                 <Badge 
@@ -981,7 +986,8 @@ export default function AdminCampaignDetailPage() {
                     <Table className="text-xs">
                       <TableHeader>
                         <TableRow className="bg-muted/50">
-                          <TableHead className="min-w-[160px] sticky left-0 bg-muted/50 z-10 text-xs">Influencer</TableHead>
+                          <TableHead className="w-14 text-center text-xs">ID</TableHead>
+                          <TableHead className="min-w-[160px] sticky left-[56px] bg-muted/50 z-10 text-xs">Influencer</TableHead>
                           <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
                           <TableHead className="min-w-[90px] text-xs">TikTok</TableHead>
                           <TableHead className="min-w-[180px] text-xs">Address</TableHead>
@@ -1000,10 +1006,14 @@ export default function AdminCampaignDetailPage() {
                           const defaultData = getFormDataFromApp(app);
                           const formData = shippingForms[app.id] || defaultData;
                           const hasShippingInfo = formData.courier && formData.trackingNumber;
+                          const seqNum = app.sequenceNumber ? String(app.sequenceNumber).padStart(3, '0') : '-';
                           
                           return (
                             <TableRow key={app.id} className="hover:bg-muted/30">
-                              <TableCell className="sticky left-0 bg-background z-10 border-r p-2">
+                              <TableCell className="text-center p-2">
+                                <span className="font-mono text-xs font-medium">{seqNum}</span>
+                              </TableCell>
+                              <TableCell className="sticky left-[56px] bg-background z-10 border-r p-2">
                                 <div className="min-w-0">
                                   <button
                                     className="text-left hover:underline font-medium text-xs truncate block max-w-full"
@@ -1271,6 +1281,7 @@ export default function AdminCampaignDetailPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-14 text-center">ID</TableHead>
                           <TableHead>Influencer</TableHead>
                           <TableHead>Phone</TableHead>
                           <TableHead>Shipping Address</TableHead>
@@ -1290,9 +1301,13 @@ export default function AdminCampaignDetailPage() {
                           const state = app.shippingState || app.influencer?.state;
                           const zip = app.shippingZipCode || app.influencer?.zipCode;
                           const fullAddress = [addr1, addr2, city, state, zip].filter(Boolean).join(", ");
+                          const seqNum = app.sequenceNumber ? String(app.sequenceNumber).padStart(3, '0') : '-';
                           
                           return (
                             <TableRow key={app.id} className="bg-muted/20">
+                              <TableCell className="text-center">
+                                <span className="font-mono text-sm font-medium">{seqNum}</span>
+                              </TableCell>
                               <TableCell className="font-medium">
                                 <div>{app.influencer?.name}</div>
                                 <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>

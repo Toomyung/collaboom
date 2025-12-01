@@ -158,6 +158,7 @@ export const applications = pgTable("applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   campaignId: varchar("campaign_id").notNull(),
   influencerId: varchar("influencer_id").notNull(),
+  sequenceNumber: integer("sequence_number"), // Auto-generated per campaign: 1, 2, 3... (read-only)
   status: text("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected' | 'shipped' | 'delivered' | 'uploaded' | 'deadline_missed' | 'completed'
   appliedAt: timestamp("applied_at").defaultNow(),
   approvedAt: timestamp("approved_at"),

@@ -690,10 +690,16 @@ export class MemStorage implements IStorage {
     const previousApps = await this.getApplicationsByInfluencer(application.influencerId);
     const hasCompletedBefore = previousApps.some(a => a.status === 'completed');
     
+    // Generate sequential number per campaign (1, 2, 3...)
+    const campaignApps = await this.getApplicationsByCampaign(application.campaignId);
+    const maxSeq = campaignApps.reduce((max, a) => Math.max(max, a.sequenceNumber || 0), 0);
+    const sequenceNumber = maxSeq + 1;
+    
     const newApplication: Application = {
       id,
       campaignId: application.campaignId,
       influencerId: application.influencerId,
+      sequenceNumber,
       status: 'pending',
       appliedAt: new Date(),
       approvedAt: null,
@@ -704,6 +710,13 @@ export class MemStorage implements IStorage {
       deadlineMissedAt: null,
       firstTime: !hasCompletedBefore,
       notesInternal: null,
+      shippingPhone: null,
+      shippingAddressLine1: null,
+      shippingAddressLine2: null,
+      shippingCity: null,
+      shippingState: null,
+      shippingZipCode: null,
+      shippingCountry: null,
       createdAt: new Date(),
     };
     this.applications.set(id, newApplication);
