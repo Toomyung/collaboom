@@ -716,8 +716,7 @@ export default function AdminCampaignDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[140px]">Influencer</TableHead>
-                        <TableHead className="w-[180px]">Address</TableHead>
-                        <TableHead className="w-[110px]">Phone</TableHead>
+                        <TableHead className="w-[200px]">Shipping Info</TableHead>
                         <TableHead className="w-[90px]">Approved</TableHead>
                         <TableHead className="w-[110px]">Courier</TableHead>
                         <TableHead className="w-[130px]">Tracking #</TableHead>
@@ -742,15 +741,22 @@ export default function AdminCampaignDetailPage() {
                             <TableCell className="text-xs">
                               {(() => {
                                 const addressParts = getDisplayAddress(app);
-                                if (!addressParts) return <span className="text-muted-foreground">No address</span>;
+                                const phone = app.influencer?.phone;
                                 return (
                                   <div className="flex items-start gap-1">
                                     <div className="flex-1">
-                                      {addressParts.map((part, idx) => (
-                                        <div key={idx} className={idx === 0 ? "text-foreground" : "text-muted-foreground"}>
-                                          {part}
-                                        </div>
-                                      ))}
+                                      {addressParts ? (
+                                        addressParts.map((part, idx) => (
+                                          <div key={idx} className={idx === 0 ? "text-foreground" : "text-muted-foreground"}>
+                                            {part}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <span className="text-muted-foreground">No address</span>
+                                      )}
+                                      {phone && (
+                                        <div className="text-muted-foreground mt-0.5">{phone}</div>
+                                      )}
                                     </div>
                                     <Button
                                       size="sm"
@@ -764,9 +770,6 @@ export default function AdminCampaignDetailPage() {
                                   </div>
                                 );
                               })()}
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {app.influencer?.phone || "-"}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {app.approvedAt
