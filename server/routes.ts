@@ -1034,6 +1034,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Save content URL (video link)
+  app.patch("/api/admin/applications/:id/content-url", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      const { contentUrl } = req.body;
+      
+      await storage.updateApplication(application.id, {
+        contentUrl: contentUrl || null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Revoke approval (admin can undo an approval)
   app.post("/api/admin/applications/:id/revoke", requireAuth("admin"), async (req, res) => {
     try {
