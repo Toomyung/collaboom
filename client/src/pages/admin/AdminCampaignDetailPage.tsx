@@ -511,6 +511,8 @@ export default function AdminCampaignDetailPage() {
 
   const pendingApplications = applications?.filter((a) => a.status === "pending") || [];
   const allApprovedApplications = applications?.filter((a) => a.status === "approved") || [];
+  // Combined list for Applicants tab: pending first, then approved (for reference)
+  const allApplicants = applications?.filter((a) => ["pending", "approved"].includes(a.status)) || [];
   const approvedTotalPages = Math.ceil(allApprovedApplications.length / APPROVED_PAGE_SIZE);
   const approvedApplications = allApprovedApplications.slice(
     (approvedPage - 1) * APPROVED_PAGE_SIZE,
@@ -637,9 +639,9 @@ export default function AdminCampaignDetailPage() {
             <TabsTrigger value="applicants" data-testid="tab-applicants">
               <Users className="h-4 w-4 mr-2" />
               Applicants
-              {pendingApplications.length > 0 && (
+              {allApplicants.length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {pendingApplications.length}
+                  {pendingApplications.length > 0 ? `${pendingApplications.length}/${allApplicants.length}` : allApplicants.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -755,11 +757,11 @@ export default function AdminCampaignDetailPage() {
             </div>
           </TabsContent>
 
-          {/* Applicants Tab */}
+          {/* Applicants Tab - Shows all applications with original profile info */}
           <TabsContent value="applicants" className="mt-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-4">
-                <CardTitle>Applicants</CardTitle>
+                <CardTitle>Applicants ({allApplicants.length})</CardTitle>
                 {selectedApplications.size > 0 && (
                   <Button
                     onClick={() => bulkApproveMutation.mutate(Array.from(selectedApplications))}
@@ -778,109 +780,156 @@ export default function AdminCampaignDetailPage() {
                       <Skeleton key={i} className="h-12" />
                     ))}
                   </div>
-                ) : pendingApplications.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={selectedApplications.size === pendingApplications.length}
-                            onCheckedChange={toggleAll}
-                          />
-                        </TableHead>
-                        <TableHead>Influencer</TableHead>
-                        <TableHead>TikTok</TableHead>
-                        <TableHead>Score</TableHead>
-                        <TableHead>Applied</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingApplications.map((app) => (
-                        <TableRow key={app.id}>
-                          <TableCell>
+                ) : allApplicants.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">
                             <Checkbox
-                              checked={selectedApplications.has(app.id)}
-                              onCheckedChange={() => toggleApplication(app.id)}
+                              checked={selectedApplications.size === pendingApplications.length && pendingApplications.length > 0}
+                              onCheckedChange={toggleAll}
+                              disabled={pendingApplications.length === 0}
                             />
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <button
-                                type="button"
-                                className="font-medium text-primary hover:underline cursor-pointer text-left"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (app.influencer) {
-                                    setSelectedInfluencer(app.influencer);
-                                  }
-                                }}
-                                data-testid={`influencer-name-${app.id}`}
-                              >
-                                {app.influencer?.name || "Unknown"}
-                              </button>
-                              <p className="text-xs text-muted-foreground">
-                                {app.influencer?.email}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {app.influencer?.tiktokHandle ? (
-                              <a
-                                href={`https://www.tiktok.com/@${app.influencer.tiktokHandle}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-muted-foreground hover:text-primary hover:underline flex items-center gap-1"
-                                onClick={(e) => e.stopPropagation()}
-                                data-testid={`tiktok-link-${app.id}`}
-                              >
-                                @{app.influencer.tiktokHandle}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Star className="h-3 w-3 text-yellow-500" />
-                              <span>{app.influencer?.score ?? 0}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {app.appliedAt
-                              ? format(new Date(app.appliedAt), "MMM d, h:mm a")
-                              : "-"}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => approveMutation.mutate(app.id)}
-                                disabled={approveMutation.isPending}
-                                data-testid={`approve-${app.id}`}
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => rejectMutation.mutate(app.id)}
-                                disabled={rejectMutation.isPending}
-                                data-testid={`reject-${app.id}`}
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                          </TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Influencer</TableHead>
+                          <TableHead>TikTok</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Address</TableHead>
+                          <TableHead>City</TableHead>
+                          <TableHead>State</TableHead>
+                          <TableHead>Zip</TableHead>
+                          <TableHead>Score</TableHead>
+                          <TableHead>Applied</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {allApplicants.map((app) => {
+                          const inf = app.influencer;
+                          const isPending = app.status === "pending";
+                          return (
+                            <TableRow key={app.id} className={!isPending ? "bg-muted/30" : ""}>
+                              <TableCell>
+                                {isPending ? (
+                                  <Checkbox
+                                    checked={selectedApplications.has(app.id)}
+                                    onCheckedChange={() => toggleApplication(app.id)}
+                                  />
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={isPending ? "outline" : "default"}
+                                  className={isPending ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" : "bg-green-500/10 text-green-600 border-green-500/30"}
+                                >
+                                  {isPending ? "Pending" : "Approved"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <button
+                                    type="button"
+                                    className="font-medium text-primary hover:underline cursor-pointer text-left"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (inf) {
+                                        setSelectedInfluencer(inf);
+                                      }
+                                    }}
+                                    data-testid={`influencer-name-${app.id}`}
+                                  >
+                                    {inf?.name || "Unknown"}
+                                  </button>
+                                  <p className="text-xs text-muted-foreground">
+                                    {inf?.email}
+                                  </p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {inf?.tiktokHandle ? (
+                                  <a
+                                    href={`https://www.tiktok.com/@${inf.tiktokHandle}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-primary hover:underline flex items-center gap-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                    data-testid={`tiktok-link-${app.id}`}
+                                  >
+                                    @{inf.tiktokHandle}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              {/* Original profile info - READ ONLY */}
+                              <TableCell className="text-sm text-muted-foreground">
+                                {inf?.phone || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate" title={inf?.addressLine1 || ""}>
+                                {inf?.addressLine1 || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {inf?.city || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {inf?.state || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {inf?.zipCode || "-"}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 text-yellow-500" />
+                                  <span>{inf?.score ?? 0}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {app.appliedAt
+                                  ? format(new Date(app.appliedAt), "MMM d, h:mm a")
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>
+                                {isPending ? (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => approveMutation.mutate(app.id)}
+                                      disabled={approveMutation.isPending}
+                                      data-testid={`approve-${app.id}`}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => rejectMutation.mutate(app.id)}
+                                      disabled={rejectMutation.isPending}
+                                      data-testid={`reject-${app.id}`}
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    See Approved tab
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No pending applications</p>
+                    <p>No applications yet</p>
                   </div>
                 )}
               </CardContent>
