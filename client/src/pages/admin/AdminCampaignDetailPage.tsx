@@ -71,6 +71,7 @@ interface ShippingFormData {
   courier: string;
   trackingNumber: string;
   trackingUrl: string;
+  phone: string;
   addressLine1: string;
   addressLine2: string;
   city: string;
@@ -280,8 +281,9 @@ export default function AdminCampaignDetailPage() {
         const defaultData = getFormDataFromApp(app);
         const formData = shippingForms[app.id] || defaultData;
         
-        // Save address to application shipping fields first
+        // Save phone and address to application shipping fields first
         await apiRequest("PATCH", `/api/admin/applications/${app.id}/shipping-address`, {
+          phone: formData.phone,
           addressLine1: formData.addressLine1,
           addressLine2: formData.addressLine2,
           city: formData.city,
@@ -358,7 +360,7 @@ export default function AdminCampaignDetailPage() {
   });
 
   const getDefaultFormData = (): ShippingFormData => ({
-    courier: "", trackingNumber: "", trackingUrl: "",
+    courier: "", trackingNumber: "", trackingUrl: "", phone: "",
     addressLine1: "", addressLine2: "", city: "", state: "", zipCode: "", country: "United States"
   });
 
@@ -368,6 +370,7 @@ export default function AdminCampaignDetailPage() {
       courier: "",
       trackingNumber: "",
       trackingUrl: "",
+      phone: app.shippingPhone || inf?.phone || "",
       addressLine1: app.shippingAddressLine1 || inf?.addressLine1 || "",
       addressLine2: app.shippingAddressLine2 || inf?.addressLine2 || "",
       city: app.shippingCity || inf?.city || "",
@@ -401,9 +404,10 @@ export default function AdminCampaignDetailPage() {
       return;
     }
     
-    // First save the address to application shipping fields (uses form data or fallback)
+    // First save phone and address to application shipping fields (uses form data or fallback)
     try {
       await apiRequest("PATCH", `/api/admin/applications/${applicationId}/shipping-address`, {
+        phone: formData.phone,
         addressLine1: formData.addressLine1,
         addressLine2: formData.addressLine2,
         city: formData.city,
@@ -412,7 +416,7 @@ export default function AdminCampaignDetailPage() {
         country: formData.country,
       });
     } catch (error) {
-      // Address save is optional, continue with shipping
+      // Phone/Address save is optional, continue with shipping
     }
     
     shipMutation.mutate({ applicationId, data: formData });
@@ -897,8 +901,14 @@ export default function AdminCampaignDetailPage() {
                                   <div className="text-xs text-muted-foreground truncate">{app.influencer?.email}</div>
                                 </div>
                               </TableCell>
-                              <TableCell className="p-2 text-xs" data-testid={`text-phone-${app.id}`}>
-                                {app.influencer?.phone || "-"}
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.phone}
+                                  onChange={(e) => updateShippingForm(app.id, "phone", e.target.value, app)}
+                                  placeholder="Phone"
+                                  className="h-7 text-xs"
+                                  data-testid={`input-phone-${app.id}`}
+                                />
                               </TableCell>
                               <TableCell className="p-2">
                                 {app.influencer?.tiktokHandle ? (

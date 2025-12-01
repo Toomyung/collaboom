@@ -1192,10 +1192,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
-      const { addressLine1, addressLine2, city, state, zipCode, country } = req.body;
+      const { phone, addressLine1, addressLine2, city, state, zipCode, country } = req.body;
 
-      // Update application with shipping address
+      // Update application with shipping info (phone and address)
       const updated = await storage.updateApplication(application.id, {
+        shippingPhone: phone || null,
         shippingAddressLine1: addressLine1 || null,
         shippingAddressLine2: addressLine2 || null,
         shippingCity: city || null,
