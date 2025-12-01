@@ -4,9 +4,8 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { CampaignCard } from "@/components/CampaignCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Campaign, MinimalCampaign } from "@shared/schema";
-import { Search, Sparkles, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Sparkles, Filter, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -200,37 +199,13 @@ export default function CampaignListPage() {
 
         {/* Campaign Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="rounded-xl border bg-card overflow-hidden">
-                <div className="relative aspect-[16/9] bg-muted">
-                  <Skeleton className="absolute inset-0" />
-                  <div className="absolute top-3 right-3">
-                    <Skeleton className="h-6 w-20 rounded-full" />
-                  </div>
-                  <div className="absolute bottom-3 left-3">
-                    <Skeleton className="h-5 w-14 rounded-full" />
-                  </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-3 w-20" />
-                      <Skeleton className="h-5 w-40" />
-                    </div>
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-4 w-28" />
-                  </div>
-                </div>
-                <div className="px-4 pb-4 flex gap-2">
-                  <Skeleton className="h-9 flex-1 rounded-md" />
-                  <Skeleton className="h-9 flex-1 rounded-md" />
-                </div>
+          <div className="min-h-[60vh] flex flex-col items-center justify-center" data-testid="loading-campaigns">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" data-testid="spinner-campaigns" />
               </div>
-            ))}
+            </div>
+            <p className="mt-4 text-muted-foreground text-sm" data-testid="text-loading-campaigns">Loading campaigns...</p>
           </div>
         ) : paginatedCampaigns && paginatedCampaigns.length > 0 ? (
           <>

@@ -92,6 +92,33 @@ function normalizeLegacyRewardType(rewardType: string, rewardAmount: number | nu
   return { rewardType, rewardAmount: rewardAmount ?? null };
 }
 
+// Helper to detect platform from URL
+type Platform = "instagram" | "tiktok" | "amazon" | "unknown";
+
+function detectPlatformFromUrl(url: string): Platform {
+  if (!url) return "unknown";
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes("instagram.com") || lowerUrl.includes("instagr.am")) {
+    return "instagram";
+  }
+  if (lowerUrl.includes("tiktok.com") || lowerUrl.includes("vm.tiktok.com")) {
+    return "tiktok";
+  }
+  if (lowerUrl.includes("amazon.com") || lowerUrl.includes("amzn.to") || lowerUrl.includes("a.co")) {
+    return "amazon";
+  }
+  return "unknown";
+}
+
+function getPlatformDisplayName(platform: Platform): string {
+  switch (platform) {
+    case "instagram": return "Instagram";
+    case "tiktok": return "TikTok";
+    case "amazon": return "Amazon";
+    default: return "Unknown";
+  }
+}
+
 export default function AdminCampaignFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id && id !== "new");
@@ -105,6 +132,33 @@ export default function AdminCampaignFormPage() {
   const [missingFieldsDialogOpen, setMissingFieldsDialogOpen] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [pendingSubmitAction, setPendingSubmitAction] = useState<(() => void) | null>(null);
+  
+  // URL mismatch warning state
+  const [urlMismatchDialogOpen, setUrlMismatchDialogOpen] = useState(false);
+  const [urlMismatchInfo, setUrlMismatchInfo] = useState<{
+    fieldName: string;
+    expectedPlatform: string;
+    detectedPlatform: string;
+    url: string;
+  } | null>(null);
+  
+  // Handler for URL field blur - validates platform matches expected field
+  const handleUrlBlur = (fieldName: string, expectedPlatform: Platform, url: string) => {
+    if (!url || url.trim() === "") return;
+    
+    const detectedPlatform = detectPlatformFromUrl(url);
+    
+    // Show warning if detected platform doesn't match expected platform
+    if (detectedPlatform !== "unknown" && detectedPlatform !== expectedPlatform) {
+      setUrlMismatchInfo({
+        fieldName,
+        expectedPlatform: getPlatformDisplayName(expectedPlatform),
+        detectedPlatform: getPlatformDisplayName(detectedPlatform),
+        url,
+      });
+      setUrlMismatchDialogOpen(true);
+    }
+  };
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
@@ -692,6 +746,10 @@ export default function AdminCampaignFormPage() {
                             placeholder="https://amazon.com/..."
                             {...field}
                             value={field.value || ""}
+                            onBlur={(e) => {
+                              field.onBlur();
+                              handleUrlBlur("Amazon Product URL", "amazon", e.target.value);
+                            }}
                             data-testid="input-amazon"
                           />
                         </FormControl>
@@ -711,6 +769,10 @@ export default function AdminCampaignFormPage() {
                             placeholder="https://instagram.com/..."
                             {...field}
                             value={field.value || ""}
+                            onBlur={(e) => {
+                              field.onBlur();
+                              handleUrlBlur("Instagram URL", "instagram", e.target.value);
+                            }}
                             data-testid="input-instagram"
                           />
                         </FormControl>
@@ -730,6 +792,10 @@ export default function AdminCampaignFormPage() {
                             placeholder="https://tiktok.com/@..."
                             {...field}
                             value={field.value || ""}
+                            onBlur={(e) => {
+                              field.onBlur();
+                              handleUrlBlur("TikTok URL", "tiktok", e.target.value);
+                            }}
                             data-testid="input-tiktok"
                           />
                         </FormControl>
@@ -1221,6 +1287,47 @@ export default function AdminCampaignFormPage() {
               </AlertDialogCancel>
               <AlertDialogAction onClick={handleConfirmSubmit} data-testid="button-missing-confirm">
                 Save Anyway
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* URL Platform Mismatch Warning Dialog */}
+        <AlertDialog 
+          open={urlMismatchDialogOpen} 
+          onOpenChange={(open) => {
+            setUrlMismatchDialogOpen(open);
+            if (!open) {
+              setUrlMismatchInfo(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                Wrong Platform URL
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                {urlMismatchInfo && (
+                  <>
+                    <p>
+                      You entered a <span className="font-semibold text-amber-600">{urlMismatchInfo.detectedPlatform}</span> URL 
+                      in the <span className="font-semibold">{urlMismatchInfo.fieldName}</span> field.
+                    </p>
+                    <p className="text-sm bg-muted p-2 rounded break-all">
+                      {urlMismatchInfo.url}
+                    </p>
+                    <p>
+                      Did you mean to put this in the {urlMismatchInfo.detectedPlatform} URL field instead?
+                    </p>
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction data-testid="button-url-mismatch-ok">
+                Got it
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
