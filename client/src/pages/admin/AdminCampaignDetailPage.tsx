@@ -79,13 +79,6 @@ interface ShippingFormData {
   country: string;
 }
 
-const COURIER_OPTIONS = [
-  { value: "USPS", label: "USPS" },
-  { value: "UPS", label: "UPS" },
-  { value: "DHL", label: "DHL" },
-  { value: "AMAZON", label: "Amazon" },
-  { value: "FEDEX", label: "FedEx" },
-];
 
 export default function AdminCampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -968,21 +961,13 @@ export default function AdminCampaignDetailPage() {
                                 />
                               </TableCell>
                               <TableCell className="p-1">
-                                <Select
+                                <Input
                                   value={formData.courier}
-                                  onValueChange={(value) => updateShippingForm(app.id, "courier", value, app)}
-                                >
-                                  <SelectTrigger className="h-7 text-xs" data-testid={`select-courier-${app.id}`}>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {COURIER_OPTIONS.map((option) => (
-                                      <SelectItem key={option.value} value={option.value}>
-                                        {option.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                  onChange={(e) => updateShippingForm(app.id, "courier", e.target.value.toUpperCase(), app)}
+                                  placeholder="USPS, UPS..."
+                                  className="h-7 text-xs w-20"
+                                  data-testid={`input-courier-${app.id}`}
+                                />
                               </TableCell>
                               <TableCell className="p-1">
                                 <Input
@@ -994,13 +979,26 @@ export default function AdminCampaignDetailPage() {
                                 />
                               </TableCell>
                               <TableCell className="p-1">
-                                <Input
-                                  value={formData.trackingUrl}
-                                  onChange={(e) => updateShippingForm(app.id, "trackingUrl", e.target.value, app)}
-                                  placeholder="https://..."
-                                  className="h-7 text-xs"
-                                  data-testid={`input-tracking-url-${app.id}`}
-                                />
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    value={formData.trackingUrl}
+                                    onChange={(e) => updateShippingForm(app.id, "trackingUrl", e.target.value, app)}
+                                    placeholder="https://..."
+                                    className="h-7 text-xs flex-1"
+                                    data-testid={`input-tracking-url-${app.id}`}
+                                  />
+                                  {formData.trackingUrl && (
+                                    <a
+                                      href={formData.trackingUrl.startsWith('http') ? formData.trackingUrl : `https://${formData.trackingUrl}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:text-primary/80 p-1"
+                                      data-testid={`link-tracking-url-${app.id}`}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="p-1">
                                 <Button
