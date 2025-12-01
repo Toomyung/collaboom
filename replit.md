@@ -55,10 +55,13 @@ Preferred communication style: Simple, everyday language.
 
 ### Performance Optimizations
 - **Route-Level Code Splitting:** All page components use React.lazy and Suspense for on-demand loading. This reduces initial bundle size by deferring admin-specific dependencies (recharts, react-dropzone) until needed.
-- **Minimal Campaign API:** Public `/api/campaigns` endpoint supports `?minimal=true` to return only essential fields (id, name, brandName, category, etc.) for list views, reducing JSON payload significantly.
+- **Minimal Campaign API:** Public `/api/campaigns` endpoint supports `?minimal=true` to return only essential fields for list views. Returns `thumbnailUrl` (single image) instead of full `imageUrls` array, dramatically reducing JSON payload from ~500KB+ to ~5KB for typical campaign lists.
+- **MinimalCampaign Type:** Strongly typed `MinimalCampaign` interface includes: id, name, brandName, productName, category, rewardType, rewardAmount, inventory, approvedCount, thumbnailUrl, status, deadline, applicationDeadline.
+- **Image Utility:** `getCampaignThumbnail()` function in `client/src/lib/imageUtils.ts` accepts campaign objects and handles both MinimalCampaign (thumbnailUrl) and full Campaign (imageUrls/imageUrl) types.
 - **Server-Side Pagination:** `/api/campaigns` supports `?page=N&pageSize=M` for true server-side pagination via `getActiveCampaignsPaginated()`.
 - **Lightweight Application Status:** `/api/applications/my-ids` endpoint returns only campaign IDs the user has applied to, eliminating the need to fetch full application records just to check application status.
 - **Client-Side Pagination:** Campaign list page displays 12 items per page with pagination controls.
+- **Performance Logging:** API endpoints include timing and payload size logging for optimization monitoring.
 
 ## External Dependencies
 
