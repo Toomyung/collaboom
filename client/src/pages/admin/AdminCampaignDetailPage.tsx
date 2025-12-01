@@ -837,6 +837,15 @@ export default function AdminCampaignDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="result" data-testid="tab-result">
+              <Star className="h-4 w-4 mr-2" />
+              Result
+              {uploadedApplications.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {uploadedApplications.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1752,7 +1761,8 @@ export default function AdminCampaignDetailPage() {
                                     <Button
                                       size="sm"
                                       onClick={() => markUploadedMutation.mutate(app.id)}
-                                      disabled={markUploadedMutation.isPending}
+                                      disabled={markUploadedMutation.isPending || !app.contentUrl}
+                                      title={!app.contentUrl ? "Video link required" : undefined}
                                       data-testid={`mark-uploaded-${app.id}`}
                                     >
                                       <CheckCircle className="h-4 w-4 mr-1" />
@@ -1782,6 +1792,74 @@ export default function AdminCampaignDetailPage() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No deliveries awaiting verification</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Result Tab */}
+          <TabsContent value="result" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Verified Results</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {uploadedApplications.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-14">ID</TableHead>
+                        <TableHead>Influencer</TableHead>
+                        <TableHead>Video Link</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {uploadedApplications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell className="font-mono text-sm text-muted-foreground">
+                            {String(app.sequenceNumber || 0).padStart(3, "0")}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
+                              onClick={() => {
+                                if (app.influencer) {
+                                  setSelectedInfluencer(app.influencer);
+                                  setInfluencerDetailTab("profile");
+                                }
+                              }}
+                              data-testid={`link-influencer-result-${app.id}`}
+                            >
+                              {app.influencer?.name}
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            {app.contentUrl ? (
+                              <a
+                                href={app.contentUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline flex items-center gap-1"
+                                data-testid={`link-video-result-${app.id}`}
+                              >
+                                <Video className="h-4 w-4" />
+                                {app.contentUrl.length > 40 
+                                  ? app.contentUrl.substring(0, 40) + "..." 
+                                  : app.contentUrl}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No verified results yet</p>
                   </div>
                 )}
               </CardContent>
