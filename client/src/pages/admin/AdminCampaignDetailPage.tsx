@@ -41,11 +41,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Campaign, ApplicationWithDetails, Influencer } from "@shared/schema";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { ExternalLink } from "lucide-react";
@@ -68,8 +63,6 @@ import {
   AlertTriangle,
   UploadCloud,
   Download,
-  MapPin,
-  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -106,8 +99,6 @@ export default function AdminCampaignDetailPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
-  const [addressForms, setAddressForms] = useState<Record<string, AddressFormData>>({});
-  const [openAddressPopover, setOpenAddressPopover] = useState<string | null>(null);
   const [approvedPage, setApprovedPage] = useState(1);
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
@@ -331,26 +322,6 @@ export default function AdminCampaignDetailPage() {
     shipMutation.mutate({ applicationId, data: formData });
   };
 
-  const updateAddressMutation = useMutation({
-    mutationFn: async ({ applicationId, data }: { applicationId: string; data: AddressFormData }) => {
-      await apiRequest("PATCH", `/api/admin/applications/${applicationId}/shipping-address`, data);
-      return applicationId;
-    },
-    onSuccess: (applicationId) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      setOpenAddressPopover(null);
-      setAddressForms((prev) => {
-        const updated = { ...prev };
-        delete updated[applicationId];
-        return updated;
-      });
-      toast({ title: "Address updated" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Failed to update address", description: error.message, variant: "destructive" });
-    },
-  });
-
   const getAddressFromApp = (app: ApplicationWithDetails): AddressFormData => {
     const inf = app.influencer;
     return {
@@ -361,59 +332,6 @@ export default function AdminCampaignDetailPage() {
       zipCode: app.shippingZipCode || inf?.zipCode || "",
       country: app.shippingCountry || inf?.country || "United States",
     };
-  };
-
-  const getAddressDisplay = (app: ApplicationWithDetails): string => {
-    const addr = getAddressFromApp(app);
-    if (!addr.addressLine1) return "No address";
-    const parts = [addr.addressLine1];
-    if (addr.city || addr.state) {
-      parts.push(`${addr.city}, ${addr.state} ${addr.zipCode}`.trim());
-    }
-    return parts.join(", ");
-  };
-
-  const openAddressEdit = (app: ApplicationWithDetails) => {
-    setAddressForms((prev) => ({
-      ...prev,
-      [app.id]: getAddressFromApp(app),
-    }));
-    setOpenAddressPopover(app.id);
-  };
-
-  const closeAddressEdit = () => {
-    const appId = openAddressPopover;
-    setOpenAddressPopover(null);
-    if (appId) {
-      setAddressForms((prev) => {
-        const updated = { ...prev };
-        delete updated[appId];
-        return updated;
-      });
-    }
-  };
-
-  const updateAddressFormField = (applicationId: string, field: keyof AddressFormData, value: string) => {
-    setAddressForms((prev) => {
-      const existing = prev[applicationId];
-      if (!existing) return prev;
-      return {
-        ...prev,
-        [applicationId]: {
-          ...existing,
-          [field]: value,
-        },
-      };
-    });
-  };
-
-  const handleSaveAddress = (applicationId: string) => {
-    const addressData = addressForms[applicationId];
-    if (!addressData?.addressLine1) {
-      toast({ title: "Please enter an address", variant: "destructive" });
-      return;
-    }
-    updateAddressMutation.mutate({ applicationId, data: addressData });
   };
 
   const handleDownloadCsv = () => {
@@ -858,30 +776,33 @@ export default function AdminCampaignDetailPage() {
               <CardContent className="p-0">
                 {approvedApplications.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <Table>
+                    <Table className="text-xs">
                       <TableHeader>
                         <TableRow className="bg-muted/50">
-                          <TableHead className="w-[180px] min-w-[180px] sticky left-0 bg-muted/50 z-10">Influencer</TableHead>
-                          <TableHead className="w-[100px] min-w-[100px]">TikTok</TableHead>
-                          <TableHead className="w-[220px] min-w-[220px]">Shipping Address</TableHead>
-                          <TableHead className="w-[100px] min-w-[100px]">Courier</TableHead>
-                          <TableHead className="w-[140px] min-w-[140px]">Tracking #</TableHead>
-                          <TableHead className="w-[80px] min-w-[80px]">Action</TableHead>
+                          <TableHead className="min-w-[160px] sticky left-0 bg-muted/50 z-10 text-xs">Influencer</TableHead>
+                          <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
+                          <TableHead className="min-w-[90px] text-xs">TikTok</TableHead>
+                          <TableHead className="min-w-[180px] text-xs">Address</TableHead>
+                          <TableHead className="min-w-[100px] text-xs">City</TableHead>
+                          <TableHead className="min-w-[60px] text-xs">State</TableHead>
+                          <TableHead className="min-w-[70px] text-xs">Zip</TableHead>
+                          <TableHead className="min-w-[90px] text-xs">Courier</TableHead>
+                          <TableHead className="min-w-[120px] text-xs">Tracking #</TableHead>
+                          <TableHead className="min-w-[70px] text-xs">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {approvedApplications.map((app) => {
                           const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", trackingUrl: "" };
                           const hasShippingInfo = formData.courier && formData.trackingNumber;
-                          const addressData = addressForms[app.id];
-                          const isAddressOpen = openAddressPopover === app.id;
+                          const addr = getAddressFromApp(app);
                           
                           return (
                             <TableRow key={app.id} className="hover:bg-muted/30">
-                              <TableCell className="sticky left-0 bg-background z-10 border-r">
+                              <TableCell className="sticky left-0 bg-background z-10 border-r p-2">
                                 <div className="min-w-0">
                                   <button
-                                    className="text-left hover:underline font-medium text-sm truncate block max-w-full"
+                                    className="text-left hover:underline font-medium text-xs truncate block max-w-full"
                                     onClick={() => setSelectedInfluencer(app.influencer || null)}
                                     data-testid={`influencer-name-${app.id}`}
                                   >
@@ -890,7 +811,10 @@ export default function AdminCampaignDetailPage() {
                                   <div className="text-xs text-muted-foreground truncate">{app.influencer?.email}</div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="p-2 text-xs" data-testid={`text-phone-${app.id}`}>
+                                {app.influencer?.phone || "-"}
+                              </TableCell>
+                              <TableCell className="p-2">
                                 {app.influencer?.tiktokHandle ? (
                                   <a 
                                     href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
@@ -905,97 +829,25 @@ export default function AdminCampaignDetailPage() {
                                   <span className="text-muted-foreground text-xs">-</span>
                                 )}
                               </TableCell>
-                              <TableCell className="p-1">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs whitespace-nowrap" data-testid={`text-address-${app.id}`}>
-                                    {getAddressDisplay(app)}
-                                  </span>
-                                  <Popover open={isAddressOpen} onOpenChange={(open) => {
-                                    if (open) openAddressEdit(app);
-                                    else closeAddressEdit();
-                                  }}>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-6 w-6 flex-shrink-0"
-                                        data-testid={`button-edit-address-${app.id}`}
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </Button>
-                                    </PopoverTrigger>
-                                  <PopoverContent className="w-80 p-3" align="start">
-                                    <div className="space-y-2">
-                                      <h4 className="font-medium text-sm">Edit Address</h4>
-                                      <div className="space-y-2">
-                                        <Input
-                                          placeholder="Street address"
-                                          value={addressData?.addressLine1 || ""}
-                                          onChange={(e) => updateAddressFormField(app.id, "addressLine1", e.target.value)}
-                                          className="h-8 text-xs"
-                                          data-testid={`input-address-line1-${app.id}`}
-                                        />
-                                        <Input
-                                          placeholder="Apt, suite (optional)"
-                                          value={addressData?.addressLine2 || ""}
-                                          onChange={(e) => updateAddressFormField(app.id, "addressLine2", e.target.value)}
-                                          className="h-8 text-xs"
-                                          data-testid={`input-address-line2-${app.id}`}
-                                        />
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <Input
-                                            placeholder="City"
-                                            value={addressData?.city || ""}
-                                            onChange={(e) => updateAddressFormField(app.id, "city", e.target.value)}
-                                            className="h-8 text-xs"
-                                            data-testid={`input-city-${app.id}`}
-                                          />
-                                          <Input
-                                            placeholder="State"
-                                            value={addressData?.state || ""}
-                                            onChange={(e) => updateAddressFormField(app.id, "state", e.target.value)}
-                                            className="h-8 text-xs"
-                                            data-testid={`input-state-${app.id}`}
-                                          />
-                                        </div>
-                                        <Input
-                                          placeholder="ZIP Code"
-                                          value={addressData?.zipCode || ""}
-                                          onChange={(e) => updateAddressFormField(app.id, "zipCode", e.target.value)}
-                                          className="h-8 text-xs"
-                                          data-testid={`input-zipcode-${app.id}`}
-                                        />
-                                      </div>
-                                      <div className="flex gap-2 pt-2">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="flex-1 h-7 text-xs"
-                                          onClick={closeAddressEdit}
-                                        >
-                                          Cancel
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          className="flex-1 h-7 text-xs"
-                                          onClick={() => handleSaveAddress(app.id)}
-                                          disabled={updateAddressMutation.isPending}
-                                          data-testid={`button-save-address-${app.id}`}
-                                        >
-                                          {updateAddressMutation.isPending ? "..." : "Save"}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </PopoverContent>
-                                  </Popover>
-                                </div>
+                              <TableCell className="p-2 text-xs" data-testid={`text-address-${app.id}`}>
+                                {addr.addressLine1 || "-"}
+                                {addr.addressLine2 && <span className="text-muted-foreground"> {addr.addressLine2}</span>}
+                              </TableCell>
+                              <TableCell className="p-2 text-xs" data-testid={`text-city-${app.id}`}>
+                                {addr.city || "-"}
+                              </TableCell>
+                              <TableCell className="p-2 text-xs" data-testid={`text-state-${app.id}`}>
+                                {addr.state || "-"}
+                              </TableCell>
+                              <TableCell className="p-2 text-xs" data-testid={`text-zip-${app.id}`}>
+                                {addr.zipCode || "-"}
                               </TableCell>
                               <TableCell className="p-1">
                                 <Select
                                   value={formData.courier}
                                   onValueChange={(value) => updateShippingForm(app.id, "courier", value)}
                                 >
-                                  <SelectTrigger className="h-8 text-xs" data-testid={`select-courier-${app.id}`}>
+                                  <SelectTrigger className="h-7 text-xs" data-testid={`select-courier-${app.id}`}>
                                     <SelectValue placeholder="Select" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1012,7 +864,7 @@ export default function AdminCampaignDetailPage() {
                                   value={formData.trackingNumber}
                                   onChange={(e) => updateShippingForm(app.id, "trackingNumber", e.target.value)}
                                   placeholder="Tracking #"
-                                  className="h-8 text-xs"
+                                  className="h-7 text-xs"
                                   data-testid={`input-tracking-${app.id}`}
                                 />
                               </TableCell>
@@ -1021,7 +873,7 @@ export default function AdminCampaignDetailPage() {
                                   size="sm"
                                   onClick={() => handleShip(app.id)}
                                   disabled={shipMutation.isPending || !hasShippingInfo}
-                                  className="h-8 text-xs"
+                                  className="h-7 text-xs px-2"
                                   data-testid={`button-ship-${app.id}`}
                                 >
                                   <Truck className="h-3 w-3 mr-1" />
