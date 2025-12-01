@@ -1226,8 +1226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Build CSV header
       const headers = [
-        "Name",
         "Email",
+        "Name",
         "TikTok Handle",
         "Instagram Handle",
         "Phone",
@@ -1238,8 +1238,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "ZIP Code",
         "Country",
         "Status",
-        "Applied At",
-        "Approved At",
+        "Courier",
+        "Tracking Number",
+        "Tracking URL",
       ];
 
       // Build CSV rows
@@ -1254,8 +1255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const country = app.shippingCountry || inf?.country || "United States";
 
         return [
-          inf?.name || "",
           inf?.email || "",
+          inf?.name || "",
           inf?.tiktokHandle || "",
           inf?.instagramHandle || "",
           inf?.phone || "",
@@ -1266,8 +1267,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           zipCode,
           country,
           app.status,
-          app.appliedAt ? new Date(app.appliedAt).toISOString().split("T")[0] : "",
-          app.approvedAt ? new Date(app.approvedAt).toISOString().split("T")[0] : "",
+          "",
+          "",
+          "",
         ];
       });
 

@@ -96,9 +96,13 @@ export default function AdminCampaignDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set());
   const [showCsvDialog, setShowCsvDialog] = useState(false);
-  const [csvContent, setCsvContent] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
   const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
+  const [approvedPage, setApprovedPage] = useState(1);
+  const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
+  const [bulkSending, setBulkSending] = useState(false);
+  const APPROVED_PAGE_SIZE = 20;
   const [editingAddressApp, setEditingAddressApp] = useState<ApplicationWithDetails | null>(null);
   const [addressForm, setAddressForm] = useState<AddressFormData>({
     addressLine1: "",
@@ -161,20 +165,104 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  const uploadCsvMutation = useMutation({
-    mutationFn: async (csvData: string) => {
-      await apiRequest("POST", `/api/admin/campaigns/${id}/shipping/upload-csv`, { csvData });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      setShowCsvDialog(false);
-      setCsvContent("");
-      toast({ title: "Shipping data uploaded" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
-    },
-  });
+  const handleCsvUpload = async () => {
+    if (!csvFile || !applications) return;
+    
+    const text = await csvFile.text();
+    const lines = text.split("\n").map(line => line.trim()).filter(line => line);
+    if (lines.length < 2) {
+      toast({ title: "Invalid CSV", description: "CSV must have header and at least one row", variant: "destructive" });
+      return;
+    }
+
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+    const emailIdx = headers.findIndex(h => h === "email");
+    const courierIdx = headers.findIndex(h => h === "courier");
+    const trackingNumberIdx = headers.findIndex(h => h.includes("tracking") && h.includes("number"));
+    const trackingUrlIdx = headers.findIndex(h => h.includes("tracking") && h.includes("url"));
+
+    if (emailIdx === -1) {
+      toast({ title: "Invalid CSV", description: "CSV must have Email column", variant: "destructive" });
+      return;
+    }
+
+    const approvedApps = applications.filter(a => a.status === "approved");
+    const emailToAppId = new Map<string, string>();
+    approvedApps.forEach(app => {
+      if (app.influencer?.email) {
+        emailToAppId.set(app.influencer.email.toLowerCase(), app.id);
+      }
+    });
+
+    let matchedCount = 0;
+    const newForms: Record<string, ShippingFormData> = { ...shippingForms };
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+      const email = values[emailIdx]?.toLowerCase();
+      const appId = emailToAppId.get(email);
+      
+      if (appId) {
+        matchedCount++;
+        const existing = newForms[appId] || { courier: "", trackingNumber: "", trackingUrl: "" };
+        newForms[appId] = {
+          courier: courierIdx !== -1 && values[courierIdx] ? values[courierIdx].toUpperCase() : existing.courier,
+          trackingNumber: trackingNumberIdx !== -1 && values[trackingNumberIdx] ? values[trackingNumberIdx] : existing.trackingNumber,
+          trackingUrl: trackingUrlIdx !== -1 && values[trackingUrlIdx] ? values[trackingUrlIdx] : existing.trackingUrl,
+        };
+      }
+    }
+
+    setShippingForms(newForms);
+    setShowCsvDialog(false);
+    setCsvFile(null);
+    toast({ 
+      title: "CSV imported", 
+      description: `Matched ${matchedCount} of ${lines.length - 1} rows. Review and click Send All or individual ship buttons.` 
+    });
+  };
+
+  const handleBulkSend = async () => {
+    if (!applications) return;
+    
+    const approvedApps = applications.filter(a => a.status === "approved");
+    const readyToSend = approvedApps.filter(app => {
+      const form = shippingForms[app.id];
+      return form?.courier && form?.trackingNumber;
+    });
+
+    if (readyToSend.length === 0) {
+      toast({ title: "No items to send", description: "Please fill in courier and tracking number for at least one item", variant: "destructive" });
+      return;
+    }
+
+    setBulkSending(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const app of readyToSend) {
+      try {
+        await apiRequest("POST", `/api/admin/applications/${app.id}/ship`, shippingForms[app.id]);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    setBulkSending(false);
+    setShowBulkSendDialog(false);
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+    
+    if (errorCount > 0) {
+      toast({ 
+        title: "Partially completed", 
+        description: `${successCount} shipped, ${errorCount} failed`,
+        variant: "destructive"
+      });
+    } else {
+      toast({ title: "All items shipped", description: `${successCount} items shipped successfully` });
+    }
+  };
 
   const markUploadedMutation = useMutation({
     mutationFn: async (applicationId: string) => {
@@ -327,7 +415,12 @@ export default function AdminCampaignDetailPage() {
   }
 
   const pendingApplications = applications?.filter((a) => a.status === "pending") || [];
-  const approvedApplications = applications?.filter((a) => a.status === "approved") || [];
+  const allApprovedApplications = applications?.filter((a) => a.status === "approved") || [];
+  const approvedTotalPages = Math.ceil(allApprovedApplications.length / APPROVED_PAGE_SIZE);
+  const approvedApplications = allApprovedApplications.slice(
+    (approvedPage - 1) * APPROVED_PAGE_SIZE,
+    approvedPage * APPROVED_PAGE_SIZE
+  );
   const rejectedApplications = applications?.filter((a) => a.status === "rejected") || [];
   const shippingApplications = applications?.filter((a) => 
     ["shipped", "delivered"].includes(a.status)
@@ -336,6 +429,11 @@ export default function AdminCampaignDetailPage() {
   const uploadedApplications = applications?.filter((a) => 
     ["uploaded", "completed"].includes(a.status)
   ) || [];
+  
+  const readyToSendCount = allApprovedApplications.filter(app => {
+    const form = shippingForms[app.id];
+    return form?.courier && form?.trackingNumber;
+  }).length;
 
   const toggleApplication = (appId: string) => {
     const newSelected = new Set(selectedApplications);
@@ -697,9 +795,20 @@ export default function AdminCampaignDetailPage() {
           {/* Approved Tab */}
           <TabsContent value="approved" className="mt-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-4">
-                <CardTitle>Approved Influencers</CardTitle>
-                <div className="flex items-center gap-2">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
+                <CardTitle>Approved Influencers ({allApprovedApplications.length})</CardTitle>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {readyToSendCount > 0 && (
+                    <Button 
+                      onClick={() => setShowBulkSendDialog(true)} 
+                      data-testid="button-send-all"
+                      size="sm"
+                      disabled={bulkSending}
+                    >
+                      <Truck className="h-4 w-4 mr-2" />
+                      Send All ({readyToSendCount})
+                    </Button>
+                  )}
                   <Button onClick={handleDownloadCsv} data-testid="button-download-csv" variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
                     Download CSV
@@ -831,6 +940,37 @@ export default function AdminCampaignDetailPage() {
                     <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p>No approved influencers yet</p>
                     <p className="text-sm mt-1">Approve applicants from the Applicants tab</p>
+                  </div>
+                )}
+                
+                {approvedTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {(approvedPage - 1) * APPROVED_PAGE_SIZE + 1} - {Math.min(approvedPage * APPROVED_PAGE_SIZE, allApprovedApplications.length)} of {allApprovedApplications.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setApprovedPage(p => Math.max(1, p - 1))}
+                        disabled={approvedPage === 1}
+                        data-testid="button-prev-page"
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm px-2">
+                        Page {approvedPage} of {approvedTotalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setApprovedPage(p => Math.min(approvedTotalPages, p + 1))}
+                        disabled={approvedPage === approvedTotalPages}
+                        data-testid="button-next-page"
+                      >
+                        Next
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -1077,33 +1217,87 @@ export default function AdminCampaignDetailPage() {
       </div>
 
       {/* CSV Upload Dialog */}
-      <Dialog open={showCsvDialog} onOpenChange={setShowCsvDialog}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={showCsvDialog} onOpenChange={(open) => {
+        setShowCsvDialog(open);
+        if (!open) setCsvFile(null);
+      }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Upload Shipping CSV</DialogTitle>
             <DialogDescription>
-              Paste CSV data with columns: email, tracking_number, courier, shipped_date, delivered_date (optional)
+              Upload a CSV file with columns: Email, Courier, Tracking Number, Tracking URL. 
+              Use "Download CSV" first to get the template with your influencer data.
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            placeholder="email,tracking_number,courier,shipped_date,delivered_date
-user@example.com,1Z999AA10123456784,UPS,2024-01-15,"
-            value={csvContent}
-            onChange={(e) => setCsvContent(e.target.value)}
-            rows={10}
-            className="font-mono text-sm"
-            data-testid="textarea-csv"
-          />
+          <div className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                className="hidden"
+                id="csv-upload-input"
+                data-testid="input-csv-file"
+              />
+              <label 
+                htmlFor="csv-upload-input"
+                className="cursor-pointer flex flex-col items-center gap-2"
+              >
+                <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                {csvFile ? (
+                  <span className="text-sm font-medium">{csvFile.name}</span>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Click to select CSV file</span>
+                )}
+              </label>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              <p className="font-medium mb-1">Expected columns:</p>
+              <p>Email (required), Courier, Tracking Number, Tracking URL</p>
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCsvDialog(false)}>
+            <Button variant="outline" onClick={() => { setShowCsvDialog(false); setCsvFile(null); }}>
               Cancel
             </Button>
             <Button
-              onClick={() => uploadCsvMutation.mutate(csvContent)}
-              disabled={!csvContent.trim() || uploadCsvMutation.isPending}
+              onClick={handleCsvUpload}
+              disabled={!csvFile}
               data-testid="button-submit-csv"
             >
-              {uploadCsvMutation.isPending ? "Uploading..." : "Upload"}
+              Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Send Confirmation Dialog */}
+      <Dialog open={showBulkSendDialog} onOpenChange={setShowBulkSendDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Confirm Bulk Send
+            </DialogTitle>
+            <DialogDescription>
+              You are about to send shipping notifications to {readyToSendCount} influencer{readyToSendCount !== 1 ? 's' : ''}.
+              This action will email them with tracking information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg text-sm">
+            <p className="font-medium text-amber-800 dark:text-amber-200">Please verify:</p>
+            <ul className="mt-2 space-y-1 text-amber-700 dark:text-amber-300">
+              <li>• All courier information is correct</li>
+              <li>• All tracking numbers are valid</li>
+              <li>• All tracking URLs are working</li>
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkSendDialog(false)} disabled={bulkSending}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkSend} disabled={bulkSending} data-testid="button-confirm-bulk-send">
+              {bulkSending ? "Sending..." : `Send All (${readyToSendCount})`}
             </Button>
           </DialogFooter>
         </DialogContent>
