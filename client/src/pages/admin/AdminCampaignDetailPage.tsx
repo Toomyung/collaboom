@@ -717,6 +717,7 @@ export default function AdminCampaignDetailPage() {
                       <TableRow>
                         <TableHead className="w-[140px]">Influencer</TableHead>
                         <TableHead className="w-[180px]">Address</TableHead>
+                        <TableHead className="w-[110px]">Phone</TableHead>
                         <TableHead className="w-[90px]">Approved</TableHead>
                         <TableHead className="w-[110px]">Courier</TableHead>
                         <TableHead className="w-[130px]">Tracking #</TableHead>
@@ -763,6 +764,9 @@ export default function AdminCampaignDetailPage() {
                                   </div>
                                 );
                               })()}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {app.influencer?.phone || "-"}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {app.approvedAt
