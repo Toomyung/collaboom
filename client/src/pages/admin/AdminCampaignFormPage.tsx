@@ -455,6 +455,19 @@ export default function AdminCampaignFormPage() {
       return;
     }
     
+    // Check if TikTok URL is an actual video link
+    const isTikTokUrl = url.includes("tiktok.com");
+    const hasVideoId = url.includes("/video/");
+    
+    if (isTikTokUrl && !hasVideoId) {
+      toast({
+        title: "Not a Video Link",
+        description: "This looks like a TikTok profile link, not a video link. Please use a video URL (e.g., tiktok.com/@user/video/123456)",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!current.includes(url)) {
       const newUrls = [...current, url];
       form.setValue("videoReferenceUrls", newUrls, { shouldDirty: true, shouldValidate: true });
