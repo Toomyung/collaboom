@@ -1255,80 +1255,104 @@ export default function AdminCampaignDetailPage() {
             </Card>
           </TabsContent>
 
-          {/* Shipping Tab */}
+          {/* Shipping Tab - Read-only shipping records */}
           <TabsContent value="shipping" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Shipping Tracking</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  Shipping Records
+                  <span className="text-muted-foreground font-normal text-sm">({shippingApplications.length})</span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {shippingApplications.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Influencer</TableHead>
-                        <TableHead>Courier</TableHead>
-                        <TableHead>Tracking #</TableHead>
-                        <TableHead>Tracking URL</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Shipped</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {shippingApplications.map((app) => (
-                        <TableRow key={app.id}>
-                          <TableCell className="font-medium">
-                            <div>{app.influencer?.name}</div>
-                            <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{app.shipping?.courier || "-"}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {app.shipping?.trackingNumber || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {app.shipping?.trackingUrl ? (
-                              <a
-                                href={app.shipping.trackingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-primary hover:underline text-sm"
-                              >
-                                Track Package
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={cn(
-                                app.status === "shipped"
-                                  ? "bg-blue-500/10 text-blue-600"
-                                  : app.status === "delivered"
-                                  ? "bg-purple-500/10 text-purple-600"
-                                  : "bg-yellow-500/10 text-yellow-600"
-                              )}
-                            >
-                              {app.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {app.shippedAt
-                              ? format(new Date(app.shippedAt), "MMM d")
-                              : "-"}
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Influencer</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Shipping Address</TableHead>
+                          <TableHead>Courier</TableHead>
+                          <TableHead>Tracking #</TableHead>
+                          <TableHead>Tracking URL</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Shipped</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {shippingApplications.map((app) => {
+                          const phone = app.shippingPhone || app.influencer?.phone;
+                          const addr1 = app.shippingAddressLine1 || app.influencer?.addressLine1;
+                          const addr2 = app.shippingAddressLine2 || app.influencer?.addressLine2;
+                          const city = app.shippingCity || app.influencer?.city;
+                          const state = app.shippingState || app.influencer?.state;
+                          const zip = app.shippingZipCode || app.influencer?.zipCode;
+                          const fullAddress = [addr1, addr2, city, state, zip].filter(Boolean).join(", ");
+                          
+                          return (
+                            <TableRow key={app.id} className="bg-muted/20">
+                              <TableCell className="font-medium">
+                                <div>{app.influencer?.name}</div>
+                                <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {phone || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-[200px]" title={fullAddress}>
+                                <div className="truncate">{fullAddress || "-"}</div>
+                              </TableCell>
+                              <TableCell className="text-sm font-medium">
+                                {app.shipping?.courier || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm font-mono">
+                                {app.shipping?.trackingNumber || "-"}
+                              </TableCell>
+                              <TableCell>
+                                {app.shipping?.trackingUrl ? (
+                                  <a
+                                    href={app.shipping.trackingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-primary hover:underline text-sm"
+                                  >
+                                    Track
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={cn(
+                                    app.status === "shipped"
+                                      ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
+                                      : app.status === "delivered"
+                                      ? "bg-purple-500/10 text-purple-600 border-purple-500/30"
+                                      : "bg-yellow-500/10 text-yellow-600 border-yellow-500/30"
+                                  )}
+                                >
+                                  {app.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {app.shippedAt
+                                  ? format(new Date(app.shippedAt), "MMM d")
+                                  : "-"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Truck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No shipping in progress</p>
-                    <p className="text-sm mt-1">Enter shipping info from the Approved tab</p>
+                    <p>No shipping records yet</p>
+                    <p className="text-sm mt-1">Ship items from the Approved tab</p>
                   </div>
                 )}
               </CardContent>
