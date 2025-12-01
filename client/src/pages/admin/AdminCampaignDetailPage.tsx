@@ -829,11 +829,13 @@ export default function AdminCampaignDetailPage() {
                           <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
                           <TableHead className="min-w-[90px] text-xs">TikTok</TableHead>
                           <TableHead className="min-w-[180px] text-xs">Address</TableHead>
+                          <TableHead className="min-w-[140px] text-xs">Address 2</TableHead>
                           <TableHead className="min-w-[100px] text-xs">City</TableHead>
                           <TableHead className="min-w-[60px] text-xs">State</TableHead>
                           <TableHead className="min-w-[70px] text-xs">Zip</TableHead>
                           <TableHead className="min-w-[90px] text-xs">Courier</TableHead>
                           <TableHead className="min-w-[120px] text-xs">Tracking #</TableHead>
+                          <TableHead className="min-w-[180px] text-xs">Tracking URL</TableHead>
                           <TableHead className="min-w-[70px] text-xs">Action</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -882,6 +884,15 @@ export default function AdminCampaignDetailPage() {
                                   placeholder="Address"
                                   className="h-7 text-xs"
                                   data-testid={`input-address-${app.id}`}
+                                />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.addressLine2}
+                                  onChange={(e) => updateShippingForm(app.id, "addressLine2", e.target.value, app)}
+                                  placeholder="Apt, Suite, etc."
+                                  className="h-7 text-xs"
+                                  data-testid={`input-address2-${app.id}`}
                                 />
                               </TableCell>
                               <TableCell className="p-1">
@@ -935,6 +946,15 @@ export default function AdminCampaignDetailPage() {
                                   placeholder="Tracking #"
                                   className="h-7 text-xs"
                                   data-testid={`input-tracking-${app.id}`}
+                                />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input
+                                  value={formData.trackingUrl}
+                                  onChange={(e) => updateShippingForm(app.id, "trackingUrl", e.target.value, app)}
+                                  placeholder="https://..."
+                                  className="h-7 text-xs"
+                                  data-testid={`input-tracking-url-${app.id}`}
                                 />
                               </TableCell>
                               <TableCell className="p-1">
