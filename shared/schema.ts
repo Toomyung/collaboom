@@ -169,6 +169,7 @@ export const applications = pgTable("applications", {
   deadlineMissedAt: timestamp("deadline_missed_at"),
   firstTime: boolean("first_time").default(false),
   notesInternal: text("notes_internal"),
+  contentUrl: text("content_url"), // URL of uploaded video content (TikTok link)
   // Shipping info (admin-editable, separate from influencer's original data)
   shippingPhone: text("shipping_phone"),
   shippingAddressLine1: text("shipping_address_line1"),
