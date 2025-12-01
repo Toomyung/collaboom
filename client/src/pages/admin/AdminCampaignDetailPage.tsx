@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -101,6 +102,8 @@ export default function AdminCampaignDetailPage() {
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
   const [approvedPage, setApprovedPage] = useState(1);
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
+  const [showShippingSheet, setShowShippingSheet] = useState(false);
+  const [editShippingApp, setEditShippingApp] = useState<ApplicationWithDetails | null>(null);
   const [bulkSending, setBulkSending] = useState(false);
   const APPROVED_PAGE_SIZE = 20;
   const [editingAddressApp, setEditingAddressApp] = useState<ApplicationWithDetails | null>(null);
@@ -824,111 +827,90 @@ export default function AdminCampaignDetailPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[140px]">Influencer</TableHead>
-                        <TableHead className="w-[200px]">Shipping Info</TableHead>
-                        <TableHead className="w-[90px]">Approved</TableHead>
-                        <TableHead className="w-[110px]">Courier</TableHead>
-                        <TableHead className="w-[130px]">Tracking #</TableHead>
-                        <TableHead className="w-[180px]">Tracking URL</TableHead>
-                        <TableHead className="w-[70px]">Action</TableHead>
+                        <TableHead>Influencer</TableHead>
+                        <TableHead>TikTok</TableHead>
+                        <TableHead>Shipping Status</TableHead>
+                        <TableHead>Approved</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {approvedApplications.map((app) => {
                         const formData = shippingForms[app.id] || { courier: "", trackingNumber: "", trackingUrl: "" };
+                        const hasShippingInfo = formData.courier && formData.trackingNumber;
+                        
                         return (
                           <TableRow key={app.id}>
-                            <TableCell className="font-medium">
-                              <button
-                                className="text-left hover:underline text-sm"
-                                onClick={() => setSelectedInfluencer(app.influencer || null)}
-                              >
-                                {app.influencer?.name}
-                              </button>
-                              <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <button
+                                    className="text-left hover:underline font-medium"
+                                    onClick={() => setSelectedInfluencer(app.influencer || null)}
+                                  >
+                                    {app.influencer?.name}
+                                  </button>
+                                  <div className="text-sm text-muted-foreground">{app.influencer?.email}</div>
+                                </div>
+                              </div>
                             </TableCell>
-                            <TableCell className="text-xs">
-                              {(() => {
-                                const addressParts = getDisplayAddress(app);
-                                const phone = app.influencer?.phone;
-                                return (
-                                  <div className="flex items-start gap-1">
-                                    <div className="flex-1">
-                                      {addressParts ? (
-                                        addressParts.map((part, idx) => (
-                                          <div key={idx} className={idx === 0 ? "text-foreground" : "text-muted-foreground"}>
-                                            {part}
-                                          </div>
-                                        ))
-                                      ) : (
-                                        <span className="text-muted-foreground">No address</span>
-                                      )}
-                                      {phone && (
-                                        <div className="text-muted-foreground mt-0.5">{phone}</div>
-                                      )}
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 w-6 p-0 shrink-0"
-                                      onClick={() => openAddressDialog(app)}
-                                      data-testid={`button-edit-address-${app.id}`}
-                                    >
-                                      <Edit className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                );
-                              })()}
+                            <TableCell>
+                              {app.influencer?.tiktokHandle ? (
+                                <a 
+                                  href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline"
+                                >
+                                  @{app.influencer.tiktokHandle}
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
                             </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
+                            <TableCell>
+                              {hasShippingInfo ? (
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Ready
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-muted-foreground">
+                                  Pending
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
                               {app.approvedAt
                                 ? format(new Date(app.approvedAt), "MMM d")
                                 : "-"}
                             </TableCell>
-                            <TableCell>
-                              <Select
-                                value={formData.courier}
-                                onValueChange={(value) => updateShippingForm(app.id, "courier", value)}
-                              >
-                                <SelectTrigger className="h-8 text-sm" data-testid={`select-courier-${app.id}`}>
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {COURIER_OPTIONS.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                placeholder="Tracking #"
-                                className="h-8 text-sm"
-                                value={formData.trackingNumber}
-                                onChange={(e) => updateShippingForm(app.id, "trackingNumber", e.target.value)}
-                                data-testid={`input-tracking-${app.id}`}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                placeholder="https://..."
-                                className="h-8 text-sm"
-                                value={formData.trackingUrl}
-                                onChange={(e) => updateShippingForm(app.id, "trackingUrl", e.target.value)}
-                                data-testid={`input-tracking-url-${app.id}`}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                onClick={() => handleShip(app.id)}
-                                disabled={shipMutation.isPending || !formData.courier || !formData.trackingNumber}
-                                data-testid={`button-ship-${app.id}`}
-                              >
-                                <Truck className="h-4 w-4" />
-                              </Button>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditShippingApp(app);
+                                    setShowShippingSheet(true);
+                                  }}
+                                  data-testid={`button-edit-shipping-${app.id}`}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
+                                {hasShippingInfo && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleShip(app.id)}
+                                    disabled={shipMutation.isPending}
+                                    data-testid={`button-ship-${app.id}`}
+                                  >
+                                    <Truck className="h-4 w-4 mr-1" />
+                                    Send
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -1302,6 +1284,134 @@ export default function AdminCampaignDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Shipping Edit Sheet */}
+      <Sheet open={showShippingSheet} onOpenChange={(open) => {
+        setShowShippingSheet(open);
+        if (!open) setEditShippingApp(null);
+      }}>
+        <SheetContent className="sm:max-w-md">
+          {editShippingApp && (
+            <>
+              <SheetHeader>
+                <SheetTitle>Edit Shipping Info</SheetTitle>
+                <SheetDescription>
+                  {editShippingApp.influencer?.name} ({editShippingApp.influencer?.email})
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-6">
+                {/* Address Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">Shipping Address</h4>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        openAddressDialog(editShippingApp);
+                      }}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3 text-sm">
+                    {(() => {
+                      const addressParts = getDisplayAddress(editShippingApp);
+                      const phone = editShippingApp.influencer?.phone;
+                      return addressParts ? (
+                        <>
+                          {addressParts.map((part, idx) => (
+                            <div key={idx}>{part}</div>
+                          ))}
+                          {phone && <div className="mt-1 text-muted-foreground">{phone}</div>}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">No address on file</span>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Shipping Form */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium">Tracking Information</h4>
+                  
+                  <div className="space-y-2">
+                    <Label>Courier</Label>
+                    <Select
+                      value={shippingForms[editShippingApp.id]?.courier || ""}
+                      onValueChange={(value) => updateShippingForm(editShippingApp.id, "courier", value)}
+                    >
+                      <SelectTrigger data-testid="select-courier-sheet">
+                        <SelectValue placeholder="Select courier..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COURIER_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tracking Number</Label>
+                    <Input
+                      placeholder="Enter tracking number..."
+                      value={shippingForms[editShippingApp.id]?.trackingNumber || ""}
+                      onChange={(e) => updateShippingForm(editShippingApp.id, "trackingNumber", e.target.value)}
+                      data-testid="input-tracking-number-sheet"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tracking URL (optional)</Label>
+                    <Input
+                      placeholder="https://..."
+                      value={shippingForms[editShippingApp.id]?.trackingUrl || ""}
+                      onChange={(e) => updateShippingForm(editShippingApp.id, "trackingUrl", e.target.value)}
+                      data-testid="input-tracking-url-sheet"
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setShowShippingSheet(false);
+                      setEditShippingApp(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => {
+                      handleShip(editShippingApp.id);
+                      setShowShippingSheet(false);
+                      setEditShippingApp(null);
+                    }}
+                    disabled={
+                      shipMutation.isPending || 
+                      !shippingForms[editShippingApp.id]?.courier || 
+                      !shippingForms[editShippingApp.id]?.trackingNumber
+                    }
+                    data-testid="button-ship-sheet"
+                  >
+                    <Truck className="h-4 w-4 mr-2" />
+                    Send Notification
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Influencer Detail Sheet */}
       <Sheet open={!!selectedInfluencer} onOpenChange={(open) => !open && setSelectedInfluencer(null)}>
