@@ -1,4 +1,4 @@
-import { Campaign } from "@shared/schema";
+import { Campaign, MinimalCampaign } from "@shared/schema";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
 
 interface CampaignCardProps {
-  campaign: Campaign;
+  campaign: Campaign | MinimalCampaign;
   showApplyButton?: boolean;
   onApply?: () => void;
   isApplied?: boolean;
@@ -123,9 +123,9 @@ export function CampaignCard({
         "relative aspect-[16/9] overflow-hidden bg-muted",
         isDisabled && "grayscale-[30%]"
       )}>
-        {getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl) ? (
+        {getCampaignThumbnail(campaign) ? (
           <img
-            src={getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl)!}
+            src={getCampaignThumbnail(campaign)!}
             alt={campaign.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
@@ -147,7 +147,7 @@ export function CampaignCard({
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground mb-1">
               {campaign.brandName}
-              {(campaign as any).productName && ` - ${(campaign as any).productName}`}
+              {campaign.productName && ` - ${campaign.productName}`}
             </p>
             <h3 className="font-semibold text-lg leading-tight truncate">{campaign.name}</h3>
           </div>

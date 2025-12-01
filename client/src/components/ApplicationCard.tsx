@@ -101,9 +101,9 @@ export function ApplicationCard({
       <div className="flex flex-col sm:flex-row">
         {/* Campaign Image */}
         <div className="relative w-full sm:w-40 h-32 sm:h-auto flex-shrink-0 overflow-hidden bg-muted">
-          {getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl) ? (
+          {getCampaignThumbnail(campaign) ? (
             <img
-              src={getCampaignThumbnail(campaign.imageUrls, campaign.imageUrl)!}
+              src={getCampaignThumbnail(campaign)!}
               alt={campaign.name}
               className="w-full h-full object-cover"
               loading="lazy"

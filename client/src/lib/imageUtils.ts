@@ -18,27 +18,39 @@ export function fixImageUrl(url: string | null | undefined): string | null {
 }
 
 /**
- * Gets the best available image URL from a campaign's image fields.
- * Handles both the new imageUrls array and legacy imageUrl field.
+ * Type guard to check if campaign has thumbnailUrl (MinimalCampaign)
+ */
+function hasThumbailUrl(campaign: any): campaign is { thumbnailUrl: string | null } {
+  return 'thumbnailUrl' in campaign;
+}
+
+/**
+ * Gets the best available image URL from a campaign object.
+ * Handles both full Campaign (with imageUrls) and MinimalCampaign (with thumbnailUrl).
  * Also fixes corrupted data URIs.
  * 
- * @param imageUrls - Array of image URLs (preferred)
- * @param imageUrl - Legacy single image URL (fallback)
+ * @param campaign - Campaign or MinimalCampaign object
  * @returns The first valid image URL or null
  */
-export function getCampaignThumbnail(
-  imageUrls: string[] | null | undefined,
-  imageUrl: string | null | undefined
-): string | null {
-  // First try imageUrls array
-  if (imageUrls && imageUrls.length > 0) {
-    const firstImage = imageUrls[0];
+export function getCampaignThumbnail(campaign: {
+  thumbnailUrl?: string | null;
+  imageUrls?: string[] | null;
+  imageUrl?: string | null;
+}): string | null {
+  // First try thumbnailUrl (from minimal API response)
+  if (hasThumbailUrl(campaign) && campaign.thumbnailUrl) {
+    return fixImageUrl(campaign.thumbnailUrl);
+  }
+  
+  // Then try imageUrls array
+  if (campaign.imageUrls && campaign.imageUrls.length > 0) {
+    const firstImage = campaign.imageUrls[0];
     return fixImageUrl(firstImage);
   }
   
   // Fall back to legacy imageUrl
-  if (imageUrl) {
-    return fixImageUrl(imageUrl);
+  if (campaign.imageUrl) {
+    return fixImageUrl(campaign.imageUrl);
   }
   
   return null;

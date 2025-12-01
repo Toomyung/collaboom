@@ -436,6 +436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get campaigns (public) - with optional pagination and field selection
   app.get("/api/campaigns", async (req, res) => {
+    const startTime = Date.now();
     const page = parseInt(req.query.page as string) || undefined;
     const pageSize = parseInt(req.query.pageSize as string) || 12;
     const minimal = req.query.minimal === 'true';
@@ -443,48 +444,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // If no pagination requested, return all (backward compatible)
     if (!page) {
       const campaigns = await storage.getActiveCampaigns();
-      // If minimal, strip heavy fields for list view
+      // If minimal, strip heavy fields for list view - only return first thumbnail
       if (minimal) {
-        const minimalCampaigns = campaigns.map(c => ({
-          id: c.id,
-          name: c.name,
-          brandName: c.brandName,
-          category: c.category,
-          rewardType: c.rewardType,
-          rewardAmount: c.rewardAmount,
-          inventory: c.inventory,
-          approvedCount: c.approvedCount,
-          imageUrl: c.imageUrl,
-          imageUrls: c.imageUrls,
-          status: c.status,
-          deadline: c.deadline,
-          applicationDeadline: c.applicationDeadline,
-        }));
+        const minimalCampaigns = campaigns.map(c => {
+          // Get only the first image for thumbnail (much smaller payload)
+          const thumbnailUrl = c.imageUrls?.[0] || c.imageUrl || null;
+          return {
+            id: c.id,
+            name: c.name,
+            brandName: c.brandName,
+            productName: c.productName,
+            category: c.category,
+            rewardType: c.rewardType,
+            rewardAmount: c.rewardAmount,
+            inventory: c.inventory,
+            approvedCount: c.approvedCount,
+            thumbnailUrl, // Single thumbnail instead of full imageUrls array
+            status: c.status,
+            deadline: c.deadline,
+            applicationDeadline: c.applicationDeadline,
+          };
+        });
+        const duration = Date.now() - startTime;
+        const responseSize = JSON.stringify(minimalCampaigns).length;
+        console.log(`[PERF] GET /api/campaigns?minimal=true - ${duration}ms, ${campaigns.length} items, ${(responseSize / 1024).toFixed(1)}KB`);
         return res.json(minimalCampaigns);
       }
+      const duration = Date.now() - startTime;
+      console.log(`[PERF] GET /api/campaigns - ${duration}ms, ${campaigns.length} items`);
       return res.json(campaigns);
     }
     
     // Paginated response
     const result = await storage.getActiveCampaignsPaginated({ page, pageSize });
     
-    // If minimal, strip heavy fields
+    // If minimal, strip heavy fields - only return first thumbnail
     if (minimal) {
-      result.items = result.items.map(c => ({
-        id: c.id,
-        name: c.name,
-        brandName: c.brandName,
-        category: c.category,
-        rewardType: c.rewardType,
-        rewardAmount: c.rewardAmount,
-        inventory: c.inventory,
-        approvedCount: c.approvedCount,
-        imageUrl: c.imageUrl,
-        imageUrls: c.imageUrls,
-        status: c.status,
-        deadline: c.deadline,
-        applicationDeadline: c.applicationDeadline,
-      })) as any;
+      result.items = result.items.map(c => {
+        const thumbnailUrl = c.imageUrls?.[0] || c.imageUrl || null;
+        return {
+          id: c.id,
+          name: c.name,
+          brandName: c.brandName,
+          productName: c.productName,
+          category: c.category,
+          rewardType: c.rewardType,
+          rewardAmount: c.rewardAmount,
+          inventory: c.inventory,
+          approvedCount: c.approvedCount,
+          thumbnailUrl,
+          status: c.status,
+          deadline: c.deadline,
+          applicationDeadline: c.applicationDeadline,
+        };
+      }) as any;
     }
     
     return res.json(result);

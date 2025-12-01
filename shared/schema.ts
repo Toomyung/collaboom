@@ -136,6 +136,23 @@ export const insertCampaignSchema = createInsertSchema(campaigns).omit({
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Campaign = typeof campaigns.$inferSelect;
 
+// Minimal Campaign type for list views (optimized payload)
+export type MinimalCampaign = {
+  id: string;
+  name: string;
+  brandName: string;
+  productName: string | null;
+  category: string;
+  rewardType: string;
+  rewardAmount: number | null;
+  inventory: number;
+  approvedCount: number | null;
+  thumbnailUrl: string | null;
+  status: string;
+  deadline: Date;
+  applicationDeadline: Date | null;
+};
+
 // Applications
 export const applications = pgTable("applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

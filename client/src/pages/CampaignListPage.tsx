@@ -5,7 +5,7 @@ import { CampaignCard } from "@/components/CampaignCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Campaign } from "@shared/schema";
+import { Campaign, MinimalCampaign } from "@shared/schema";
 import { Search, Sparkles, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,14 +36,14 @@ export default function CampaignListPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<MinimalCampaign | null>(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const { isAuthenticated, influencer } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   // Use minimal=true to get only the fields needed for the list view
-  const { data: campaigns, isLoading } = useQuery<Campaign[]>({
+  const { data: campaigns, isLoading } = useQuery<MinimalCampaign[]>({
     queryKey: ["/api/campaigns", { minimal: true }],
     queryFn: async () => {
       const res = await fetch("/api/campaigns?minimal=true");
@@ -118,7 +118,7 @@ export default function CampaignListPage() {
     setCurrentPage(1);
   };
 
-  const handleApplyClick = (campaign: Campaign) => {
+  const handleApplyClick = (campaign: MinimalCampaign) => {
     if (!isAuthenticated) {
       setLocation("/login");
       return;
@@ -144,7 +144,7 @@ export default function CampaignListPage() {
     setShowApplyDialog(true);
   };
 
-  const canApply = (campaign: Campaign) => {
+  const canApply = (campaign: MinimalCampaign) => {
     if (!isAuthenticated) return true; // Will redirect to login
     if (!influencer?.profileCompleted) return false;
     if (influencer?.restricted) return false;
@@ -152,7 +152,7 @@ export default function CampaignListPage() {
     return true;
   };
 
-  const getApplyDisabledReason = (campaign: Campaign) => {
+  const getApplyDisabledReason = (campaign: MinimalCampaign) => {
     if (!influencer?.profileCompleted) return "Complete your profile to apply";
     if (influencer?.restricted) return "Account restricted";
     if ((campaign.approvedCount ?? 0) >= campaign.inventory) return "Campaign is full";
@@ -202,10 +202,33 @@ export default function CampaignListPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-[16/9] rounded-xl" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+              <div key={i} className="rounded-xl border bg-card overflow-hidden">
+                <div className="relative aspect-[16/9] bg-muted">
+                  <Skeleton className="absolute inset-0" />
+                  <div className="absolute top-3 right-3">
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                  </div>
+                  <div className="absolute bottom-3 left-3">
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                  </div>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-5 w-40" />
+                    </div>
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                </div>
+                <div className="px-4 pb-4 flex gap-2">
+                  <Skeleton className="h-9 flex-1 rounded-md" />
+                  <Skeleton className="h-9 flex-1 rounded-md" />
+                </div>
               </div>
             ))}
           </div>
