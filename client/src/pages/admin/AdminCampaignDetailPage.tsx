@@ -213,10 +213,10 @@ export default function AdminCampaignDetailPage() {
     }
 
     const approvedApps = applications.filter(a => a.status === "approved");
-    const emailToAppId = new Map<string, string>();
+    const emailToApp = new Map<string, ApplicationWithDetails>();
     approvedApps.forEach(app => {
       if (app.influencer?.email) {
-        emailToAppId.set(app.influencer.email.toLowerCase(), app.id);
+        emailToApp.set(app.influencer.email.toLowerCase(), app);
       }
     });
 
@@ -231,19 +231,19 @@ export default function AdminCampaignDetailPage() {
     for (let i = 1; i < rows.length; i++) {
       const values = rows[i].map(v => String(v).trim());
       const email = values[emailIdx]?.toLowerCase();
-      const appId = emailToAppId.get(email);
+      const app = emailToApp.get(email);
       
-      if (appId) {
+      if (app) {
         matchedCount++;
-        const existing = newForms[appId] || { 
-          courier: "", trackingNumber: "", trackingUrl: "",
-          addressLine1: "", addressLine2: "", city: "", state: "", zipCode: "", country: "United States"
-        };
-        newForms[appId] = {
-          ...existing,
-          courier: courierIdx !== -1 && values[courierIdx] ? values[courierIdx].toUpperCase() : existing.courier,
-          trackingNumber: trackingNumberIdx !== -1 && values[trackingNumberIdx] ? values[trackingNumberIdx] : existing.trackingNumber,
-          trackingUrl: trackingUrlIdx !== -1 && values[trackingUrlIdx] ? values[trackingUrlIdx] : existing.trackingUrl,
+        // Always get address from application/influencer data, never from file
+        // Only import: courier, tracking number, tracking URL
+        const existingOrDefault = newForms[app.id] || getFormDataFromApp(app);
+        newForms[app.id] = {
+          ...existingOrDefault,
+          // Only update these 3 fields from file, preserve all address fields
+          courier: courierIdx !== -1 && values[courierIdx] ? values[courierIdx].toUpperCase() : existingOrDefault.courier,
+          trackingNumber: trackingNumberIdx !== -1 && values[trackingNumberIdx] ? values[trackingNumberIdx] : existingOrDefault.trackingNumber,
+          trackingUrl: trackingUrlIdx !== -1 && values[trackingUrlIdx] ? values[trackingUrlIdx] : existingOrDefault.trackingUrl,
         };
       }
     }
@@ -1308,8 +1308,8 @@ export default function AdminCampaignDetailPage() {
           <DialogHeader>
             <DialogTitle>Upload Shipping File</DialogTitle>
             <DialogDescription>
-              Upload a CSV or Excel (.xlsx) file with columns: Email, Courier, Tracking Number, Tracking URL. 
-              Use "Download CSV" first to get the template with your influencer data.
+              Upload a CSV or Excel (.xlsx) file. Only Courier, Tracking Number, and Tracking URL will be imported.
+              Address information from influencers will be preserved.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
