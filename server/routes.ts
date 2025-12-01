@@ -1500,6 +1500,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Undo missed (revert to delivered)
+  app.post("/api/admin/uploads/:applicationId/undo-missed", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.status !== "deadline_missed") {
+        return res.status(400).json({ message: "Can only undo missed applications" });
+      }
+
+      // Revert application status to delivered
+      await storage.updateApplication(application.id, {
+        status: "delivered",
+        deadlineMissedAt: null,
+      });
+
+      // Update upload record if exists
+      const upload = await storage.getUploadByApplication(application.id);
+      if (upload) {
+        await storage.updateUploadByApplication(application.id, {
+          status: "pending",
+        });
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get all influencers (admin) with pagination
   app.get("/api/admin/influencers", requireAuth("admin"), async (req, res) => {
     try {

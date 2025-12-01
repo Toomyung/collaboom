@@ -524,6 +524,19 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
+  const undoMissedMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/admin/uploads/${applicationId}/undo-missed`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Reverted to delivered" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const shipMutation = useMutation({
     mutationFn: async ({ applicationId, data }: { applicationId: string; data: ShippingFormData }) => {
       await apiRequest("POST", `/api/admin/applications/${applicationId}/ship`, data);
@@ -654,7 +667,9 @@ export default function AdminCampaignDetailPage() {
     ["shipped", "delivered"].includes(a.status)
   ) || [];
   const shippedOnlyApplications = applications?.filter((a) => a.status === "shipped") || [];
-  const deliveredApplications = applications?.filter((a) => a.status === "delivered") || [];
+  const deliveredApplications = applications?.filter((a) => 
+    ["delivered", "deadline_missed"].includes(a.status)
+  ) || [];
   const uploadedApplications = applications?.filter((a) => 
     ["uploaded", "completed"].includes(a.status)
   ) || [];
@@ -1714,27 +1729,48 @@ export default function AdminCampaignDetailPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => markUploadedMutation.mutate(app.id)}
-                                  disabled={markUploadedMutation.isPending}
-                                  data-testid={`mark-uploaded-${app.id}`}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Verified
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600"
-                                  onClick={() => markMissedMutation.mutate(app.id)}
-                                  disabled={markMissedMutation.isPending}
-                                  data-testid={`mark-missed-${app.id}`}
-                                >
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Missed
-                                </Button>
+                              <div className="flex gap-2 items-center">
+                                {app.status === "deadline_missed" ? (
+                                  <>
+                                    <Badge variant="destructive" className="text-xs">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Missed
+                                    </Badge>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 text-xs"
+                                      onClick={() => undoMissedMutation.mutate(app.id)}
+                                      disabled={undoMissedMutation.isPending}
+                                      data-testid={`undo-missed-${app.id}`}
+                                    >
+                                      Undo
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => markUploadedMutation.mutate(app.id)}
+                                      disabled={markUploadedMutation.isPending}
+                                      data-testid={`mark-uploaded-${app.id}`}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Verified
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-600"
+                                      onClick={() => markMissedMutation.mutate(app.id)}
+                                      disabled={markMissedMutation.isPending}
+                                      data-testid={`mark-missed-${app.id}`}
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Missed
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
