@@ -156,21 +156,42 @@ export default function AdminCampaignDetailPage() {
   const handleCsvUpload = async () => {
     if (!csvFile || !applications) return;
     
-    const text = await csvFile.text();
+    let text = await csvFile.text();
+    
+    // Remove BOM (Byte Order Mark) that Excel adds
+    if (text.charCodeAt(0) === 0xFEFF) {
+      text = text.slice(1);
+    }
+    // Also check for UTF-8 BOM bytes
+    if (text.startsWith('\uFEFF')) {
+      text = text.slice(1);
+    }
+    
+    // Normalize line endings (Excel uses \r\n)
+    text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    
     const lines = text.split("\n").map(line => line.trim()).filter(line => line);
     if (lines.length < 2) {
       toast({ title: "Invalid CSV", description: "CSV must have header and at least one row", variant: "destructive" });
       return;
     }
 
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+    // Detect delimiter (Excel in some locales uses semicolons)
+    const firstLine = lines[0];
+    const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
+    
+    const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
     const emailIdx = headers.findIndex(h => h === "email");
     const courierIdx = headers.findIndex(h => h === "courier");
-    const trackingNumberIdx = headers.findIndex(h => h.includes("tracking") && h.includes("number"));
+    const trackingNumberIdx = headers.findIndex(h => h.includes("tracking") && (h.includes("number") || h.includes("#")));
     const trackingUrlIdx = headers.findIndex(h => h.includes("tracking") && h.includes("url"));
 
     if (emailIdx === -1) {
-      toast({ title: "Invalid CSV", description: "CSV must have Email column", variant: "destructive" });
+      toast({ 
+        title: "Invalid CSV format", 
+        description: `Email column not found. Found columns: ${headers.join(", ")}`, 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -191,7 +212,7 @@ export default function AdminCampaignDetailPage() {
     });
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+      const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ""));
       const email = values[emailIdx]?.toLowerCase();
       const appId = emailToAppId.get(email);
       
@@ -1273,7 +1294,7 @@ export default function AdminCampaignDetailPage() {
             <div className="border-2 border-dashed rounded-lg p-6 text-center">
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv,.CSV,text/csv,application/csv,application/vnd.ms-excel"
                 onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
                 className="hidden"
                 id="csv-upload-input"
