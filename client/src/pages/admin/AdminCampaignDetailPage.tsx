@@ -61,6 +61,8 @@ import {
   Star,
   AlertTriangle,
   UploadCloud,
+  Download,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +70,15 @@ interface ShippingFormData {
   courier: string;
   trackingNumber: string;
   trackingUrl: string;
+}
+
+interface AddressFormData {
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
 }
 
 const COURIER_OPTIONS = [
@@ -88,6 +99,15 @@ export default function AdminCampaignDetailPage() {
   const [csvContent, setCsvContent] = useState("");
   const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
+  const [editingAddressApp, setEditingAddressApp] = useState<ApplicationWithDetails | null>(null);
+  const [addressForm, setAddressForm] = useState<AddressFormData>({
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "United States",
+  });
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
@@ -221,6 +241,59 @@ export default function AdminCampaignDetailPage() {
       return;
     }
     shipMutation.mutate({ applicationId, data: formData });
+  };
+
+  const updateAddressMutation = useMutation({
+    mutationFn: async ({ applicationId, data }: { applicationId: string; data: AddressFormData }) => {
+      await apiRequest("PATCH", `/api/admin/applications/${applicationId}/shipping-address`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      setEditingAddressApp(null);
+      toast({ title: "Address updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update address", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const openAddressDialog = (app: ApplicationWithDetails) => {
+    const inf = app.influencer;
+    setAddressForm({
+      addressLine1: app.shippingAddressLine1 || inf?.addressLine1 || "",
+      addressLine2: app.shippingAddressLine2 || inf?.addressLine2 || "",
+      city: app.shippingCity || inf?.city || "",
+      state: app.shippingState || inf?.state || "",
+      zipCode: app.shippingZipCode || inf?.zipCode || "",
+      country: app.shippingCountry || inf?.country || "United States",
+    });
+    setEditingAddressApp(app);
+  };
+
+  const handleSaveAddress = () => {
+    if (!editingAddressApp) return;
+    updateAddressMutation.mutate({ applicationId: editingAddressApp.id, data: addressForm });
+  };
+
+  const handleDownloadCsv = () => {
+    window.open(`/api/admin/campaigns/${id}/export-csv`, "_blank");
+  };
+
+  const getDisplayAddress = (app: ApplicationWithDetails) => {
+    const inf = app.influencer;
+    const line1 = app.shippingAddressLine1 || inf?.addressLine1 || "";
+    const line2 = app.shippingAddressLine2 || inf?.addressLine2 || "";
+    const city = app.shippingCity || inf?.city || "";
+    const state = app.shippingState || inf?.state || "";
+    const zipCode = app.shippingZipCode || inf?.zipCode || "";
+    
+    if (!line1) return null;
+    
+    const parts = [line1];
+    if (line2) parts.push(line2);
+    parts.push(`${city}, ${state} ${zipCode}`);
+    
+    return parts;
   };
 
   if (authLoading || campaignLoading) {
@@ -626,10 +699,16 @@ export default function AdminCampaignDetailPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-4">
                 <CardTitle>Approved Influencers</CardTitle>
-                <Button onClick={() => setShowCsvDialog(true)} data-testid="button-upload-csv" variant="outline" size="sm">
-                  <UploadCloud className="h-4 w-4 mr-2" />
-                  Upload CSV
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button onClick={handleDownloadCsv} data-testid="button-download-csv" variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV
+                  </Button>
+                  <Button onClick={() => setShowCsvDialog(true)} data-testid="button-upload-csv" variant="outline" size="sm">
+                    <UploadCloud className="h-4 w-4 mr-2" />
+                    Upload CSV
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {approvedApplications.length > 0 ? (
@@ -637,7 +716,7 @@ export default function AdminCampaignDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[140px]">Influencer</TableHead>
-                        <TableHead className="w-[100px]">Address</TableHead>
+                        <TableHead className="w-[180px]">Address</TableHead>
                         <TableHead className="w-[90px]">Approved</TableHead>
                         <TableHead className="w-[110px]">Courier</TableHead>
                         <TableHead className="w-[130px]">Tracking #</TableHead>
@@ -659,12 +738,31 @@ export default function AdminCampaignDetailPage() {
                               </button>
                               <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
                             </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {app.influencer?.addressLine1 && (
-                                <span title={`${app.influencer.addressLine1}, ${app.influencer.city}, ${app.influencer.state} ${app.influencer.zipCode}`}>
-                                  {app.influencer.city}, {app.influencer.state}
-                                </span>
-                              )}
+                            <TableCell className="text-xs">
+                              {(() => {
+                                const addressParts = getDisplayAddress(app);
+                                if (!addressParts) return <span className="text-muted-foreground">No address</span>;
+                                return (
+                                  <div className="flex items-start gap-1">
+                                    <div className="flex-1">
+                                      {addressParts.map((part, idx) => (
+                                        <div key={idx} className={idx === 0 ? "text-foreground" : "text-muted-foreground"}>
+                                          {part}
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 shrink-0"
+                                      onClick={() => openAddressDialog(app)}
+                                      data-testid={`button-edit-address-${app.id}`}
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {app.approvedAt
@@ -1110,6 +1208,91 @@ user@example.com,1Z999AA10123456784,UPS,2024-01-15,"
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Address Edit Dialog */}
+      <Dialog open={!!editingAddressApp} onOpenChange={(open) => !open && setEditingAddressApp(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Shipping Address</DialogTitle>
+            <DialogDescription>
+              Update the shipping address for {editingAddressApp?.influencer?.name || "this influencer"}.
+              This will not change the influencer's original address.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Address Line 1</label>
+              <Input
+                value={addressForm.addressLine1}
+                onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                placeholder="Street address"
+                data-testid="input-address-line1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Address Line 2</label>
+              <Input
+                value={addressForm.addressLine2}
+                onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
+                placeholder="Apt, suite, etc. (optional)"
+                data-testid="input-address-line2"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">City</label>
+                <Input
+                  value={addressForm.city}
+                  onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                  placeholder="City"
+                  data-testid="input-city"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">State</label>
+                <Input
+                  value={addressForm.state}
+                  onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                  placeholder="State"
+                  data-testid="input-state"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">ZIP Code</label>
+                <Input
+                  value={addressForm.zipCode}
+                  onChange={(e) => setAddressForm({ ...addressForm, zipCode: e.target.value })}
+                  placeholder="ZIP Code"
+                  data-testid="input-zipcode"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Country</label>
+                <Input
+                  value={addressForm.country}
+                  onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                  placeholder="Country"
+                  data-testid="input-country"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingAddressApp(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveAddress}
+              disabled={updateAddressMutation.isPending}
+              data-testid="button-save-address"
+            >
+              {updateAddressMutation.isPending ? "Saving..." : "Save Address"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

@@ -52,6 +52,16 @@ Preferred communication style: Simple, everyday language.
 - **Campaign Archive & Delete:** Full lifecycle management with Archive (hide from influencers), Restore (unarchive), and Delete (cascade removal of applications, shipping, uploads, issues) functionality with confirmation dialogs. Server-side security enforces that only archived campaigns can be permanently deleted.
 - **Inline Shipping Entry & Bulk Upload:** Admins can enter shipping details individually or via CSV upload, including courier, tracking number, and URL.
 - **Enhanced Shipping Display:** Clear display of shipping information for both admins and influencers.
+- **Admin Address Override System:** 
+  - Applications table stores optional shipping address fields (`shippingAddressLine1`, `shippingAddressLine2`, `shippingCity`, `shippingState`, `shippingZipCode`, `shippingCountry`)
+  - Admin can edit shipping address per application without modifying influencer's original profile address
+  - Address display shows full address (all lines) with edit button in Approved tab
+  - Falls back to influencer's original address when no override exists
+- **Influencer Data Export:** Download CSV button exports all approved influencer data including name, email, TikTok handle, Instagram handle, phone, full address (with overrides), status, and dates.
+- **Two-Step Application Confirmation:**
+  - Step 1: Address confirmation dialog with "Confirm" and "Change my address" buttons
+  - Step 2: TikTok verification dialog with clickable handle link, restriction warning, and agreement checkbox
+  - Prevents application if no TikTok handle exists
 
 ### Performance Optimizations
 - **Route-Level Code Splitting:** All page components use React.lazy and Suspense for on-demand loading. This reduces initial bundle size by deferring admin-specific dependencies (recharts, react-dropzone) until needed.
