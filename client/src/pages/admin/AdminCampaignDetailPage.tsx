@@ -69,6 +69,7 @@ import {
   UploadCloud,
   Download,
   MapPin,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -905,20 +906,24 @@ export default function AdminCampaignDetailPage() {
                                 )}
                               </TableCell>
                               <TableCell className="p-1">
-                                <Popover open={isAddressOpen} onOpenChange={(open) => {
-                                  if (open) openAddressEdit(app);
-                                  else closeAddressEdit();
-                                }}>
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      className="h-8 w-full justify-start text-xs font-normal truncate"
-                                      data-testid={`button-address-${app.id}`}
-                                    >
-                                      <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
-                                      <span className="truncate">{getAddressDisplay(app)}</span>
-                                    </Button>
-                                  </PopoverTrigger>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs whitespace-nowrap" data-testid={`text-address-${app.id}`}>
+                                    {getAddressDisplay(app)}
+                                  </span>
+                                  <Popover open={isAddressOpen} onOpenChange={(open) => {
+                                    if (open) openAddressEdit(app);
+                                    else closeAddressEdit();
+                                  }}>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 flex-shrink-0"
+                                        data-testid={`button-edit-address-${app.id}`}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                    </PopoverTrigger>
                                   <PopoverContent className="w-80 p-3" align="start">
                                     <div className="space-y-2">
                                       <h4 className="font-medium text-sm">Edit Address</h4>
@@ -982,7 +987,8 @@ export default function AdminCampaignDetailPage() {
                                       </div>
                                     </div>
                                   </PopoverContent>
-                                </Popover>
+                                  </Popover>
+                                </div>
                               </TableCell>
                               <TableCell className="p-1">
                                 <Select
