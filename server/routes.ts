@@ -968,6 +968,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark as delivered
+  app.post("/api/admin/applications/:id/delivered", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Can only mark shipped applications as delivered
+      if (application.status !== "shipped") {
+        return res.status(400).json({ message: "Can only mark shipped applications as delivered" });
+      }
+
+      await storage.updateApplication(application.id, {
+        status: "delivered",
+        deliveredAt: new Date(),
+      });
+
+      // Update shipping record if exists
+      const shipping = await storage.getShippingByApplication(application.id);
+      if (shipping) {
+        await storage.updateShipping(shipping.id, {
+          status: "delivered",
+          deliveredAt: new Date(),
+        });
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Revoke approval (admin can undo an approval)
   app.post("/api/admin/applications/:id/revoke", requireAuth("admin"), async (req, res) => {
     try {

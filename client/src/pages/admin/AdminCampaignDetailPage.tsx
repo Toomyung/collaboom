@@ -133,6 +133,19 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
+  const markDeliveredMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/delivered`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Marked as delivered" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to mark as delivered", description: error.message, variant: "destructive" });
+    },
+  });
+
   const bulkApproveMutation = useMutation({
     mutationFn: async (applicationIds: string[]) => {
       await apiRequest("POST", `/api/admin/applications/bulk-approve`, { applicationIds });
@@ -1293,7 +1306,8 @@ export default function AdminCampaignDetailPage() {
                           <TableHead className="min-w-[100px] text-xs">Tracking #</TableHead>
                           <TableHead className="min-w-[80px] text-xs">Tracking URL</TableHead>
                           <TableHead className="min-w-[70px] text-xs">Status</TableHead>
-                          <TableHead className="min-w-[70px] text-xs">Shipped</TableHead>
+                          <TableHead className="min-w-[80px] text-xs">Delivered</TableHead>
+                          <TableHead className="min-w-[70px] text-xs">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1369,9 +1383,26 @@ export default function AdminCampaignDetailPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground p-2">
-                                {app.shippedAt
-                                  ? format(new Date(app.shippedAt), "MMM d")
+                                {app.deliveredAt
+                                  ? format(new Date(app.deliveredAt), "MMM d")
                                   : "-"}
+                              </TableCell>
+                              <TableCell className="p-2">
+                                {app.status === "shipped" ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 text-xs"
+                                    onClick={() => markDeliveredMutation.mutate(app.id)}
+                                    disabled={markDeliveredMutation.isPending}
+                                    data-testid={`button-delivered-${app.id}`}
+                                  >
+                                    <Package className="h-3 w-3 mr-1" />
+                                    Delivered
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Done</span>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
