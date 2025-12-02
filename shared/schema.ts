@@ -80,7 +80,7 @@ export const updateProfileSchema = z.object({
   state: z.string().min(1, "State is required"),
   zipCode: z.string()
     .min(1, "ZIP code is required")
-    .regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 digits (e.g., 12345) or 9 digits with hyphen (e.g., 12345-6789)"),
+    .regex(/^[\d\-—]{1,10}$/, "ZIP code must be up to 10 characters (digits and dashes only)"),
   paypalEmail: z.string().email("Valid PayPal email is required").optional().or(z.literal("")),
 });
 
