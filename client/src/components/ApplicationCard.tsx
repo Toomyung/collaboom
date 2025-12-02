@@ -167,7 +167,9 @@ export function ApplicationCard({
                 </div>
                 {application.shipping.trackingUrl && (
                   <a
-                    href={application.shipping.trackingUrl}
+                    href={application.shipping.trackingUrl.startsWith('http') 
+                      ? application.shipping.trackingUrl 
+                      : `https://${application.shipping.trackingUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-medium"
