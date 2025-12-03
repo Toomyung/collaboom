@@ -28,7 +28,13 @@ Preferred communication style: Simple, everyday language.
 ### System Features & Implementations
 - **Admin Notes System:** Allows admins to add internal notes to influencer profiles.
 - **Score/Penalty Event History:** Tracks and displays influencer reputation events.
-- **Shipping Issue Reporting:** Influencers can report shipping problems, which admins can view and resolve.
+- **Shipping Issue Reporting & Admin Management:** Influencers can report shipping problems via "Report Issue" button on their application cards. Admins have a dedicated "Reported Issues" page (`/admin/issues`) with:
+  - Stats cards showing Open, Resolved, and Dismissed issue counts
+  - Search functionality by influencer name, email, TikTok handle, or campaign name
+  - Status filter dropdown (All, Open, Resolved, Dismissed)
+  - Detailed issue cards showing influencer info (name, email, TikTok link), campaign details, and issue message
+  - Resolve/Dismiss actions with optional admin response
+  - Sidebar badge showing count of open issues for quick visibility
 - **Ghosting Detection:** Automated penalties for missed deadlines, leading to account restriction.
 - **Enhanced Admin Influencer Management:** Tabbed interface for profile, history, notes, and applications.
 - **Email Notification System:** Resend API integration sends automated emails on: (1) influencer signup (welcome email), (2) application approval, (3) shipping info entry. Uses non-blocking async sending with beautiful HTML templates. Also logs to notifications table for audit trail.
