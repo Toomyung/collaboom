@@ -224,7 +224,7 @@ export function ApplicationCard({
               </div>
             )}
 
-            {/* Reported Issues */}
+            {/* Comments Section */}
             {issues && issues.length > 0 && (
               <div className="space-y-2">
                 {issues.map((issue) => (
@@ -252,7 +252,7 @@ export function ApplicationCard({
                           issue.status === "open" ? "text-amber-600" : 
                           issue.status === "resolved" ? "text-green-600" : "text-gray-500"
                         )}>
-                          Your Reported Issue
+                          Your Comment
                         </span>
                       </div>
                       <Badge 
@@ -262,30 +262,30 @@ export function ApplicationCard({
                           issue.status === "resolved" && "bg-green-500/10 text-green-600 border-green-500/20"
                         )}
                       >
-                        {issue.status === "open" ? "Pending" : 
-                         issue.status === "resolved" ? "Resolved" : "Dismissed"}
+                        {issue.status === "open" ? "Awaiting Reply" : 
+                         issue.status === "resolved" ? "Replied" : "Dismissed"}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {issue.message}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Reported: {issue.createdAt ? format(new Date(issue.createdAt), "MMM d, yyyy") : "Unknown"}
+                      Sent: {issue.createdAt ? format(new Date(issue.createdAt), "MMM d, yyyy") : "Unknown"}
                     </p>
                     
-                    {/* Admin Response */}
+                    {/* Collaboom Team Response */}
                     {issue.adminResponse && (
-                      <div className="bg-blue-500/5 border border-blue-500/20 rounded-md p-2 mt-2">
+                      <div className="bg-primary/5 border border-primary/20 rounded-md p-2 mt-2">
                         <div className="flex items-center gap-1 mb-1">
-                          <CheckCircle className="h-3 w-3 text-blue-600" />
-                          <span className="text-xs font-medium text-blue-600">Admin Response</span>
+                          <MessageSquare className="h-3 w-3 text-primary" />
+                          <span className="text-xs font-medium text-primary">Collaboom Team</span>
                         </div>
                         <p className="text-sm" data-testid={`issue-response-${issue.id}`}>
                           {issue.adminResponse}
                         </p>
                         {issue.resolvedAt && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Responded: {format(new Date(issue.resolvedAt), "MMM d, yyyy")}
+                            {format(new Date(issue.resolvedAt), "MMM d, yyyy")}
                           </p>
                         )}
                       </div>
@@ -335,15 +335,25 @@ export function ApplicationCard({
 
               {["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status) &&
                 onReportIssue && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onReportIssue}
-                    data-testid={`button-report-${application.id}`}
-                  >
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    Report Issue
-                  </Button>
+                  (() => {
+                    const hasPendingComment = issues?.some(issue => issue.status === "open");
+                    return hasPendingComment ? (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MessageSquare className="h-3 w-3" />
+                        Awaiting reply on your comment
+                      </span>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onReportIssue}
+                        data-testid={`button-comment-${application.id}`}
+                      >
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        Leave a Comment
+                      </Button>
+                    );
+                  })()
                 )}
 
               {application.status === "rejected" && onDismiss && (
