@@ -1,14 +1,12 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { ApplicationCard } from "@/components/ApplicationCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApplicationWithDetails, ShippingIssue } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
-import { Link, useLocation, Redirect } from "wouter";
+import { Link, Redirect } from "wouter";
 import {
   Star,
   AlertTriangle,
@@ -20,6 +18,10 @@ import {
   XCircle,
   AlertCircle,
   HelpCircle,
+  ExternalLink,
+  ChevronDown,
+  MessageSquare,
+  Eye,
   Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -40,39 +42,100 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { getCampaignThumbnail } from "@/lib/imageUtils";
 
-const statusTabs = [
-  { id: "pending", label: "Pending", icon: Clock },
-  { id: "approved", label: "Approved", icon: CheckCircle },
-  { id: "shipped", label: "Shipping", icon: Truck },
-  { id: "delivered", label: "Delivered", icon: Package },
-  { id: "uploaded", label: "Uploaded", icon: Upload },
-  { id: "deadline_missed", label: "Missed", icon: AlertCircle },
+const statusConfig: Record<
+  string,
+  { label: string; color: string; icon: typeof Clock; description: string; step: number }
+> = {
+  pending: {
+    label: "Pending Review",
+    color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    icon: Clock,
+    description: "Awaiting approval from our team",
+    step: 1,
+  },
+  approved: {
+    label: "Approved",
+    color: "bg-green-500/10 text-green-600 border-green-500/20",
+    icon: CheckCircle,
+    description: "Your application has been approved! Shipping will begin soon.",
+    step: 2,
+  },
+  rejected: {
+    label: "Not Selected",
+    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+    icon: XCircle,
+    description: "Unfortunately, due to the brand's circumstances, we couldn't work together on this campaign. We hope to collaborate with you on future opportunities!",
+    step: 0,
+  },
+  shipped: {
+    label: "Shipped",
+    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    icon: Truck,
+    description: "Your package is on the way!",
+    step: 3,
+  },
+  delivered: {
+    label: "Delivered",
+    color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    icon: Package,
+    description: "Package delivered! If you've posted with the correct hashtags and mentions, our team reviews content daily and will move it to Uploaded automatically.",
+    step: 4,
+  },
+  uploaded: {
+    label: "Content Uploaded",
+    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    icon: Upload,
+    description: "We've confirmed your video upload - thank you so much for participating! We'll be sharing your content with the brand. Please keep your video live for at least 6 weeks and avoid changing your TikTok handle during this period.",
+    step: 5,
+  },
+  completed: {
+    label: "Completed",
+    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    icon: CheckCircle,
+    description: "Campaign completed successfully!",
+    step: 5,
+  },
+  deadline_missed: {
+    label: "Deadline Missed",
+    color: "bg-red-500/10 text-red-600 border-red-500/20",
+    icon: AlertCircle,
+    description: "The upload deadline has passed.",
+    step: 0,
+  },
+};
+
+const progressSteps = [
+  { label: "Applied", icon: Clock },
+  { label: "Approved", icon: CheckCircle },
+  { label: "Shipped", icon: Truck },
+  { label: "Delivered", icon: Package },
+  { label: "Uploaded", icon: Upload },
 ];
 
 export default function DashboardPage() {
   const { isAuthenticated, influencer, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("pending");
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
   const [showIssueDialog, setShowIssueDialog] = useState(false);
   const [issueMessage, setIssueMessage] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [applicationToCancel, setApplicationToCancel] = useState<ApplicationWithDetails | null>(null);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const { data: applications, isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/applications/detailed"],
     enabled: isAuthenticated,
   });
 
-  // Fetch all issues for the current influencer
   const { data: myIssues } = useQuery<ShippingIssue[]>({
     queryKey: ["/api/my-issues"],
     enabled: isAuthenticated,
   });
 
-  // Group issues by application ID for easy lookup
   const issuesByApplicationId = myIssues?.reduce((acc, issue) => {
     if (!acc[issue.applicationId]) {
       acc[issue.applicationId] = [];
@@ -146,10 +209,8 @@ export default function DashboardPage() {
     },
   });
 
-  // Mark rejection as viewed when user visits the pending tab
-  // This must be before any early returns to maintain hook order
   useEffect(() => {
-    if (activeTab === "pending" && applications) {
+    if (applications) {
       const unviewedRejections = applications.filter(
         (app) => app.status === "rejected" && !app.rejectionViewedAt && !app.dismissedAt
       );
@@ -157,7 +218,7 @@ export default function DashboardPage() {
         markRejectionViewedMutation.mutate(unviewedRejections.map((app) => app.id));
       }
     }
-  }, [activeTab, applications]);
+  }, [applications]);
 
   if (authLoading) {
     return (
@@ -166,6 +227,11 @@ export default function DashboardPage() {
           <Skeleton className="h-10 w-48 mb-8" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-24 rounded-xl" />
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
@@ -178,12 +244,9 @@ export default function DashboardPage() {
     return <Redirect to="/login" />;
   }
 
-  // Filter out dismissed rejections and rejections that expired (24h after being viewed)
   const visibleApplications = applications?.filter((app) => {
     if (app.status === "rejected") {
-      // Already dismissed
       if (app.dismissedAt) return false;
-      // Viewed more than 24 hours ago - auto expire
       if (app.rejectionViewedAt) {
         const viewedTime = new Date(app.rejectionViewedAt).getTime();
         const now = Date.now();
@@ -194,10 +257,26 @@ export default function DashboardPage() {
     return true;
   });
 
+  const sortedApplications = visibleApplications?.sort((a, b) => {
+    const statusOrder: Record<string, number> = {
+      delivered: 1,
+      shipped: 2,
+      approved: 3,
+      pending: 4,
+      uploaded: 5,
+      completed: 6,
+      rejected: 7,
+      deadline_missed: 8,
+    };
+    const orderA = statusOrder[a.status] || 99;
+    const orderB = statusOrder[b.status] || 99;
+    if (orderA !== orderB) return orderA - orderB;
+    return new Date(b.appliedAt!).getTime() - new Date(a.appliedAt!).getTime();
+  });
+
   const getStatusCounts = () => {
     if (!visibleApplications) return {};
     return visibleApplications.reduce((acc, app) => {
-      // Count rejected applications under pending
       if (app.status === "rejected") {
         acc["pending"] = (acc["pending"] || 0) + 1;
         return acc;
@@ -209,17 +288,6 @@ export default function DashboardPage() {
   };
 
   const statusCounts = getStatusCounts();
-
-  const filteredApplications = visibleApplications?.filter((app) => {
-    if (activeTab === "uploaded") {
-      return app.status === "uploaded" || app.status === "completed";
-    }
-    // Show rejected applications in the pending tab
-    if (activeTab === "pending") {
-      return app.status === "pending" || app.status === "rejected";
-    }
-    return app.status === activeTab;
-  });
 
   const handleCancelApplication = (application: ApplicationWithDetails) => {
     setApplicationToCancel(application);
@@ -244,10 +312,278 @@ export default function DashboardPage() {
     });
   };
 
+  const renderProgressBar = (status: string) => {
+    const currentStep = statusConfig[status]?.step || 0;
+    if (status === "rejected" || status === "deadline_missed") return null;
+
+    return (
+      <div className="flex items-center gap-1 w-full mt-4">
+        {progressSteps.map((step, index) => {
+          const stepNum = index + 1;
+          const isComplete = stepNum <= currentStep;
+          const isCurrent = stepNum === currentStep;
+          return (
+            <div key={step.label} className="flex-1 flex flex-col items-center">
+              <div className="flex items-center w-full">
+                <div
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full transition-colors",
+                    isComplete ? "bg-primary" : "bg-muted"
+                  )}
+                />
+              </div>
+              <div className="flex items-center gap-1 mt-1.5">
+                <step.icon
+                  className={cn(
+                    "h-3 w-3",
+                    isComplete ? "text-primary" : "text-muted-foreground"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-[10px] hidden sm:inline",
+                    isCurrent ? "text-primary font-medium" : isComplete ? "text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  {step.label}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderApplicationDetails = (application: ApplicationWithDetails) => {
+    const campaign = application.campaign;
+    const status = statusConfig[application.status] || statusConfig.pending;
+    const deadline = new Date(campaign.deadline);
+    const isDeadlineSoon =
+      application.status === "delivered" &&
+      deadline.getTime() - Date.now() < 48 * 60 * 60 * 1000;
+    const issues = issuesByApplicationId[application.id];
+
+    return (
+      <div className="space-y-4 pt-4">
+        {renderProgressBar(application.status)}
+
+        <div className="bg-muted/50 rounded-lg p-4 mt-4">
+          <p className="text-sm text-muted-foreground">
+            {application.status === "uploaded" && application.pointsAwarded && application.pointsAwarded > 0
+              ? `We've confirmed your video upload and you've earned +${application.pointsAwarded} points! Thank you so much for participating. We'll be sharing your content with the brand. Please keep your video live for at least 6 weeks and avoid changing your TikTok handle during this period.`
+              : status.description}
+          </p>
+        </div>
+
+        {isDeadlineSoon && (
+          <div className="flex items-center gap-2 text-amber-600 bg-amber-500/10 rounded-lg p-3">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span className="text-sm font-medium">
+              Upload deadline: {format(deadline, "MMM d, h:mm a")} PST
+            </span>
+          </div>
+        )}
+
+        {application.shipping && (application.status === "shipped" || application.status === "delivered") && (
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4 text-blue-600" />
+              <span className="font-medium text-blue-600">Shipping Information</span>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {application.shipping.courier && (
+                <span className="text-muted-foreground">
+                  Courier: <Badge variant="outline" className="ml-1">{application.shipping.courier}</Badge>
+                </span>
+              )}
+              {application.shipping.trackingNumber && (
+                <span className="text-muted-foreground">
+                  Tracking #: <span className="font-medium text-foreground">{application.shipping.trackingNumber}</span>
+                </span>
+              )}
+            </div>
+            {application.shipping.trackingUrl && (
+              <a
+                href={application.shipping.trackingUrl.startsWith('http') 
+                  ? application.shipping.trackingUrl 
+                  : `https://${application.shipping.trackingUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-medium"
+                data-testid={`link-tracking-${application.id}`}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Track Your Package
+              </a>
+            )}
+          </div>
+        )}
+
+        {application.status === "uploaded" && (
+          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-emerald-600" />
+                <span className="font-medium text-emerald-600">Your Uploaded Video</span>
+              </div>
+              {application.pointsAwarded && application.pointsAwarded > 0 && (
+                <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-600 px-2 py-1 rounded-full text-sm font-medium">
+                  <Star className="h-3.5 w-3.5 fill-amber-500" />
+                  +{application.pointsAwarded} points earned!
+                </div>
+              )}
+            </div>
+            {application.contentUrl && (
+              <a
+                href={application.contentUrl.startsWith('http') 
+                  ? application.contentUrl 
+                  : `https://${application.contentUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-medium"
+                data-testid={`link-video-${application.id}`}
+              >
+                <ExternalLink className="h-3 w-3" />
+                View Your TikTok Video
+              </a>
+            )}
+          </div>
+        )}
+
+        {issues && issues.length > 0 && (
+          <div className="space-y-2">
+            {issues.map((issue) => (
+              <div 
+                key={issue.id} 
+                className={cn(
+                  "rounded-lg p-3 space-y-2",
+                  issue.status === "open" 
+                    ? "bg-amber-500/5 border border-amber-500/20" 
+                    : issue.status === "resolved"
+                    ? "bg-green-500/5 border border-green-500/20"
+                    : "bg-gray-500/5 border border-gray-500/20"
+                )}
+                data-testid={`issue-${issue.id}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className={cn(
+                      "h-4 w-4",
+                      issue.status === "open" ? "text-amber-600" : 
+                      issue.status === "resolved" ? "text-green-600" : "text-gray-500"
+                    )} />
+                    <span className={cn(
+                      "font-medium text-sm",
+                      issue.status === "open" ? "text-amber-600" : 
+                      issue.status === "resolved" ? "text-green-600" : "text-gray-500"
+                    )}>
+                      Your Reported Issue
+                    </span>
+                  </div>
+                  <Badge 
+                    variant={issue.status === "open" ? "outline" : "secondary"}
+                    className={cn(
+                      "text-xs",
+                      issue.status === "resolved" && "bg-green-500/10 text-green-600 border-green-500/20"
+                    )}
+                  >
+                    {issue.status === "open" ? "Pending" : 
+                     issue.status === "resolved" ? "Resolved" : "Dismissed"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {issue.message}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Reported: {issue.createdAt ? format(new Date(issue.createdAt), "MMM d, yyyy") : "Unknown"}
+                </p>
+                
+                {issue.adminResponse && (
+                  <div className="bg-blue-500/5 border border-blue-500/20 rounded-md p-2 mt-2">
+                    <div className="flex items-center gap-1 mb-1">
+                      <CheckCircle className="h-3 w-3 text-blue-600" />
+                      <span className="text-xs font-medium text-blue-600">Admin Response</span>
+                    </div>
+                    <p className="text-sm" data-testid={`issue-response-${issue.id}`}>
+                      {issue.adminResponse}
+                    </p>
+                    {issue.resolvedAt && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Responded: {format(new Date(issue.resolvedAt), "MMM d, yyyy")}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t">
+          <span>Applied: {format(new Date(application.appliedAt!), "MMM d, yyyy")}</span>
+          {application.approvedAt && (
+            <span>
+              Approved: {format(new Date(application.approvedAt), "MMM d, yyyy")}
+            </span>
+          )}
+          <span>Deadline: {format(deadline, "MMM d, yyyy")} PST</span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 pt-2">
+          <Link href={`/campaigns/${campaign.id}`}>
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid={`button-view-campaign-${application.id}`}
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              View Campaign
+            </Button>
+          </Link>
+
+          {application.status === "pending" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleCancelApplication(application)}
+              data-testid={`button-cancel-${application.id}`}
+            >
+              Cancel Application
+            </Button>
+          )}
+
+          {["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleReportIssue(application)}
+              data-testid={`button-report-${application.id}`}
+            >
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Report Issue
+            </Button>
+          )}
+
+          {application.status === "rejected" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => dismissMutation.mutate(application.id)}
+              data-testid={`button-dismiss-${application.id}`}
+            >
+              <XCircle className="h-3 w-3 mr-1" />
+              Dismiss
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Restricted Account Banner */}
         {influencer?.restricted && (
           <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -261,7 +597,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Profile Incomplete Banner */}
         {!influencer?.profileCompleted && (
           <div className="mb-6 bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
@@ -277,7 +612,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -288,7 +622,6 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
@@ -342,87 +675,103 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Applications Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent p-0 mb-6">
-            {statusTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-full px-4"
-                data-testid={`tab-${tab.id}`}
-              >
-                <tab.icon className="h-4 w-4 mr-2" />
-                {tab.label}
-                {statusCounts[tab.id] ? (
-                  <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                    {statusCounts[tab.id]}
-                  </Badge>
-                ) : null}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">My Campaigns</h2>
+          
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 rounded-xl" />
+              ))}
+            </div>
+          ) : sortedApplications && sortedApplications.length > 0 ? (
+            <Accordion
+              type="multiple"
+              value={expandedItems}
+              onValueChange={setExpandedItems}
+              className="space-y-3"
+            >
+              {sortedApplications.map((application) => {
+                const campaign = application.campaign;
+                const status = statusConfig[application.status] || statusConfig.pending;
+                const StatusIcon = status.icon;
 
-          {statusTabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id} className="mt-0">
-              {isLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-32 rounded-xl" />
-                  ))}
-                </div>
-              ) : filteredApplications && filteredApplications.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredApplications.map((application) => (
-                    <ApplicationCard
-                      key={application.id}
-                      application={application}
-                      issues={issuesByApplicationId[application.id]}
-                      onCancelApplication={
-                        application.status === "pending"
-                          ? () => handleCancelApplication(application)
-                          : undefined
-                      }
-                      onReportIssue={
-                        ["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status)
-                          ? () => handleReportIssue(application)
-                          : undefined
-                      }
-                      onDismiss={
-                        application.status === "rejected"
-                          ? () => dismissMutation.mutate(application.id)
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                    <tab.icon className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">
-                    {tab.id === "uploaded" ? "No uploads detected yet" : `No ${tab.label.toLowerCase()} applications`}
-                  </h3>
-                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                    {tab.id === "pending"
-                      ? "Apply to campaigns to see them here"
-                      : tab.id === "uploaded"
-                      ? "Don't worry! If you've posted your video with the correct hashtags and mentions, our team checks content daily. Your upload will appear here automatically once verified."
-                      : `Applications with ${tab.label.toLowerCase()} status will appear here`}
-                  </p>
-                  {tab.id === "pending" && (
-                    <Link href="/campaigns">
-                      <Button>Browse Campaigns</Button>
-                    </Link>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+                return (
+                  <AccordionItem
+                    key={application.id}
+                    value={application.id}
+                    className="border rounded-xl overflow-hidden bg-card"
+                    data-testid={`card-application-${application.id}`}
+                  >
+                    <AccordionTrigger className="hover:no-underline p-0 [&>svg]:hidden">
+                      <div className="flex items-center gap-4 w-full p-4">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
+                          {getCampaignThumbnail(campaign) ? (
+                            <img
+                              src={getCampaignThumbnail(campaign)!}
+                              alt={campaign.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
+                              <Package className="h-6 w-6 text-primary/40" />
+                            </div>
+                          )}
+                        </div>
 
-        {/* FAQ / How It Works Section */}
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-xs text-muted-foreground mb-0.5">
+                            {campaign.brandName}
+                          </p>
+                          <h3 className="font-semibold text-base sm:text-lg leading-tight truncate">
+                            {campaign.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge className={cn("flex-shrink-0", status.color)}>
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {status.label}
+                            </Badge>
+                            {application.pointsAwarded && application.pointsAwarded > 0 && (
+                              <div className="flex items-center gap-1 text-amber-600 text-xs">
+                                <Star className="h-3 w-3 fill-amber-500" />
+                                +{application.pointsAwarded}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <ChevronDown className={cn(
+                          "h-5 w-5 text-muted-foreground transition-transform flex-shrink-0",
+                          expandedItems.includes(application.id) && "rotate-180"
+                        )} />
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      {renderApplicationDetails(application)}
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Sparkles className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">No campaigns yet</h3>
+                <p className="text-muted-foreground mb-4 text-center max-w-md">
+                  Start applying to campaigns to see them here. Browse our available campaigns to find the perfect match!
+                </p>
+                <Link href="/campaigns">
+                  <Button>Browse Campaigns</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -469,7 +818,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Report Issue Dialog */}
       <Dialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
         <DialogContent>
           <DialogHeader>
@@ -500,7 +848,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Application Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
