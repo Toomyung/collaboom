@@ -13,6 +13,7 @@ import {
   ExternalLink,
   AlertTriangle,
   Eye,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -183,24 +184,34 @@ export function ApplicationCard({
             )}
 
             {/* Uploaded Video Info */}
-            {application.status === "uploaded" && application.upload?.tiktokVideoUrl && (
-              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Upload className="h-4 w-4 text-emerald-600" />
-                  <span className="font-medium text-emerald-600">Your Uploaded Video</span>
+            {application.status === "uploaded" && (
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-4 w-4 text-emerald-600" />
+                    <span className="font-medium text-emerald-600">Your Uploaded Video</span>
+                  </div>
+                  {application.pointsAwarded && application.pointsAwarded > 0 && (
+                    <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-600 px-2 py-1 rounded-full text-sm font-medium">
+                      <Star className="h-3.5 w-3.5 fill-amber-500" />
+                      +{application.pointsAwarded} points earned!
+                    </div>
+                  )}
                 </div>
-                <a
-                  href={application.upload.tiktokVideoUrl.startsWith('http') 
-                    ? application.upload.tiktokVideoUrl 
-                    : `https://${application.upload.tiktokVideoUrl}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-medium"
-                  data-testid={`link-video-${application.id}`}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  View Your TikTok Video
-                </a>
+                {application.contentUrl && (
+                  <a
+                    href={application.contentUrl.startsWith('http') 
+                      ? application.contentUrl 
+                      : `https://${application.contentUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-medium"
+                    data-testid={`link-video-${application.id}`}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Your TikTok Video
+                  </a>
+                )}
               </div>
             )}
 

@@ -1392,10 +1392,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
-      // Update application status
+      // Get points from request body (default 5)
+      const points = typeof req.body.points === 'number' ? req.body.points : 5;
+
+      // Update application status with points awarded
       await storage.updateApplication(application.id, {
         status: "uploaded",
         uploadedAt: new Date(),
+        pointsAwarded: points,
       });
 
       // Get or create upload record
@@ -1411,11 +1415,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Award score
       const influencer = await storage.getInfluencer(application.influencerId);
       if (influencer) {
-        let scoreBonus = 10; // Base score for completing
+        // Award the specified points
+        await storage.addScoreEvent({
+          influencerId: influencer.id,
+          campaignId: application.campaignId,
+          applicationId: application.id,
+          delta: points,
+          reason: "upload_success",
+        });
         
-        // First time bonus
+        // First time bonus (additional 5 points)
         if (application.firstTime) {
-          scoreBonus += 5;
           await storage.addScoreEvent({
             influencerId: influencer.id,
             campaignId: application.campaignId,
@@ -1424,14 +1434,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             reason: "first_upload",
           });
         }
-        
-        await storage.addScoreEvent({
-          influencerId: influencer.id,
-          campaignId: application.campaignId,
-          applicationId: application.id,
-          delta: 10,
-          reason: "upload_success",
-        });
       }
 
       return res.json({ success: true });

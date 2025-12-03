@@ -105,6 +105,7 @@ export default function AdminCampaignDetailPage() {
   const [newNote, setNewNote] = useState("");
   const [contentUrlForms, setContentUrlForms] = useState<Record<string, string>>({});
   const [editingContentUrl, setEditingContentUrl] = useState<Set<string>>(new Set());
+  const [pointsForms, setPointsForms] = useState<Record<string, number>>({});
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
   const [approvedPage, setApprovedPage] = useState(1);
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
@@ -500,12 +501,12 @@ export default function AdminCampaignDetailPage() {
   };
 
   const markUploadedMutation = useMutation({
-    mutationFn: async (applicationId: string) => {
-      await apiRequest("POST", `/api/admin/uploads/${applicationId}/mark-uploaded`);
+    mutationFn: async ({ applicationId, points }: { applicationId: string; points: number }) => {
+      await apiRequest("POST", `/api/admin/uploads/${applicationId}/mark-uploaded`, { points });
     },
-    onSuccess: () => {
+    onSuccess: (_, { points }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      toast({ title: "Marked as uploaded" });
+      toast({ title: `Verified with +${points} points` });
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -1539,6 +1540,7 @@ export default function AdminCampaignDetailPage() {
                         <TableHead>Influencer</TableHead>
                         <TableHead>TikTok</TableHead>
                         <TableHead>Video Link</TableHead>
+                        <TableHead className="w-20">Points</TableHead>
                         <TableHead>Deadline</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -1672,6 +1674,20 @@ export default function AdminCampaignDetailPage() {
                               </div>
                             </TableCell>
                             <TableCell>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={pointsForms[app.id] ?? 5}
+                                onChange={(e) => setPointsForms(prev => ({
+                                  ...prev,
+                                  [app.id]: parseInt(e.target.value) || 5
+                                }))}
+                                className="h-8 w-16 text-center text-sm"
+                                data-testid={`input-points-${app.id}`}
+                              />
+                            </TableCell>
+                            <TableCell>
                               <span className={cn(isOverdue && "text-red-500")}>
                                 {format(deadline, "MMM d")}
                               </span>
@@ -1683,7 +1699,10 @@ export default function AdminCampaignDetailPage() {
                               <div className="flex gap-2 items-center">
                                 <Button
                                   size="sm"
-                                  onClick={() => markUploadedMutation.mutate(app.id)}
+                                  onClick={() => markUploadedMutation.mutate({ 
+                                    applicationId: app.id, 
+                                    points: pointsForms[app.id] ?? 5 
+                                  })}
                                   disabled={markUploadedMutation.isPending || !app.contentUrl}
                                   title={!app.contentUrl ? "Video link required" : undefined}
                                   data-testid={`mark-uploaded-${app.id}`}
@@ -1733,6 +1752,7 @@ export default function AdminCampaignDetailPage() {
                         <TableHead className="w-14">ID</TableHead>
                         <TableHead>Influencer</TableHead>
                         <TableHead>Video Link</TableHead>
+                        <TableHead className="w-20">Points</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1769,6 +1789,16 @@ export default function AdminCampaignDetailPage() {
                                   ? app.contentUrl.substring(0, 40) + "..." 
                                   : app.contentUrl}
                               </a>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {app.pointsAwarded ? (
+                              <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                                <Star className="h-3.5 w-3.5 fill-amber-500" />
+                                +{app.pointsAwarded}
+                              </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )}
