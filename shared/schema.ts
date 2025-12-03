@@ -374,4 +374,5 @@ export type CampaignWithStats = Campaign & {
 export type ShippingIssueWithDetails = ShippingIssue & {
   influencer?: Influencer;
   campaign?: Campaign;
+  applicationStatus?: string;
 };

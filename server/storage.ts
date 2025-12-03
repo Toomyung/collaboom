@@ -960,7 +960,8 @@ export class MemStorage implements IStorage {
     return Promise.all(openIssues.map(async (issue) => {
       const influencer = await this.getInfluencer(issue.influencerId);
       const campaign = await this.getCampaign(issue.campaignId);
-      return { ...issue, influencer, campaign };
+      const application = await this.getApplication(issue.applicationId);
+      return { ...issue, influencer, campaign, applicationStatus: application?.status };
     }));
   }
 
@@ -969,7 +970,8 @@ export class MemStorage implements IStorage {
     return Promise.all(allIssues.map(async (issue) => {
       const influencer = await this.getInfluencer(issue.influencerId);
       const campaign = await this.getCampaign(issue.campaignId);
-      return { ...issue, influencer, campaign };
+      const application = await this.getApplication(issue.applicationId);
+      return { ...issue, influencer, campaign, applicationStatus: application?.status };
     }));
   }
 
