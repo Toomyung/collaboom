@@ -16,7 +16,10 @@ import {
   PlayCircle,
   CheckCircle,
   Archive,
+  AlertCircle,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -28,10 +31,11 @@ interface NavItem {
   href: string;
   label: string;
   icon: any;
+  badge?: number;
   subItems?: { href: string; label: string; icon: any }[];
 }
 
-const navItems: NavItem[] = [
+const getNavItems = (openIssuesCount?: number): NavItem[] => [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { 
     href: "/admin/campaigns", 
@@ -44,6 +48,7 @@ const navItems: NavItem[] = [
     ]
   },
   { href: "/admin/influencers", label: "Influencers", icon: Users },
+  { href: "/admin/issues", label: "Reported Issues", icon: AlertCircle, badge: openIssuesCount },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
@@ -51,6 +56,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["Campaigns"]);
+
+  // Fetch open issues count for badge
+  const { data: openIssues } = useQuery<any[]>({
+    queryKey: ["/api/admin/issues"],
+  });
+  const openIssuesCount = openIssues?.length || 0;
+  const navItems = getNavItems(openIssuesCount > 0 ? openIssuesCount : undefined);
 
   const isActive = (href: string) => {
     if (href === "/admin") return location === "/admin";
@@ -160,10 +172,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                         isActive(item.href) && "bg-sidebar-accent text-sidebar-accent-foreground"
                       )}
                       onClick={() => setSidebarOpen(false)}
-                      data-testid={`nav-${item.label.toLowerCase()}`}
+                      data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                     >
                       <item.icon className="h-4 w-4" />
-                      {item.label}
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-xs px-1.5 py-0.5 min-w-[1.25rem] h-5">
+                          {item.badge}
+                        </Badge>
+                      )}
                     </Button>
                   </Link>
                 )}
