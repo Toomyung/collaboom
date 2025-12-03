@@ -130,6 +130,19 @@ export default function DashboardPage() {
     },
   });
 
+  // Mark rejection as viewed when user visits the pending tab
+  // This must be before any early returns to maintain hook order
+  useEffect(() => {
+    if (activeTab === "pending" && applications) {
+      const unviewedRejections = applications.filter(
+        (app) => app.status === "rejected" && !app.rejectionViewedAt && !app.dismissedAt
+      );
+      if (unviewedRejections.length > 0) {
+        markRejectionViewedMutation.mutate(unviewedRejections.map((app) => app.id));
+      }
+    }
+  }, [activeTab, applications]);
+
   if (authLoading) {
     return (
       <MainLayout>
@@ -191,18 +204,6 @@ export default function DashboardPage() {
     }
     return app.status === activeTab;
   });
-
-  // Mark rejection as viewed when user visits the pending tab
-  useEffect(() => {
-    if (activeTab === "pending" && visibleApplications) {
-      const unviewedRejections = visibleApplications.filter(
-        (app) => app.status === "rejected" && !app.rejectionViewedAt && !app.dismissedAt
-      );
-      if (unviewedRejections.length > 0) {
-        markRejectionViewedMutation.mutate(unviewedRejections.map((app) => app.id));
-      }
-    }
-  }, [activeTab, visibleApplications]);
 
   const handleCancelApplication = (application: ApplicationWithDetails) => {
     setApplicationToCancel(application);
