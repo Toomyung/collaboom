@@ -121,6 +121,7 @@ export interface IStorage {
   // Shipping Issues
   createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue>;
   getShippingIssuesByApplication(applicationId: string): Promise<ShippingIssue[]>;
+  getShippingIssuesByInfluencer(influencerId: string): Promise<ShippingIssue[]>;
   getAllOpenShippingIssues(): Promise<ShippingIssueWithDetails[]>;
   getAllShippingIssues(): Promise<ShippingIssueWithDetails[]>;
   updateShippingIssue(id: string, data: Partial<ShippingIssue>): Promise<ShippingIssue | undefined>;
@@ -946,6 +947,12 @@ export class MemStorage implements IStorage {
 
   async getShippingIssuesByApplication(applicationId: string): Promise<ShippingIssue[]> {
     return Array.from(this.shippingIssues.values()).filter(i => i.applicationId === applicationId);
+  }
+
+  async getShippingIssuesByInfluencer(influencerId: string): Promise<ShippingIssue[]> {
+    return Array.from(this.shippingIssues.values())
+      .filter(i => i.influencerId === influencerId)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
   }
 
   async getAllOpenShippingIssues(): Promise<ShippingIssueWithDetails[]> {

@@ -670,6 +670,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(shippingIssues.applicationId, applicationId));
   }
 
+  async getShippingIssuesByInfluencer(influencerId: string): Promise<ShippingIssue[]> {
+    return await db.select().from(shippingIssues)
+      .where(eq(shippingIssues.influencerId, influencerId))
+      .orderBy(desc(shippingIssues.createdAt));
+  }
+
   async getAllOpenShippingIssues(): Promise<ShippingIssueWithDetails[]> {
     const openIssues = await db.select().from(shippingIssues)
       .where(eq(shippingIssues.status, 'open'));

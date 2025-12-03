@@ -1,4 +1,4 @@
-import { ApplicationWithDetails } from "@shared/schema";
+import { ApplicationWithDetails, ShippingIssue } from "@shared/schema";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Eye,
   Star,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -22,6 +23,7 @@ import { getCampaignThumbnail } from "@/lib/imageUtils";
 
 interface ApplicationCardProps {
   application: ApplicationWithDetails;
+  issues?: ShippingIssue[];
   onCancelApplication?: () => void;
   onReportIssue?: () => void;
   onDismiss?: () => void;
@@ -83,6 +85,7 @@ const statusConfig: Record<
 
 export function ApplicationCard({
   application,
+  issues,
   onCancelApplication,
   onReportIssue,
   onDismiss,
@@ -218,6 +221,77 @@ export function ApplicationCard({
                     View Your TikTok Video
                   </a>
                 )}
+              </div>
+            )}
+
+            {/* Reported Issues */}
+            {issues && issues.length > 0 && (
+              <div className="space-y-2">
+                {issues.map((issue) => (
+                  <div 
+                    key={issue.id} 
+                    className={cn(
+                      "rounded-lg p-3 space-y-2",
+                      issue.status === "open" 
+                        ? "bg-amber-500/5 border border-amber-500/20" 
+                        : issue.status === "resolved"
+                        ? "bg-green-500/5 border border-green-500/20"
+                        : "bg-gray-500/5 border border-gray-500/20"
+                    )}
+                    data-testid={`issue-${issue.id}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className={cn(
+                          "h-4 w-4",
+                          issue.status === "open" ? "text-amber-600" : 
+                          issue.status === "resolved" ? "text-green-600" : "text-gray-500"
+                        )} />
+                        <span className={cn(
+                          "font-medium text-sm",
+                          issue.status === "open" ? "text-amber-600" : 
+                          issue.status === "resolved" ? "text-green-600" : "text-gray-500"
+                        )}>
+                          Your Reported Issue
+                        </span>
+                      </div>
+                      <Badge 
+                        variant={issue.status === "open" ? "outline" : "secondary"}
+                        className={cn(
+                          "text-xs",
+                          issue.status === "resolved" && "bg-green-500/10 text-green-600 border-green-500/20"
+                        )}
+                      >
+                        {issue.status === "open" ? "Pending" : 
+                         issue.status === "resolved" ? "Resolved" : "Dismissed"}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {issue.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Reported: {issue.createdAt ? format(new Date(issue.createdAt), "MMM d, yyyy") : "Unknown"}
+                    </p>
+                    
+                    {/* Admin Response */}
+                    {issue.adminResponse && (
+                      <div className="bg-blue-500/5 border border-blue-500/20 rounded-md p-2 mt-2">
+                        <div className="flex items-center gap-1 mb-1">
+                          <CheckCircle className="h-3 w-3 text-blue-600" />
+                          <span className="text-xs font-medium text-blue-600">Admin Response</span>
+                        </div>
+                        <p className="text-sm" data-testid={`issue-response-${issue.id}`}>
+                          {issue.adminResponse}
+                        </p>
+                        {issue.resolvedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Responded: {format(new Date(issue.resolvedAt), "MMM d, yyyy")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 

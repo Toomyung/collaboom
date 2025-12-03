@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApplicationWithDetails } from "@shared/schema";
+import { ApplicationWithDetails, ShippingIssue } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation, Redirect } from "wouter";
 import {
@@ -66,6 +66,21 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
+  // Fetch all issues for the current influencer
+  const { data: myIssues } = useQuery<ShippingIssue[]>({
+    queryKey: ["/api/my-issues"],
+    enabled: isAuthenticated,
+  });
+
+  // Group issues by application ID for easy lookup
+  const issuesByApplicationId = myIssues?.reduce((acc, issue) => {
+    if (!acc[issue.applicationId]) {
+      acc[issue.applicationId] = [];
+    }
+    acc[issue.applicationId].push(issue);
+    return acc;
+  }, {} as Record<string, ShippingIssue[]>) || {};
+
   const cancelMutation = useMutation({
     mutationFn: async (applicationId: string) => {
       await apiRequest("POST", `/api/applications/${applicationId}/cancel`);
@@ -95,6 +110,7 @@ export default function DashboardPage() {
       await apiRequest("POST", `/api/applications/${applicationId}/report-issue`, { message });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-issues"] });
       toast({
         title: "Issue reported",
         description: "Our team will review your report and get back to you.",
@@ -361,6 +377,7 @@ export default function DashboardPage() {
                     <ApplicationCard
                       key={application.id}
                       application={application}
+                      issues={issuesByApplicationId[application.id]}
                       onCancelApplication={
                         application.status === "pending"
                           ? () => handleCancelApplication(application)

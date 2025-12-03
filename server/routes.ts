@@ -487,6 +487,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get influencer's reported issues (to view admin responses)
+  app.get("/api/my-issues", requireAuth("influencer"), async (req, res) => {
+    try {
+      const issues = await storage.getShippingIssuesByInfluencer(req.session.userId!);
+      return res.json(issues);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get campaigns (public) - with optional pagination and field selection
   app.get("/api/campaigns", async (req, res) => {
     const startTime = Date.now();
