@@ -681,6 +681,17 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+  async getAllShippingIssues(): Promise<ShippingIssueWithDetails[]> {
+    const allIssues = await db.select().from(shippingIssues)
+      .orderBy(desc(shippingIssues.createdAt));
+    
+    return Promise.all(allIssues.map(async (issue) => {
+      const influencer = await this.getInfluencer(issue.influencerId);
+      const campaign = await this.getCampaign(issue.campaignId);
+      return { ...issue, influencer, campaign };
+    }));
+  }
+
   async updateShippingIssue(id: string, data: Partial<ShippingIssue>): Promise<ShippingIssue | undefined> {
     const [updated] = await db.update(shippingIssues)
       .set(data)

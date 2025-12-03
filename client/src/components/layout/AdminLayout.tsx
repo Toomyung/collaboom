@@ -57,11 +57,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["Campaigns"]);
 
-  // Fetch open issues count for badge
-  const { data: openIssues } = useQuery<any[]>({
+  // Fetch all issues and count only open ones for badge
+  const { data: allIssues } = useQuery<any[]>({
     queryKey: ["/api/admin/issues"],
   });
-  const openIssuesCount = openIssues?.length || 0;
+  const openIssuesCount = allIssues?.filter((i: any) => i.status === "open").length || 0;
   const navItems = getNavItems(openIssuesCount > 0 ? openIssuesCount : undefined);
 
   const isActive = (href: string) => {

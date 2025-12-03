@@ -1837,10 +1837,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SHIPPING ISSUES (ADMIN)
   // =====================
 
-  // Get all open shipping issues
+  // Get all shipping issues (all statuses for filtering on frontend)
   app.get("/api/admin/issues", requireAuth("admin"), async (req, res) => {
     try {
-      const issues = await storage.getAllOpenShippingIssues();
+      const issues = await storage.getAllShippingIssues();
       return res.json(issues);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
