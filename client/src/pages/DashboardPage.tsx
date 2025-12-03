@@ -175,8 +175,8 @@ export default function DashboardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/my-issues"] });
       toast({
-        title: "Issue reported",
-        description: "Our team will review your report and get back to you.",
+        title: "Comment submitted",
+        description: "The Collaboom team will respond as soon as possible.",
       });
       setShowIssueDialog(false);
       setIssueMessage("");
@@ -184,7 +184,7 @@ export default function DashboardPage() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to report",
+        title: "Failed to submit",
         description: error.message,
         variant: "destructive",
       });
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                       issue.status === "open" ? "text-amber-600" : 
                       issue.status === "resolved" ? "text-green-600" : "text-gray-500"
                     )}>
-                      Your Reported Issue
+                      Your Comment
                     </span>
                   </div>
                   <Badge 
@@ -503,7 +503,7 @@ export default function DashboardPage() {
                   <div className="bg-blue-500/5 border border-blue-500/20 rounded-md p-2 mt-2">
                     <div className="flex items-center gap-1 mb-1">
                       <CheckCircle className="h-3 w-3 text-blue-600" />
-                      <span className="text-xs font-medium text-blue-600">Admin Response</span>
+                      <span className="text-xs font-medium text-blue-600">Collaboom Team</span>
                     </div>
                     <p className="text-sm" data-testid={`issue-response-${issue.id}`}>
                       {issue.adminResponse}
@@ -558,10 +558,10 @@ export default function DashboardPage() {
               variant="outline"
               size="sm"
               onClick={() => handleReportIssue(application)}
-              data-testid={`button-report-${application.id}`}
+              data-testid={`button-comment-${application.id}`}
             >
-              <AlertCircle className="h-3 w-3 mr-1" />
-              Report Issue
+              <MessageSquare className="h-3 w-3 mr-1" />
+              Comment
             </Button>
           )}
 
@@ -805,12 +805,12 @@ export default function DashboardPage() {
                   better opportunities and exclusive campaigns.
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="shipping">
-                <AccordionTrigger>What if my package is lost or damaged?</AccordionTrigger>
+              <AccordionItem value="comments">
+                <AccordionTrigger>How do I ask questions or report issues?</AccordionTrigger>
                 <AccordionContent>
-                  Use the "Report Issue" button on your shipping or delivered applications. 
-                  Our team will investigate and take appropriate action. This won't affect 
-                  your score if the issue is on our end.
+                  Use the "Comment" button on any campaign to ask questions or report issues. 
+                  Whether you're curious about shipping, have content questions, or received 
+                  a damaged package - the Collaboom team will respond as soon as possible.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -821,17 +821,17 @@ export default function DashboardPage() {
       <Dialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Report a Shipping Issue</DialogTitle>
+            <DialogTitle>Leave a Comment</DialogTitle>
             <DialogDescription>
-              Describe the issue you're experiencing with your package.
+              Have a question or issue about this campaign? Let us know and the Collaboom team will respond as soon as possible.
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="e.g., Package arrived damaged, missing items, never received..."
+            placeholder="e.g., When will my package arrive? / I received a damaged product / Questions about the content requirements..."
             value={issueMessage}
             onChange={(e) => setIssueMessage(e.target.value)}
             rows={4}
-            data-testid="textarea-issue"
+            data-testid="textarea-comment"
           />
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowIssueDialog(false)}>
@@ -840,9 +840,9 @@ export default function DashboardPage() {
             <Button
               onClick={submitIssueReport}
               disabled={!issueMessage.trim() || reportIssueMutation.isPending}
-              data-testid="button-submit-issue"
+              data-testid="button-submit-comment"
             >
-              {reportIssueMutation.isPending ? "Submitting..." : "Submit Report"}
+              {reportIssueMutation.isPending ? "Submitting..." : "Submit"}
             </Button>
           </DialogFooter>
         </DialogContent>
