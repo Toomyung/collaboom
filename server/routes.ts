@@ -1858,6 +1858,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SHIPPING ISSUES (ADMIN)
   // =====================
 
+  // Get issues for a specific application (admin)
+  app.get("/api/admin/applications/:id/issues", requireAuth("admin"), async (req, res) => {
+    try {
+      const issues = await storage.getShippingIssuesByApplication(req.params.id);
+      return res.json(issues);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get all shipping issues (all statuses for filtering on frontend)
   app.get("/api/admin/issues", requireAuth("admin"), async (req, res) => {
     try {
