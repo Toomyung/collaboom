@@ -57,7 +57,7 @@ const statusConfig: Record<
     label: "Delivered",
     color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
     icon: Package,
-    description: "Package delivered. Please upload your content by the deadline.",
+    description: "Package delivered! If you've posted with the correct hashtags and mentions, our team reviews content daily and will move it to Uploaded automatically.",
   },
   uploaded: {
     label: "Content Uploaded",

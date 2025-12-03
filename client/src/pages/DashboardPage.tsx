@@ -324,10 +324,14 @@ export default function DashboardPage() {
                   <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <tab.icon className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-medium mb-2">No {tab.label.toLowerCase()} applications</h3>
-                  <p className="text-muted-foreground mb-4">
+                  <h3 className="text-lg font-medium mb-2">
+                    {tab.id === "uploaded" ? "No uploads detected yet" : `No ${tab.label.toLowerCase()} applications`}
+                  </h3>
+                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
                     {tab.id === "pending"
                       ? "Apply to campaigns to see them here"
+                      : tab.id === "uploaded"
+                      ? "Don't worry! If you've posted your video with the correct hashtags and mentions, our team checks content daily. Your upload will appear here automatically once verified."
                       : `Applications with ${tab.label.toLowerCase()} status will appear here`}
                   </p>
                   {tab.id === "pending" && (
