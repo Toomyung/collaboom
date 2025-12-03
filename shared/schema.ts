@@ -163,6 +163,8 @@ export const applications = pgTable("applications", {
   appliedAt: timestamp("applied_at").defaultNow(),
   approvedAt: timestamp("approved_at"),
   rejectedAt: timestamp("rejected_at"),
+  rejectionViewedAt: timestamp("rejection_viewed_at"), // When user first saw the rejection
+  dismissedAt: timestamp("dismissed_at"), // When user dismissed the rejection notification
   shippedAt: timestamp("shipped_at"),
   deliveredAt: timestamp("delivered_at"),
   uploadedAt: timestamp("uploaded_at"),

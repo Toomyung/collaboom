@@ -22,7 +22,7 @@ import {
   HelpCircle,
   Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -48,7 +48,6 @@ const statusTabs = [
   { id: "delivered", label: "Delivered", icon: Package },
   { id: "uploaded", label: "Uploaded", icon: Upload },
   { id: "deadline_missed", label: "Missed", icon: AlertCircle },
-  { id: "rejected", label: "Rejected", icon: XCircle },
 ];
 
 export default function DashboardPage() {
@@ -113,6 +112,24 @@ export default function DashboardPage() {
     },
   });
 
+  const dismissMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/applications/${applicationId}/dismiss`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+    },
+  });
+
+  const markRejectionViewedMutation = useMutation({
+    mutationFn: async (applicationIds: string[]) => {
+      await apiRequest("POST", `/api/applications/mark-rejection-viewed`, { applicationIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+    },
+  });
+
   if (authLoading) {
     return (
       <MainLayout>
@@ -132,9 +149,30 @@ export default function DashboardPage() {
     return <Redirect to="/login" />;
   }
 
+  // Filter out dismissed rejections and rejections that expired (24h after being viewed)
+  const visibleApplications = applications?.filter((app) => {
+    if (app.status === "rejected") {
+      // Already dismissed
+      if (app.dismissedAt) return false;
+      // Viewed more than 24 hours ago - auto expire
+      if (app.rejectionViewedAt) {
+        const viewedTime = new Date(app.rejectionViewedAt).getTime();
+        const now = Date.now();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        if (now - viewedTime > twentyFourHours) return false;
+      }
+    }
+    return true;
+  });
+
   const getStatusCounts = () => {
-    if (!applications) return {};
-    return applications.reduce((acc, app) => {
+    if (!visibleApplications) return {};
+    return visibleApplications.reduce((acc, app) => {
+      // Count rejected applications under pending
+      if (app.status === "rejected") {
+        acc["pending"] = (acc["pending"] || 0) + 1;
+        return acc;
+      }
       const status = app.status === "completed" ? "uploaded" : app.status;
       acc[status] = (acc[status] || 0) + 1;
       return acc;
@@ -143,12 +181,28 @@ export default function DashboardPage() {
 
   const statusCounts = getStatusCounts();
 
-  const filteredApplications = applications?.filter((app) => {
+  const filteredApplications = visibleApplications?.filter((app) => {
     if (activeTab === "uploaded") {
       return app.status === "uploaded" || app.status === "completed";
     }
+    // Show rejected applications in the pending tab
+    if (activeTab === "pending") {
+      return app.status === "pending" || app.status === "rejected";
+    }
     return app.status === activeTab;
   });
+
+  // Mark rejection as viewed when user visits the pending tab
+  useEffect(() => {
+    if (activeTab === "pending" && visibleApplications) {
+      const unviewedRejections = visibleApplications.filter(
+        (app) => app.status === "rejected" && !app.rejectionViewedAt && !app.dismissedAt
+      );
+      if (unviewedRejections.length > 0) {
+        markRejectionViewedMutation.mutate(unviewedRejections.map((app) => app.id));
+      }
+    }
+  }, [activeTab, visibleApplications]);
 
   const handleCancelApplication = (application: ApplicationWithDetails) => {
     setApplicationToCancel(application);
@@ -314,6 +368,11 @@ export default function DashboardPage() {
                       onReportIssue={
                         ["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status)
                           ? () => handleReportIssue(application)
+                          : undefined
+                      }
+                      onDismiss={
+                        application.status === "rejected"
+                          ? () => dismissMutation.mutate(application.id)
                           : undefined
                       }
                     />

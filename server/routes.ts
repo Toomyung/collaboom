@@ -615,6 +615,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dismiss rejected application notification
+  app.post("/api/applications/:id/dismiss", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      if (application.status !== "rejected") {
+        return res.status(400).json({ message: "Only rejected applications can be dismissed" });
+      }
+
+      await storage.updateApplication(application.id, {
+        dismissedAt: new Date(),
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mark rejection(s) as viewed
+  app.post("/api/applications/mark-rejection-viewed", requireAuth("influencer"), async (req, res) => {
+    try {
+      const { applicationIds } = req.body;
+      if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+        return res.status(400).json({ message: "applicationIds required" });
+      }
+
+      for (const id of applicationIds) {
+        const application = await storage.getApplication(id);
+        if (application && application.influencerId === req.session.userId && application.status === "rejected") {
+          if (!application.rejectionViewedAt) {
+            await storage.updateApplication(application.id, {
+              rejectionViewedAt: new Date(),
+            });
+          }
+        }
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Report issue
   app.post("/api/applications/:id/report-issue", requireAuth("influencer"), async (req, res) => {
     try {

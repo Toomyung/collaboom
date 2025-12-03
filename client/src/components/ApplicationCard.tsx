@@ -24,6 +24,7 @@ interface ApplicationCardProps {
   application: ApplicationWithDetails;
   onCancelApplication?: () => void;
   onReportIssue?: () => void;
+  onDismiss?: () => void;
 }
 
 const statusConfig: Record<
@@ -44,9 +45,9 @@ const statusConfig: Record<
   },
   rejected: {
     label: "Not Selected",
-    color: "bg-red-500/10 text-red-600 border-red-500/20",
+    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
     icon: XCircle,
-    description: "Unfortunately, you were not selected for this campaign.",
+    description: "Unfortunately, due to the brand's circumstances, we couldn't work together on this campaign. We hope to collaborate with you on future opportunities!",
   },
   shipped: {
     label: "Shipped",
@@ -84,6 +85,7 @@ export function ApplicationCard({
   application,
   onCancelApplication,
   onReportIssue,
+  onDismiss,
 }: ApplicationCardProps) {
   const campaign = application.campaign;
   const status = statusConfig[application.status] || statusConfig.pending;
@@ -135,7 +137,11 @@ export function ApplicationCard({
           </CardHeader>
 
           <CardContent className="p-0 space-y-3">
-            <p className="text-sm text-muted-foreground">{status.description}</p>
+            <p className="text-sm text-muted-foreground">
+              {application.status === "uploaded" && application.pointsAwarded && application.pointsAwarded > 0
+                ? `We've confirmed your video upload and you've earned +${application.pointsAwarded} points! Thank you so much for participating. We'll be sharing your content with the brand. Please keep your video live for at least 6 weeks and avoid changing your TikTok handle during this period.`
+                : status.description}
+            </p>
 
             {/* Deadline warning */}
             {isDeadlineSoon && (
@@ -265,6 +271,18 @@ export function ApplicationCard({
                     Report Issue
                   </Button>
                 )}
+
+              {application.status === "rejected" && onDismiss && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onDismiss}
+                  data-testid={`button-dismiss-${application.id}`}
+                >
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Dismiss
+                </Button>
+              )}
             </div>
           </CardContent>
         </div>
