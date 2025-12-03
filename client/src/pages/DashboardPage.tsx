@@ -312,7 +312,7 @@ export default function DashboardPage() {
                           : undefined
                       }
                       onReportIssue={
-                        application.status === "shipped" || application.status === "delivered"
+                        ["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status)
                           ? () => handleReportIssue(application)
                           : undefined
                       }

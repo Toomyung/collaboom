@@ -63,7 +63,7 @@ const statusConfig: Record<
     label: "Content Uploaded",
     color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
     icon: Upload,
-    description: "Your content has been submitted for verification.",
+    description: "We've confirmed your video upload - thank you so much for participating! We'll be sharing your content with the brand. Please keep your video live for at least 6 weeks and avoid changing your TikTok handle during this period.",
   },
   completed: {
     label: "Completed",
@@ -182,6 +182,28 @@ export function ApplicationCard({
               </div>
             )}
 
+            {/* Uploaded Video Info */}
+            {application.status === "uploaded" && application.upload?.tiktokVideoUrl && (
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-emerald-600" />
+                  <span className="font-medium text-emerald-600">Your Uploaded Video</span>
+                </div>
+                <a
+                  href={application.upload.tiktokVideoUrl.startsWith('http') 
+                    ? application.upload.tiktokVideoUrl 
+                    : `https://${application.upload.tiktokVideoUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-medium"
+                  data-testid={`link-video-${application.id}`}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View Your TikTok Video
+                </a>
+              </div>
+            )}
+
             {/* Dates */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span>Applied: {format(new Date(application.appliedAt!), "MMM d, yyyy")}</span>
@@ -220,7 +242,7 @@ export function ApplicationCard({
                 </>
               )}
 
-              {(application.status === "shipped" || application.status === "delivered") &&
+              {["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status) &&
                 onReportIssue && (
                   <Button
                     variant="outline"
