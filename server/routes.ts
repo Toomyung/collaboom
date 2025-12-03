@@ -729,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Report issue
+  // Report issue / Leave comment
   app.post("/api/applications/:id/report-issue", requireAuth("influencer"), async (req, res) => {
     try {
       if (!validateUUID(req.params.id)) {
@@ -743,6 +743,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (application.influencerId !== req.session.userId) {
         return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if there's already a pending (unanswered) comment for this application
+      const existingIssues = await storage.getShippingIssuesByApplication(application.id);
+      const hasPendingComment = existingIssues.some(issue => issue.status === "open");
+      
+      if (hasPendingComment) {
+        return res.status(400).json({ 
+          message: "You already have a pending comment on this campaign. Please wait for a response before submitting another.",
+          code: "PENDING_COMMENT_EXISTS"
+        });
       }
 
       const validationResult = issueReportSchema.safeParse(req.body);
