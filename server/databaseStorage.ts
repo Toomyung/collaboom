@@ -60,6 +60,11 @@ export class DatabaseStorage implements IStorage {
     return influencer;
   }
 
+  async getInfluencerByInstagramHandle(handle: string): Promise<Influencer | undefined> {
+    const [influencer] = await db.select().from(influencers).where(eq(influencers.instagramHandle, handle));
+    return influencer;
+  }
+
   async createInfluencer(email: string, passwordHash: string): Promise<Influencer> {
     const [newInfluencer] = await db.insert(influencers).values({
       email,

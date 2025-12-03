@@ -384,6 +384,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/me", requireAuth("influencer"), async (req, res) => {
     try {
       const data = updateProfileSchema.parse(req.body);
+      
+      // Validate social handles - only allow English letters, numbers, underscores, and periods
+      const socialHandleRegex = /^[a-zA-Z0-9_.]+$/;
+      
+      if (data.tiktokHandle && !socialHandleRegex.test(data.tiktokHandle)) {
+        return res.status(400).json({ 
+          message: "TikTok handle can only contain English letters, numbers, underscores, and periods.",
+          field: "tiktokHandle"
+        });
+      }
+      
+      if (data.instagramHandle && !socialHandleRegex.test(data.instagramHandle)) {
+        return res.status(400).json({ 
+          message: "Instagram handle can only contain English letters, numbers, underscores, and periods.",
+          field: "instagramHandle"
+        });
+      }
+      
+      // Check if TikTok handle is already taken by another user
+      if (data.tiktokHandle) {
+        const existingInfluencer = await storage.getInfluencerByTiktokHandle(data.tiktokHandle);
+        if (existingInfluencer && existingInfluencer.id !== req.session.userId) {
+          return res.status(400).json({ 
+            message: "This TikTok handle is already registered by another user. Please use a different handle.",
+            field: "tiktokHandle"
+          });
+        }
+      }
+      
+      // Check if Instagram handle is already taken by another user
+      if (data.instagramHandle) {
+        const existingInfluencer = await storage.getInfluencerByInstagramHandle(data.instagramHandle);
+        if (existingInfluencer && existingInfluencer.id !== req.session.userId) {
+          return res.status(400).json({ 
+            message: "This Instagram handle is already registered by another user. Please use a different handle.",
+            field: "instagramHandle"
+          });
+        }
+      }
+      
       const influencer = await storage.updateInfluencer(req.session.userId!, data);
       if (!influencer) {
         return res.status(404).json({ message: "Influencer not found" });
@@ -392,6 +432,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      // Handle database unique constraint errors
+      if (error.message?.includes("unique constraint") && error.message?.includes("tiktok_handle")) {
+        return res.status(400).json({ 
+          message: "This TikTok handle is already registered by another user. Please use a different handle.",
+          field: "tiktokHandle"
+        });
+      }
+      if (error.message?.includes("unique constraint") && error.message?.includes("instagram_handle")) {
+        return res.status(400).json({ 
+          message: "This Instagram handle is already registered by another user. Please use a different handle.",
+          field: "instagramHandle"
+        });
       }
       return res.status(500).json({ message: error.message });
     }

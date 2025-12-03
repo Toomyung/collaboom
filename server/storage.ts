@@ -60,6 +60,7 @@ export interface IStorage {
   getInfluencerByEmail(email: string): Promise<Influencer | undefined>;
   getInfluencerBySupabaseId(supabaseId: string): Promise<Influencer | undefined>;
   getInfluencerByTiktokHandle(handle: string): Promise<Influencer | undefined>;
+  getInfluencerByInstagramHandle(handle: string): Promise<Influencer | undefined>;
   createInfluencer(email: string, passwordHash: string): Promise<Influencer>;
   createInfluencerFromSupabase(data: { email: string; supabaseId: string; name?: string | null; profileImageUrl?: string | null }): Promise<Influencer>;
   updateInfluencer(id: string, data: Partial<Influencer>): Promise<Influencer | undefined>;
@@ -334,6 +335,10 @@ export class MemStorage implements IStorage {
 
   async getInfluencerByTiktokHandle(handle: string): Promise<Influencer | undefined> {
     return Array.from(this.influencers.values()).find(i => i.tiktokHandle === handle);
+  }
+
+  async getInfluencerByInstagramHandle(handle: string): Promise<Influencer | undefined> {
+    return Array.from(this.influencers.values()).find(i => i.instagramHandle === handle);
   }
 
   async createInfluencer(email: string, passwordHash: string): Promise<Influencer> {

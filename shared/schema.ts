@@ -62,8 +62,13 @@ export const insertInfluencerSchema = createInsertSchema(influencers).pick({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  tiktokHandle: z.string().min(1, "TikTok handle is required"),
-  instagramHandle: z.string().optional(),
+  tiktokHandle: z.string()
+    .min(1, "TikTok handle is required")
+    .regex(/^[a-zA-Z0-9_.]+$/, "TikTok handle can only contain English letters, numbers, underscores, and periods"),
+  instagramHandle: z.string()
+    .regex(/^[a-zA-Z0-9_.]*$/, "Instagram handle can only contain English letters, numbers, underscores, and periods")
+    .optional()
+    .or(z.literal("")),
   phone: z.string()
     .min(1, "Phone number is required")
     .regex(/^[\d\s\-\+\(\)]+$/, "Phone number can only contain digits, spaces, and +/- characters"),

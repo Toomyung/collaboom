@@ -129,6 +129,10 @@ export default function ProfilePage() {
   const updateMutation = useMutation({
     mutationFn: async (data: UpdateProfile) => {
       const res = await apiRequest("PUT", "/api/me", data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Update failed");
+      }
       return res.json();
     },
     onSuccess: () => {
