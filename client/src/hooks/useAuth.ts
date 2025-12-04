@@ -58,8 +58,8 @@ async function logoutUser(): Promise<void> {
     if (supabase) {
       await supabase.auth.signOut();
     }
-  } catch (e) {
-    console.error("Supabase signout error:", e);
+  } catch {
+    // Silent error handling
   }
   await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
 }
@@ -83,7 +83,7 @@ export function useAuth() {
         if (!mounted) return;
         
         if (!supabase) {
-          setSupabaseError("Supabase not configured");
+          setSupabaseError("Authentication service unavailable");
           setSupabaseLoading(false);
           setSupabaseReady(false);
           return;
@@ -136,8 +136,8 @@ export function useAuth() {
                 await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
                 await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
               }
-            } catch (error) {
-              console.error("Failed to sync Supabase auth with backend:", error);
+            } catch {
+              // Silent auth sync error
             }
           }
           
@@ -147,8 +147,7 @@ export function useAuth() {
         });
 
         subscription = sub;
-      } catch (error) {
-        console.error("Failed to initialize Supabase auth:", error);
+      } catch {
         if (mounted) {
           setSupabaseError("Failed to initialize authentication");
           setSupabaseLoading(false);
@@ -175,7 +174,7 @@ export function useAuth() {
   const signInWithGoogle = async () => {
     const supabase = await getSupabase();
     if (!supabase) {
-      throw new Error("Supabase not configured");
+      throw new Error("Authentication service unavailable");
     }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -184,7 +183,6 @@ export function useAuth() {
       },
     });
     if (error) {
-      console.error("Google sign-in error:", error);
       throw error;
     }
   };

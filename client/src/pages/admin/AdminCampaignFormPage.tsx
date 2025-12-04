@@ -240,13 +240,11 @@ export default function AdminCampaignFormPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      console.log('[DEBUG] createMutation - videoReferenceUrls:', data.videoReferenceUrls);
       const payload = { 
         ...data, 
         applicationDeadline: new Date(data.applicationDeadline),
         deadline: new Date(data.deadline) 
       };
-      console.log('[DEBUG] createMutation - payload videoReferenceUrls:', payload.videoReferenceUrls);
       const res = await apiRequest("POST", "/api/admin/campaigns", payload);
       return res.json();
     },

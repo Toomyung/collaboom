@@ -112,18 +112,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Supabase config (safe to expose anon key)
-  app.get("/api/config/supabase", (req, res) => {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+  // Get auth provider config (safe to expose public key)
+  app.get("/api/config/auth", (req, res) => {
+    const providerUrl = process.env.SUPABASE_URL;
+    const publicKey = process.env.SUPABASE_ANON_KEY;
     
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return res.status(500).json({ message: "Supabase configuration missing" });
+    if (!providerUrl || !publicKey) {
+      return res.status(500).json({ message: "Authentication configuration unavailable" });
     }
     
     return res.json({
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
+      url: providerUrl,
+      anonKey: publicKey,
     });
   });
 
