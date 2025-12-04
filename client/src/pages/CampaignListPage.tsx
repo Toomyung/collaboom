@@ -352,7 +352,7 @@ export default function CampaignListPage() {
               variant="outline"
               onClick={() => {
                 setShowApplyDialog(false);
-                setLocation("/dashboard");
+                setLocation("/profile");
               }}
               data-testid="button-change-address"
             >
