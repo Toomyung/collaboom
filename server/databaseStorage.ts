@@ -1,6 +1,7 @@
 import { eq, and, sql, desc } from "drizzle-orm";
 import { db } from "./db";
 import * as bcrypt from 'bcryptjs';
+import { deleteImagesFromStorage } from "./supabaseStorage";
 import {
   admins, influencers, campaigns, applications, shipping, uploads,
   scoreEvents, penaltyEvents, adminNotes, notifications, shippingIssues,
@@ -390,6 +391,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCampaign(id: string): Promise<void> {
+    // Get campaign first to retrieve image URLs for Storage cleanup
+    const [campaign] = await db.select().from(campaigns).where(eq(campaigns.id, id));
+    
+    if (campaign) {
+      // Delete images from Supabase Storage (graceful - errors logged but don't block deletion)
+      const imageUrls: string[] = [];
+      if (campaign.imageUrls && Array.isArray(campaign.imageUrls)) {
+        imageUrls.push(...campaign.imageUrls);
+      }
+      if (campaign.imageUrl) {
+        imageUrls.push(campaign.imageUrl);
+      }
+      
+      if (imageUrls.length > 0) {
+        try {
+          const result = await deleteImagesFromStorage(imageUrls);
+          console.log(`[Campaign Delete] Storage cleanup: ${result.deleted} images deleted`);
+          if (result.errors.length > 0) {
+            console.warn('[Campaign Delete] Storage cleanup errors:', result.errors);
+          }
+        } catch (error) {
+          console.error('[Campaign Delete] Storage cleanup failed (continuing with DB deletion):', error);
+        }
+      }
+    }
+    
     // Get all applications for this campaign
     const campaignApps = await db.select().from(applications).where(eq(applications.campaignId, id));
     

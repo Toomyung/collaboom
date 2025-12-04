@@ -6,7 +6,7 @@ import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail } from "./emailService";
-import { ensureBucketExists, uploadMultipleImages, isBase64Image } from "./supabaseStorage";
+import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
 import {
   authLimiter,
   strictAuthLimiter,
@@ -2027,6 +2027,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
         needsMigration: base64Count,
         alreadyMigrated: urlCount,
         noImages: campaigns.length - base64Count - urlCount,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Clean up orphan images from Storage (images without corresponding campaigns)
+  app.post("/api/admin/cleanup-orphan-images", requireAuth("admin"), async (req, res) => {
+    try {
+      // Get all image file paths from Storage
+      const storageFiles = await listAllStorageImages();
+      
+      if (storageFiles.length === 0) {
+        return res.json({
+          success: true,
+          message: "No images found in Storage",
+          orphanCount: 0,
+          deletedCount: 0,
+        });
+      }
+      
+      // Get all campaigns and their image URLs
+      const result = await storage.getCampaignsPaginated({ page: 1, pageSize: 1000 });
+      const campaigns = result.items;
+      
+      // Extract all valid file paths from campaign imageUrls
+      const validFilePaths = new Set<string>();
+      
+      for (const campaign of campaigns) {
+        const imageUrls = campaign.imageUrls || [];
+        if (campaign.imageUrl) {
+          imageUrls.push(campaign.imageUrl);
+        }
+        
+        for (const url of imageUrls) {
+          if (url && url.includes('supabase.co/storage')) {
+            const filePath = extractFilePathFromUrl(url);
+            if (filePath) {
+              validFilePaths.add(filePath);
+            }
+          }
+        }
+      }
+      
+      // Find orphan files (in Storage but not in any campaign)
+      const orphanFiles = storageFiles.filter(file => !validFilePaths.has(file));
+      
+      if (orphanFiles.length === 0) {
+        return res.json({
+          success: true,
+          message: "No orphan images found",
+          totalInStorage: storageFiles.length,
+          validCount: validFilePaths.size,
+          orphanCount: 0,
+          deletedCount: 0,
+        });
+      }
+      
+      // Convert file paths back to URLs for deletion
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const orphanUrls = orphanFiles.map(file => 
+        `${supabaseUrl}/storage/v1/object/public/collaboom-campaign/${file}`
+      );
+      
+      // Delete orphan images
+      const deleteResult = await deleteImagesFromStorage(orphanUrls);
+      
+      return res.json({
+        success: true,
+        message: `Cleaned up ${deleteResult.deleted} orphan images`,
+        totalInStorage: storageFiles.length,
+        validCount: validFilePaths.size,
+        orphanCount: orphanFiles.length,
+        deletedCount: deleteResult.deleted,
+        errors: deleteResult.errors,
+      });
+    } catch (error: any) {
+      console.error('[Orphan Cleanup] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Preview orphan images without deleting (dry run)
+  app.get("/api/admin/orphan-images", requireAuth("admin"), async (req, res) => {
+    try {
+      // Get all image file paths from Storage
+      const storageFiles = await listAllStorageImages();
+      
+      // Get all campaigns and their image URLs
+      const result = await storage.getCampaignsPaginated({ page: 1, pageSize: 1000 });
+      const campaigns = result.items;
+      
+      // Extract all valid file paths from campaign imageUrls
+      const validFilePaths = new Set<string>();
+      
+      for (const campaign of campaigns) {
+        const imageUrls = campaign.imageUrls || [];
+        if (campaign.imageUrl) {
+          imageUrls.push(campaign.imageUrl);
+        }
+        
+        for (const url of imageUrls) {
+          if (url && url.includes('supabase.co/storage')) {
+            const filePath = extractFilePathFromUrl(url);
+            if (filePath) {
+              validFilePaths.add(filePath);
+            }
+          }
+        }
+      }
+      
+      // Find orphan files
+      const orphanFiles = storageFiles.filter(file => !validFilePaths.has(file));
+      
+      return res.json({
+        totalInStorage: storageFiles.length,
+        validCount: validFilePaths.size,
+        orphanCount: orphanFiles.length,
+        orphanFiles: orphanFiles,
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });

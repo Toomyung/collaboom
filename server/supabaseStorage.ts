@@ -112,3 +112,84 @@ export function isBase64Image(str: string): boolean {
 export function isStorageUrl(str: string): boolean {
   return str?.startsWith('http');
 }
+
+export function extractFilePathFromUrl(url: string): string | null {
+  try {
+    const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteImagesFromStorage(imageUrls: string[]): Promise<{ deleted: number; errors: string[] }> {
+  const supabase = getSupabaseAdmin();
+  const errors: string[] = [];
+  let deleted = 0;
+
+  console.log('[Storage Delete] Received URLs:', imageUrls);
+
+  const filePaths: string[] = [];
+  
+  for (const url of imageUrls) {
+    if (!url || !url.includes('supabase.co/storage')) {
+      console.log('[Storage Delete] Skipping non-storage URL:', url);
+      continue;
+    }
+    
+    const filePath = extractFilePathFromUrl(url);
+    console.log('[Storage Delete] Extracted path from URL:', { url: url.substring(0, 80) + '...', filePath });
+    if (filePath) {
+      filePaths.push(filePath);
+    }
+  }
+
+  console.log('[Storage Delete] File paths to delete:', filePaths);
+
+  if (filePaths.length === 0) {
+    console.log('[Storage Delete] No valid file paths found');
+    return { deleted: 0, errors: [] };
+  }
+
+  try {
+    console.log(`[Storage Delete] Calling remove() on bucket ${BUCKET_NAME} for ${filePaths.length} files`);
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove(filePaths);
+
+    console.log('[Storage Delete] API Response:', { data, error });
+
+    if (error) {
+      console.error('[Storage] Delete error:', error);
+      errors.push(error.message);
+    } else {
+      deleted = data?.length || filePaths.length;
+      console.log(`[Storage] Deleted ${deleted} images from bucket`);
+    }
+  } catch (error: any) {
+    console.error('[Storage] Delete failed:', error);
+    errors.push(error.message);
+  }
+
+  return { deleted, errors };
+}
+
+export async function listAllStorageImages(): Promise<string[]> {
+  const supabase = getSupabaseAdmin();
+  
+  try {
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list('campaigns', { limit: 1000 });
+
+    if (error) {
+      console.error('[Storage] List error:', error);
+      return [];
+    }
+
+    return data?.map(file => `campaigns/${file.name}`) || [];
+  } catch (error) {
+    console.error('[Storage] List failed:', error);
+    return [];
+  }
+}
