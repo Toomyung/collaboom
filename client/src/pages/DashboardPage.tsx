@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApplicationWithDetails, ShippingIssue } from "@shared/schema";
+import { ApplicationWithDetails, ShippingIssue, ScoreEvent } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, Redirect } from "wouter";
 import {
@@ -23,7 +23,18 @@ import {
   MessageSquare,
   Eye,
   Sparkles,
+  DollarSign,
+  Trophy,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -132,6 +143,14 @@ const progressSteps = [
   { label: "Uploaded", icon: Upload },
 ];
 
+interface ScoreEventWithCampaign extends ScoreEvent {
+  campaign?: {
+    id: string;
+    name: string;
+    brandName: string;
+  };
+}
+
 export default function DashboardPage() {
   const { isAuthenticated, influencer, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -143,10 +162,25 @@ export default function DashboardPage() {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [showDismissDialog, setShowDismissDialog] = useState(false);
   const [applicationToDismiss, setApplicationToDismiss] = useState<ApplicationWithDetails | null>(null);
+  
+  const [showScoreSheet, setShowScoreSheet] = useState(false);
+  const [showCompletedSheet, setShowCompletedSheet] = useState(false);
+  const [showMissedSheet, setShowMissedSheet] = useState(false);
+  const [showCashSheet, setShowCashSheet] = useState(false);
 
   const { data: applications, isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/applications/detailed"],
     enabled: isAuthenticated,
+  });
+
+  const { data: allApplications } = useQuery<ApplicationWithDetails[]>({
+    queryKey: ["/api/applications/all-history"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: scoreEvents } = useQuery<ScoreEventWithCampaign[]>({
+    queryKey: ["/api/me/score-events"],
+    enabled: isAuthenticated && showScoreSheet,
   });
 
   const { data: myIssues } = useQuery<ShippingIssue[]>({
@@ -666,54 +700,77 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate transition-all"
+            onClick={() => setShowScoreSheet(true)}
+            data-testid="card-score"
+          >
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Star className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-2xl font-bold">{influencer?.score ?? 0}</p>
                 <p className="text-xs text-muted-foreground">Your Score</p>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate transition-all"
+            onClick={() => setShowCompletedSheet(true)}
+            data-testid="card-completed"
+          >
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <Trophy className="h-5 w-5 text-green-500" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-2xl font-bold">
-                  {(statusCounts.uploaded || 0) + (statusCounts.completed || 0)}
+                  {allApplications?.filter(a => a.status === "uploaded" || a.status === "completed").length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Completed</p>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate transition-all"
+            onClick={() => setShowMissedSheet(true)}
+            data-testid="card-missed"
+          >
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Truck className="h-5 w-5 text-blue-500" />
+              <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-red-500" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-2xl font-bold">
-                  {(statusCounts.approved || 0) +
-                    (statusCounts.shipped || 0) +
-                    (statusCounts.delivered || 0)}
+                  {allApplications?.filter(a => a.status === "deadline_missed").length || 0}
                 </p>
-                <p className="text-xs text-muted-foreground">In Progress</p>
+                <p className="text-xs text-muted-foreground">Missed</p>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate transition-all"
+            onClick={() => setShowCashSheet(true)}
+            data-testid="card-cash"
+          >
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-yellow-500" />
+              <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-emerald-500" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{statusCounts.pending || 0}</p>
-                <p className="text-xs text-muted-foreground">Pending</p>
+              <div className="flex-1">
+                <p className="text-2xl font-bold">
+                  ${allApplications?.filter(a => 
+                    (a.status === "uploaded" || a.status === "completed") && 
+                    a.campaign.rewardType === "gift_paid"
+                  ).reduce((sum, a) => sum + (a.campaign.rewardAmount || 0), 0) || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">Cash Earned</p>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
         </div>
@@ -976,6 +1033,261 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Score History Sheet */}
+      <Sheet open={showScoreSheet} onOpenChange={setShowScoreSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-primary" />
+              Score History
+            </SheetTitle>
+            <SheetDescription>
+              Your total score: <span className="font-bold text-foreground">{influencer?.score ?? 0} points</span>
+            </SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
+            {scoreEvents && scoreEvents.length > 0 ? (
+              <div className="space-y-3">
+                {scoreEvents.map((event) => (
+                  <div 
+                    key={event.id} 
+                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                  >
+                    <div className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0",
+                      event.delta > 0 ? "bg-green-500/10" : "bg-red-500/10"
+                    )}>
+                      <Star className={cn(
+                        "h-4 w-4",
+                        event.delta > 0 ? "text-green-500" : "text-red-500"
+                      )} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className={cn(
+                          "font-medium text-sm",
+                          event.delta > 0 ? "text-green-600" : "text-red-600"
+                        )}>
+                          {event.delta > 0 ? "+" : ""}{event.delta} points
+                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          {event.createdAt ? format(new Date(event.createdAt), "MMM d, yyyy") : ""}
+                        </span>
+                      </div>
+                      {event.campaign && (
+                        <p className="text-sm text-muted-foreground truncate">
+                          {event.campaign.name}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {event.reason.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No score events yet</p>
+                <p className="text-sm">Complete campaigns to earn points!</p>
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Completed Campaigns Sheet */}
+      <Sheet open={showCompletedSheet} onOpenChange={setShowCompletedSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-green-500" />
+              Completed Campaigns
+            </SheetTitle>
+            <SheetDescription>
+              You've completed {allApplications?.filter(a => a.status === "uploaded" || a.status === "completed").length || 0} campaigns
+            </SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
+            {(() => {
+              const completed = allApplications?.filter(a => a.status === "uploaded" || a.status === "completed") || [];
+              return completed.length > 0 ? (
+                <div className="space-y-3">
+                  {completed.map((app) => (
+                    <div 
+                      key={app.id} 
+                      className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                    >
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {getCampaignThumbnail(app.campaign) ? (
+                          <img 
+                            src={getCampaignThumbnail(app.campaign)!} 
+                            alt={app.campaign.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
+                            <Package className="h-5 w-5 text-primary/40" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{app.campaign.name}</p>
+                        <p className="text-xs text-muted-foreground">{app.campaign.brandName}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {app.pointsAwarded && app.pointsAwarded > 0 && (
+                            <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-600">
+                              +{app.pointsAwarded} pts
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {app.uploadedAt ? format(new Date(app.uploadedAt), "MMM d, yyyy") : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Trophy className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No completed campaigns yet</p>
+                  <p className="text-sm">Apply to campaigns and upload content to complete them!</p>
+                </div>
+              );
+            })()}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Missed Campaigns Sheet */}
+      <Sheet open={showMissedSheet} onOpenChange={setShowMissedSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Missed Deadlines
+            </SheetTitle>
+            <SheetDescription>
+              {allApplications?.filter(a => a.status === "deadline_missed").length || 0} campaigns with missed deadlines
+            </SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
+            {(() => {
+              const missed = allApplications?.filter(a => a.status === "deadline_missed") || [];
+              return missed.length > 0 ? (
+                <div className="space-y-3">
+                  {missed.map((app) => (
+                    <div 
+                      key={app.id} 
+                      className="flex items-start gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20"
+                    >
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {getCampaignThumbnail(app.campaign) ? (
+                          <img 
+                            src={getCampaignThumbnail(app.campaign)!} 
+                            alt={app.campaign.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
+                            <Package className="h-5 w-5 text-primary/40" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{app.campaign.name}</p>
+                        <p className="text-xs text-muted-foreground">{app.campaign.brandName}</p>
+                        <p className="text-xs text-red-500 mt-1">
+                          Deadline: {format(new Date(app.campaign.deadline), "MMM d, yyyy")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50 text-green-500" />
+                  <p>No missed deadlines!</p>
+                  <p className="text-sm">Great job staying on track!</p>
+                </div>
+              );
+            })()}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Cash Earned Sheet */}
+      <Sheet open={showCashSheet} onOpenChange={setShowCashSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-emerald-500" />
+              Cash Earned
+            </SheetTitle>
+            <SheetDescription>
+              Total earned: <span className="font-bold text-foreground">
+                ${allApplications?.filter(a => 
+                  (a.status === "uploaded" || a.status === "completed") && 
+                  a.campaign.rewardType === "gift_paid"
+                ).reduce((sum, a) => sum + (a.campaign.rewardAmount || 0), 0) || 0}
+              </span>
+            </SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
+            {(() => {
+              const paidCampaigns = allApplications?.filter(a => 
+                (a.status === "uploaded" || a.status === "completed") && 
+                a.campaign.rewardType === "gift_paid"
+              ) || [];
+              return paidCampaigns.length > 0 ? (
+                <div className="space-y-3">
+                  {paidCampaigns.map((app) => (
+                    <div 
+                      key={app.id} 
+                      className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20"
+                    >
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {getCampaignThumbnail(app.campaign) ? (
+                          <img 
+                            src={getCampaignThumbnail(app.campaign)!} 
+                            alt={app.campaign.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
+                            <Package className="h-5 w-5 text-primary/40" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{app.campaign.name}</p>
+                        <p className="text-xs text-muted-foreground">{app.campaign.brandName}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
+                            ${app.campaign.rewardAmount || 0}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {app.uploadedAt ? format(new Date(app.uploadedAt), "MMM d, yyyy") : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No paid campaigns completed yet</p>
+                  <p className="text-sm">Look for "Gift + Paid" campaigns to earn cash!</p>
+                </div>
+              );
+            })()}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </MainLayout>
   );
 }

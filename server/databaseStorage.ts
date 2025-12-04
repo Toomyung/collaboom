@@ -481,6 +481,28 @@ export class DatabaseStorage implements IStorage {
     return detailed;
   }
 
+  async getAllApplicationsHistory(influencerId: string): Promise<ApplicationWithDetails[]> {
+    // Returns all applications including dismissed ones (full history)
+    const apps = await this.getApplicationsByInfluencer(influencerId);
+    const detailed: ApplicationWithDetails[] = [];
+
+    for (const app of apps) {
+      const campaign = await this.getCampaign(app.campaignId);
+      if (campaign) {
+        const shippingData = await this.getShippingByApplication(app.id);
+        const upload = await this.getUploadByApplication(app.id);
+        detailed.push({
+          ...app,
+          campaign,
+          shipping: shippingData || undefined,
+          upload: upload || undefined,
+        });
+      }
+    }
+
+    return detailed;
+  }
+
   async getApplicationsWithDetailsByCampaign(campaignId: string): Promise<ApplicationWithDetails[]> {
     const apps = await this.getApplicationsByCampaign(campaignId);
     const campaign = await this.getCampaign(campaignId);

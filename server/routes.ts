@@ -476,7 +476,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/me/score-events", requireAuth("influencer"), async (req, res) => {
     try {
       const events = await storage.getScoreEventsByInfluencer(req.session.userId!);
-      return res.json(events);
+      
+      // Enrich with campaign information
+      const enrichedEvents = await Promise.all(events.map(async (event) => {
+        let campaign = null;
+        if (event.campaignId) {
+          campaign = await storage.getCampaign(event.campaignId);
+        }
+        return {
+          ...event,
+          campaign: campaign ? { id: campaign.id, name: campaign.name, brandName: campaign.brandName } : null
+        };
+      }));
+      
+      return res.json(enrichedEvents);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -596,6 +609,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get influencer's applications with details
   app.get("/api/applications/detailed", requireAuth("influencer"), async (req, res) => {
     const applications = await storage.getApplicationsWithDetails(req.session.userId!);
+    return res.json(applications);
+  });
+
+  // Get all application history (including dismissed ones)
+  app.get("/api/applications/all-history", requireAuth("influencer"), async (req, res) => {
+    const applications = await storage.getAllApplicationsHistory(req.session.userId!);
     return res.json(applications);
   });
 

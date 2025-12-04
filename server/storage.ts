@@ -85,6 +85,7 @@ export interface IStorage {
   getApplicationsByInfluencer(influencerId: string): Promise<Application[]>;
   getApplicationsByCampaign(campaignId: string): Promise<Application[]>;
   getApplicationsWithDetails(influencerId: string): Promise<ApplicationWithDetails[]>;
+  getAllApplicationsHistory(influencerId: string): Promise<ApplicationWithDetails[]>;
   getApplicationsWithDetailsByCampaign(campaignId: string): Promise<ApplicationWithDetails[]>;
   createApplication(application: InsertApplication): Promise<Application>;
   updateApplication(id: string, data: Partial<Application>): Promise<Application | undefined>;
@@ -647,6 +648,28 @@ export class MemStorage implements IStorage {
   }
 
   async getApplicationsWithDetails(influencerId: string): Promise<ApplicationWithDetails[]> {
+    const applications = await this.getApplicationsByInfluencer(influencerId);
+    const detailed: ApplicationWithDetails[] = [];
+    
+    for (const app of applications) {
+      const campaign = await this.getCampaign(app.campaignId);
+      if (campaign) {
+        const shipping = await this.getShippingByApplication(app.id);
+        const upload = await this.getUploadByApplication(app.id);
+        detailed.push({
+          ...app,
+          campaign,
+          shipping: shipping || undefined,
+          upload: upload || undefined,
+        });
+      }
+    }
+    
+    return detailed;
+  }
+
+  async getAllApplicationsHistory(influencerId: string): Promise<ApplicationWithDetails[]> {
+    // Returns all applications including dismissed ones (full history)
     const applications = await this.getApplicationsByInfluencer(influencerId);
     const detailed: ApplicationWithDetails[] = [];
     
