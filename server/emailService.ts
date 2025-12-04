@@ -235,3 +235,62 @@ View in dashboard: https://collaboom.io/dashboard
     return { success: false, error: (err as Error).message };
   }
 }
+
+export async function sendUploadVerifiedEmail(
+  to: string,
+  influencerName: string,
+  campaignName: string,
+  brandName: string,
+  pointsAwarded: number,
+  existingThreadId?: string | null
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+
+    const baseSubject = `[Collaboom] ${campaignName} by ${brandName}`;
+    
+    const headers: Record<string, string> = {};
+    let subject = baseSubject;
+    
+    if (existingThreadId) {
+      headers["In-Reply-To"] = existingThreadId;
+      headers["References"] = existingThreadId;
+      subject = `Re: ${baseSubject}`;
+    }
+
+    const pointsText = pointsAwarded > 0 
+      ? `You've earned +${pointsAwarded} points for this campaign!`
+      : `This campaign did not include bonus points.`;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject,
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
+      text: `Hi ${influencerName},
+
+Great job! Your video for "${campaignName}" by ${brandName} has been reviewed and verified.
+
+${pointsText}
+
+Thank you for participating in this campaign. We appreciate your creativity and effort!
+
+Check your updated score and explore new campaigns in your dashboard:
+https://collaboom.io/dashboard
+
+- The Collaboom Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send upload verified email:", error);
+      return { success: false, error: error.message };
+    }
+
+    const referencedId = existingThreadId || "none";
+    console.log(`Upload verified email sent to ${to}, ID: ${data?.id}, In-Reply-To: ${referencedId}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending upload verified email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}

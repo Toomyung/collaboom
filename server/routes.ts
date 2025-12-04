@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail } from "./emailService";
+import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail } from "./emailService";
 import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
 import {
   authLimiter,
@@ -1604,6 +1604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Award score
       const influencer = await storage.getInfluencer(application.influencerId);
+      const campaign = await storage.getCampaign(application.campaignId);
+      
       if (influencer) {
         // Award the specified points
         await storage.addScoreEvent({
@@ -1623,6 +1625,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             delta: 5,
             reason: "first_upload",
           });
+        }
+
+        // Send upload verified email (non-blocking)
+        if (influencer.email && campaign) {
+          sendUploadVerifiedEmail(
+            influencer.email,
+            influencer.name || influencer.email.split("@")[0],
+            campaign.name,
+            campaign.brandName,
+            points,
+            application.emailThreadId
+          ).then((result) => {
+            if (result.success) {
+              // Log notification to database
+              storage.createNotification({
+                influencerId: influencer.id,
+                campaignId: campaign.id,
+                applicationId: application.id,
+                type: "upload_verified",
+              }).catch(console.error);
+            }
+          }).catch(console.error);
         }
       }
 

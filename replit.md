@@ -37,7 +37,7 @@ Preferred communication style: Simple, everyday language.
   - Sidebar badge showing count of open issues for quick visibility
 - **Ghosting Detection:** Automated penalties for missed deadlines, leading to account restriction.
 - **Enhanced Admin Influencer Management:** Tabbed interface for profile, history, notes, and applications.
-- **Email Notification System:** Resend API integration sends automated emails on: (1) influencer signup (welcome email), (2) application approval, (3) shipping info entry, (4) admin reply to comments. Uses non-blocking async sending with beautiful HTML templates. Also logs to notifications table for audit trail.
+- **Email Notification System:** Resend API integration sends automated emails on: (1) influencer signup (welcome email), (2) application approval, (3) shipping info entry, (4) admin reply to comments, (5) upload verification (admin verifies video → influencer receives confirmation). Uses non-blocking async sending with beautiful HTML templates. Also logs to notifications table for audit trail.
 - **Email Threading System (IMPORTANT):** All campaign-related emails are threaded together per influencer+campaign combination:
   - **Thread Structure:** Welcome emails are standalone. Campaign emails (Approval → Shipping → Admin Reply → future emails) are threaded together.
   - **Implementation:** 
