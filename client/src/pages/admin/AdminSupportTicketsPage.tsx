@@ -276,15 +276,16 @@ export default function AdminSupportTicketsPage() {
                             <span className="text-muted-foreground">{ticket.influencer?.email}</span>
                           </div>
                           {ticket.influencer?.tiktokHandle && (
-                            <Link 
+                            <a 
                               href={`https://tiktok.com/@${ticket.influencer.tiktokHandle.replace("@", "")}`}
                               target="_blank"
+                              rel="noopener noreferrer"
                             >
                               <Button variant="ghost" size="sm" className="h-auto py-0 px-2">
                                 @{ticket.influencer.tiktokHandle.replace("@", "")}
                                 <ExternalLink className="h-3 w-3 ml-1" />
                               </Button>
-                            </Link>
+                            </a>
                           )}
                         </div>
 
