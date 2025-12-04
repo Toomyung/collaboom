@@ -3,9 +3,10 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Users, Gift, DollarSign } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
+import type { MouseEvent } from "react";
 
 interface CampaignCardProps {
   campaign: Campaign | MinimalCampaign;
@@ -110,13 +111,24 @@ export function CampaignCard({
   };
 
   const isDisabled = isClosed || isApplicationClosed || isFull;
+  const [, setLocation] = useLocation();
+
+  const handleCardClick = () => {
+    setLocation(`/campaigns/${campaign.id}`);
+  };
+
+  const handleApplyClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    onApply?.();
+  };
 
   return (
     <Card
       className={cn(
-        "group overflow-hidden transition-all duration-200",
+        "group overflow-hidden transition-all duration-200 cursor-pointer",
         isDisabled ? "opacity-60" : "hover:shadow-md"
       )}
+      onClick={handleCardClick}
       data-testid={`card-campaign-${campaign.id}`}
     >
       <div className={cn(
@@ -175,21 +187,16 @@ export function CampaignCard({
       </CardContent>
 
       {showApplyButton && (
-        <CardFooter className="p-4 pt-0 flex gap-2">
-          <Link href={`/campaigns/${campaign.id}`} className="flex-1">
-            <Button variant="outline" className="w-full" data-testid={`button-view-${campaign.id}`}>
-              View Details
-            </Button>
-          </Link>
+        <CardFooter className="p-4 pt-0 flex gap-2" onClick={(e) => e.stopPropagation()}>
           {isApplied ? (
-            <Badge variant="secondary" className="h-9 px-4">
+            <Badge variant="secondary" className="h-9 px-4 flex-1 justify-center">
               Applied
             </Badge>
           ) : (
             <Button
               className="flex-1"
               disabled={!canApply || isFull || isClosed || isApplicationClosed}
-              onClick={onApply}
+              onClick={handleApplyClick}
               title={isApplicationClosed ? "Application deadline has passed" : applyDisabledReason}
               data-testid={`button-apply-${campaign.id}`}
             >
