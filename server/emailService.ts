@@ -70,10 +70,17 @@ export async function sendApplicationApprovedEmail(
     const recipient = TEST_EMAIL_OVERRIDE || to;
     const subject = `[Collaboom] ${campaignName} by ${brandName}`;
     
+    // Generate a unique Message-ID for threading
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const messageId = `<collaboom-${uniqueId}@collaboom.io>`;
+    
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
       subject,
+      headers: {
+        "Message-ID": messageId,
+      },
       text: `Hi ${influencerName},
 
 Great news! Your application for "${campaignName}" by ${brandName} has been approved.
@@ -97,7 +104,7 @@ Make sure your shipping address is up to date in your profile!
       return { success: false, error: error.message };
     }
 
-    const messageId = data?.id ? toMessageId(data.id) : undefined;
+    // Return our custom Message-ID for threading (not the Resend ID)
     console.log(`Approval email sent to ${to}, ID: ${data?.id}, MessageId: ${messageId}`);
     
     return { success: true, emailId: data?.id, messageId };
