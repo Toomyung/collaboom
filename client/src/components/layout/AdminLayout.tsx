@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Archive,
   AlertCircle,
+  Headphones,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,7 @@ interface NavItem {
   subItems?: { href: string; label: string; icon: any }[];
 }
 
-const getNavItems = (openIssuesCount?: number): NavItem[] => [
+const getNavItems = (openIssuesCount?: number, openTicketsCount?: number): NavItem[] => [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { 
     href: "/admin/campaigns", 
@@ -49,6 +50,7 @@ const getNavItems = (openIssuesCount?: number): NavItem[] => [
   },
   { href: "/admin/influencers", label: "Influencers", icon: Users },
   { href: "/admin/issues", label: "Reported Issues", icon: AlertCircle, badge: openIssuesCount },
+  { href: "/admin/support-tickets", label: "Support Tickets", icon: Headphones, badge: openTicketsCount },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
@@ -57,12 +59,19 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["Campaigns"]);
 
-  // Fetch all issues and count only open ones for badge
+  // Fetch all issues and support tickets, count only open ones for badges
   const { data: allIssues } = useQuery<any[]>({
     queryKey: ["/api/admin/issues"],
   });
+  const { data: allTickets } = useQuery<any[]>({
+    queryKey: ["/api/admin/support-tickets"],
+  });
   const openIssuesCount = allIssues?.filter((i: any) => i.status === "open").length || 0;
-  const navItems = getNavItems(openIssuesCount > 0 ? openIssuesCount : undefined);
+  const openTicketsCount = allTickets?.filter((t: any) => t.status === "open").length || 0;
+  const navItems = getNavItems(
+    openIssuesCount > 0 ? openIssuesCount : undefined,
+    openTicketsCount > 0 ? openTicketsCount : undefined
+  );
 
   const isActive = (href: string) => {
     if (href === "/admin") return location === "/admin";

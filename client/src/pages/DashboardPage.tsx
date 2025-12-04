@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApplicationWithDetails, ShippingIssue, ScoreEvent } from "@shared/schema";
+import { ApplicationWithDetails, ShippingIssue, ScoreEvent, SupportTicket } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, Redirect } from "wouter";
 import {
@@ -26,6 +26,8 @@ import {
   DollarSign,
   Trophy,
   ChevronRight,
+  Headphones,
+  Send,
 } from "lucide-react";
 import {
   Sheet,
@@ -167,6 +169,9 @@ export default function DashboardPage() {
   const [showCompletedSheet, setShowCompletedSheet] = useState(false);
   const [showMissedSheet, setShowMissedSheet] = useState(false);
   const [showCashSheet, setShowCashSheet] = useState(false);
+  const [showSupportSheet, setShowSupportSheet] = useState(false);
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
 
   const { data: applications, isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/applications/detailed"],
@@ -186,6 +191,33 @@ export default function DashboardPage() {
   const { data: myIssues } = useQuery<ShippingIssue[]>({
     queryKey: ["/api/my-issues"],
     enabled: isAuthenticated,
+  });
+
+  const { data: mySupportTickets } = useQuery<SupportTicket[]>({
+    queryKey: ["/api/support-tickets/my"],
+    enabled: isAuthenticated && showSupportSheet,
+  });
+
+  const submitSupportTicketMutation = useMutation({
+    mutationFn: async ({ subject, message }: { subject: string; message: string }) => {
+      await apiRequest("POST", "/api/support-tickets", { subject, message });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/support-tickets/my"] });
+      toast({
+        title: "Ticket submitted",
+        description: "We'll get back to you as soon as possible.",
+      });
+      setSupportSubject("");
+      setSupportMessage("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to submit ticket",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const issuesByApplicationId = myIssues?.reduce((acc, issue) => {
@@ -694,9 +726,19 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Track your campaign applications</p>
           </div>
-          <Link href="/campaigns">
-            <Button data-testid="button-browse">Browse Campaigns</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSupportSheet(true)}
+              data-testid="button-support"
+            >
+              <Headphones className="h-4 w-4 mr-2" />
+              Support
+            </Button>
+            <Link href="/campaigns">
+              <Button data-testid="button-browse">Browse Campaigns</Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -1285,6 +1327,117 @@ export default function DashboardPage() {
                 </div>
               );
             })()}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      {/* Support Sheet */}
+      <Sheet open={showSupportSheet} onOpenChange={setShowSupportSheet}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Headphones className="h-5 w-5 text-primary" />
+              Support
+            </SheetTitle>
+            <SheetDescription>
+              Have a question? We're here to help!
+            </SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
+            <div className="space-y-6">
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-amber-800 dark:text-amber-200">
+                    <p className="font-medium">Campaign-Specific Questions</p>
+                    <p className="text-xs mt-1 opacity-80">
+                      For questions about a specific campaign (shipping, content, deadlines), please use the "Comment" button on that campaign card instead.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm">Submit a new ticket</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm text-muted-foreground">Subject</label>
+                    <input 
+                      type="text"
+                      className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Brief description of your question"
+                      value={supportSubject}
+                      onChange={(e) => setSupportSubject(e.target.value)}
+                      data-testid="input-support-subject"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground">Message</label>
+                    <Textarea
+                      className="mt-1 min-h-[100px] text-sm"
+                      placeholder="Please describe your question in detail..."
+                      value={supportMessage}
+                      onChange={(e) => setSupportMessage(e.target.value)}
+                      data-testid="input-support-message"
+                    />
+                  </div>
+                  <Button 
+                    className="w-full"
+                    disabled={!supportSubject.trim() || !supportMessage.trim() || submitSupportTicketMutation.isPending}
+                    onClick={() => submitSupportTicketMutation.mutate({ subject: supportSubject, message: supportMessage })}
+                    data-testid="button-submit-support"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {submitSupportTicketMutation.isPending ? "Submitting..." : "Submit Ticket"}
+                  </Button>
+                </div>
+              </div>
+
+              {mySupportTickets && mySupportTickets.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Your tickets</h4>
+                  <div className="space-y-3">
+                    {mySupportTickets.map((ticket) => (
+                      <div 
+                        key={ticket.id}
+                        className={cn(
+                          "p-3 rounded-lg border",
+                          ticket.status === "open" 
+                            ? "bg-blue-500/5 border-blue-500/20" 
+                            : "bg-muted/50 border-border"
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{ticket.subject}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {ticket.createdAt && format(new Date(ticket.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant={ticket.status === "open" ? "default" : "secondary"}
+                            className="text-xs flex-shrink-0"
+                          >
+                            {ticket.status === "open" ? "Open" : "Resolved"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                          {ticket.message}
+                        </p>
+                        {ticket.adminResponse && (
+                          <div className="mt-2 pt-2 border-t">
+                            <p className="text-xs font-medium text-primary">Admin Response:</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {ticket.adminResponse}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </ScrollArea>
         </SheetContent>
       </Sheet>

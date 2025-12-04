@@ -2052,6 +2052,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =====================
+  // SUPPORT TICKETS
+  // =====================
+
+  // Create a support ticket (influencer)
+  app.post("/api/support-tickets", requireAuth("influencer"), async (req, res) => {
+    try {
+      const { subject, message } = req.body;
+      
+      // Validate required fields
+      if (!subject || typeof subject !== 'string' || subject.trim().length === 0) {
+        return res.status(400).json({ message: "Subject is required" });
+      }
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      if (subject.trim().length > 200) {
+        return res.status(400).json({ message: "Subject must be 200 characters or less" });
+      }
+      if (message.trim().length > 5000) {
+        return res.status(400).json({ message: "Message must be 5000 characters or less" });
+      }
+      
+      const ticket = await storage.createSupportTicket({
+        influencerId: req.session.userId!,
+        subject: subject.trim(),
+        message: message.trim(),
+      });
+      
+      return res.json(ticket);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get my support tickets (influencer)
+  app.get("/api/support-tickets/my", requireAuth("influencer"), async (req, res) => {
+    try {
+      const tickets = await storage.getSupportTicketsByInfluencer(req.session.userId!);
+      return res.json(tickets);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get all support tickets (admin)
+  app.get("/api/admin/support-tickets", requireAuth("admin"), async (req, res) => {
+    try {
+      // Always return all tickets - frontend handles filtering by status
+      const tickets = await storage.getAllSupportTickets();
+      return res.json(tickets);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Respond to support ticket (admin)
+  app.post("/api/admin/support-tickets/:id/respond", requireAuth("admin"), async (req, res) => {
+    try {
+      const { response, status } = req.body;
+      
+      // Validate response
+      if (!response || typeof response !== 'string' || response.trim().length === 0) {
+        return res.status(400).json({ message: "Response is required" });
+      }
+      if (response.trim().length > 5000) {
+        return res.status(400).json({ message: "Response must be 5000 characters or less" });
+      }
+      
+      // Validate status
+      const validStatuses = ["resolved", "closed"];
+      const finalStatus = validStatuses.includes(status) ? status : "resolved";
+      
+      // Build update object - only set resolved fields if actually resolving/closing
+      const updateData: any = {
+        adminResponse: response.trim(),
+        status: finalStatus,
+        resolvedByAdminId: req.session.userId,
+        resolvedAt: new Date(),
+      };
+      
+      const ticket = await storage.updateSupportTicket(req.params.id, updateData);
+      
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      return res.json({ success: true, ticket });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // =====================
   // IMAGE MIGRATION
   // =====================
 
