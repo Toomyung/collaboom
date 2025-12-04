@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { deleteImagesFromStorage } from "./supabaseStorage";
 import {
   admins, influencers, campaigns, applications, shipping, uploads,
-  scoreEvents, penaltyEvents, adminNotes, notifications, shippingIssues,
+  scoreEvents, penaltyEvents, adminNotes, notifications, shippingIssues, supportTickets,
   type Admin, type InsertAdmin,
   type Influencer, type InsertInfluencer,
   type Campaign, type InsertCampaign,
@@ -16,6 +16,7 @@ import {
   type AdminNote, type InsertAdminNote,
   type Notification, type InsertNotification,
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
+  type SupportTicket, type InsertSupportTicket, type SupportTicketWithDetails,
 } from "@shared/schema";
 import { IStorage, GetCampaignsOptions, PaginatedCampaignsResult } from "./storage";
 
@@ -757,6 +758,64 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(shippingIssues)
       .set(data)
       .where(eq(shippingIssues.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Support Tickets
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    const [newTicket] = await db.insert(supportTickets).values({
+      influencerId: ticket.influencerId,
+      subject: ticket.subject,
+      message: ticket.message,
+      status: "open",
+    }).returning();
+    return newTicket;
+  }
+
+  async getSupportTicketsByInfluencer(influencerId: string): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets)
+      .where(eq(supportTickets.influencerId, influencerId))
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getAllSupportTickets(): Promise<SupportTicketWithDetails[]> {
+    const tickets = await db.select().from(supportTickets)
+      .orderBy(desc(supportTickets.createdAt));
+    
+    const result: SupportTicketWithDetails[] = [];
+    for (const ticket of tickets) {
+      const [influencer] = await db.select().from(influencers)
+        .where(eq(influencers.id, ticket.influencerId));
+      result.push({ ...ticket, influencer });
+    }
+    return result;
+  }
+
+  async getAllOpenSupportTickets(): Promise<SupportTicketWithDetails[]> {
+    const tickets = await db.select().from(supportTickets)
+      .where(eq(supportTickets.status, "open"))
+      .orderBy(desc(supportTickets.createdAt));
+    
+    const result: SupportTicketWithDetails[] = [];
+    for (const ticket of tickets) {
+      const [influencer] = await db.select().from(influencers)
+        .where(eq(influencers.id, ticket.influencerId));
+      result.push({ ...ticket, influencer });
+    }
+    return result;
+  }
+
+  async getSupportTicket(id: string): Promise<SupportTicket | undefined> {
+    const [ticket] = await db.select().from(supportTickets)
+      .where(eq(supportTickets.id, id));
+    return ticket;
+  }
+
+  async updateSupportTicket(id: string, data: Partial<SupportTicket>): Promise<SupportTicket | undefined> {
+    const [updated] = await db.update(supportTickets)
+      .set(data)
+      .where(eq(supportTickets.id, id))
       .returning();
     return updated;
   }

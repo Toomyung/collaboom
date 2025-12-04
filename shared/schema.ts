@@ -378,3 +378,29 @@ export type ShippingIssueWithDetails = ShippingIssue & {
   campaign?: Campaign;
   applicationStatus?: string;
 };
+
+// Support Tickets (general questions from influencers)
+export const supportTickets = pgTable("support_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("open"), // 'open' | 'resolved' | 'closed'
+  resolvedByAdminId: varchar("resolved_by_admin_id"),
+  resolvedAt: timestamp("resolved_at"),
+  adminResponse: text("admin_response"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).pick({
+  influencerId: true,
+  subject: true,
+  message: true,
+});
+
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type SupportTicket = typeof supportTickets.$inferSelect;
+
+export type SupportTicketWithDetails = SupportTicket & {
+  influencer?: Influencer;
+};

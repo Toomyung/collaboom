@@ -10,6 +10,7 @@ import {
   type AdminNote, type InsertAdminNote,
   type Notification, type InsertNotification,
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
+  type SupportTicket, type InsertSupportTicket, type SupportTicketWithDetails,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as bcrypt from 'bcryptjs';
@@ -127,6 +128,14 @@ export interface IStorage {
   getAllShippingIssues(): Promise<ShippingIssueWithDetails[]>;
   updateShippingIssue(id: string, data: Partial<ShippingIssue>): Promise<ShippingIssue | undefined>;
   
+  // Support Tickets
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  getSupportTicketsByInfluencer(influencerId: string): Promise<SupportTicket[]>;
+  getAllSupportTickets(): Promise<SupportTicketWithDetails[]>;
+  getAllOpenSupportTickets(): Promise<SupportTicketWithDetails[]>;
+  getSupportTicket(id: string): Promise<SupportTicket | undefined>;
+  updateSupportTicket(id: string, data: Partial<SupportTicket>): Promise<SupportTicket | undefined>;
+  
   // Stats
   getAdminStats(): Promise<{
     activeCampaigns: number;
@@ -153,6 +162,7 @@ export class MemStorage implements IStorage {
   private adminNotes: Map<string, AdminNote>;
   private notifications: Map<string, Notification>;
   private shippingIssues: Map<string, ShippingIssue>;
+  private supportTickets: Map<string, SupportTicket>;
   private influencerPasswords: Map<string, string>;
   private adminPasswords: Map<string, string>;
 
@@ -168,6 +178,7 @@ export class MemStorage implements IStorage {
     this.adminNotes = new Map();
     this.notifications = new Map();
     this.shippingIssues = new Map();
+    this.supportTickets = new Map();
     this.influencerPasswords = new Map();
     this.adminPasswords = new Map();
     
@@ -1003,6 +1014,63 @@ export class MemStorage implements IStorage {
     if (!issue) return undefined;
     const updated = { ...issue, ...data };
     this.shippingIssues.set(id, updated);
+    return updated;
+  }
+
+  // Support Tickets
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    const id = randomUUID();
+    const newTicket: SupportTicket = {
+      id,
+      influencerId: ticket.influencerId,
+      subject: ticket.subject,
+      message: ticket.message,
+      status: "open",
+      resolvedByAdminId: null,
+      resolvedAt: null,
+      adminResponse: null,
+      createdAt: new Date(),
+    };
+    this.supportTickets.set(id, newTicket);
+    return newTicket;
+  }
+
+  async getSupportTicketsByInfluencer(influencerId: string): Promise<SupportTicket[]> {
+    return Array.from(this.supportTickets.values())
+      .filter(t => t.influencerId === influencerId)
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async getAllSupportTickets(): Promise<SupportTicketWithDetails[]> {
+    const tickets = Array.from(this.supportTickets.values())
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    
+    return tickets.map(ticket => ({
+      ...ticket,
+      influencer: this.influencers.get(ticket.influencerId),
+    }));
+  }
+
+  async getAllOpenSupportTickets(): Promise<SupportTicketWithDetails[]> {
+    const tickets = Array.from(this.supportTickets.values())
+      .filter(t => t.status === "open")
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    
+    return tickets.map(ticket => ({
+      ...ticket,
+      influencer: this.influencers.get(ticket.influencerId),
+    }));
+  }
+
+  async getSupportTicket(id: string): Promise<SupportTicket | undefined> {
+    return this.supportTickets.get(id);
+  }
+
+  async updateSupportTicket(id: string, data: Partial<SupportTicket>): Promise<SupportTicket | undefined> {
+    const ticket = this.supportTickets.get(id);
+    if (!ticket) return undefined;
+    const updated = { ...ticket, ...data };
+    this.supportTickets.set(id, updated);
     return updated;
   }
 
