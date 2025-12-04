@@ -1820,11 +1820,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all applications for this influencer
       const applications = await storage.getApplicationsByInfluencer(req.params.id);
       
-      // Enrich with campaign data
+      // Enrich with campaign data and shipping issues (comments)
       const enrichedApplications = await Promise.all(
         applications.map(async (app) => {
           const campaign = await storage.getCampaign(app.campaignId);
-          return { ...app, campaign };
+          const issues = await storage.getShippingIssuesByApplication(app.id);
+          const shipping = await storage.getShippingByApplication(app.id);
+          return { ...app, campaign, issues, shipping };
         })
       );
 
@@ -1849,17 +1851,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const scoreEvents = await storage.getScoreEventsByInfluencer(req.params.id);
       const penaltyEvents = await storage.getPenaltyEventsByInfluencer(req.params.id);
 
-      // Application status breakdown
-      const statusCounts = {
-        pending: enrichedApplications.filter((a) => a.status === "pending").length,
-        approved: enrichedApplications.filter((a) => a.status === "approved").length,
-        shipped: enrichedApplications.filter((a) => a.status === "shipped").length,
-        delivered: enrichedApplications.filter((a) => a.status === "delivered").length,
-        uploaded: completedApps.length,
-        rejected: enrichedApplications.filter((a) => a.status === "rejected").length,
-        deadline_missed: missedApps.length,
-      };
-
       return res.json({
         influencer,
         stats: {
@@ -1870,9 +1861,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cashEarned,
           totalPointsFromCampaigns,
           totalApplications: enrichedApplications.length,
-          statusCounts,
         },
         recentApplications: enrichedApplications
+          .filter((a) => !a.dismissedAt)
           .sort((a, b) => new Date(b.appliedAt!).getTime() - new Date(a.appliedAt!).getTime())
           .slice(0, 10),
         scoreEventsCount: scoreEvents.length,

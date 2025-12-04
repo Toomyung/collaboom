@@ -13,6 +13,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   User,
   Star,
   AlertTriangle,
@@ -35,15 +41,20 @@ import {
   Truck,
   Upload,
   ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { Influencer, AdminNote, ScoreEvent, PenaltyEvent, Application, Campaign } from "@shared/schema";
+import type { Influencer, AdminNote, ScoreEvent, PenaltyEvent, Application, Campaign, ShippingIssue, Shipping } from "@shared/schema";
 
-type ApplicationWithCampaign = Application & { campaign?: Campaign };
+type ApplicationWithDetails = Application & { 
+  campaign?: Campaign;
+  issues?: ShippingIssue[];
+  shipping?: Shipping | null;
+};
 
 type InfluencerWithStats = Influencer & {
   appliedCount?: number;
@@ -61,17 +72,8 @@ interface DashboardStats {
     cashEarned: number;
     totalPointsFromCampaigns: number;
     totalApplications: number;
-    statusCounts: {
-      pending: number;
-      approved: number;
-      shipped: number;
-      delivered: number;
-      uploaded: number;
-      rejected: number;
-      deadline_missed: number;
-    };
   };
-  recentApplications: ApplicationWithCampaign[];
+  recentApplications: ApplicationWithDetails[];
   scoreEventsCount: number;
   penaltyEventsCount: number;
 }
@@ -84,6 +86,97 @@ interface InfluencerDetailSheetProps {
   onDataChange?: () => void;
 }
 
+const statusConfig: Record<string, { 
+  label: string; 
+  color: string; 
+  bgColor: string;
+  textColor: string;
+  icon: typeof Clock;
+  description: string;
+  step: number;
+}> = {
+  pending: {
+    label: "Pending Review",
+    color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    bgColor: "bg-yellow-500/10 border border-yellow-500/20",
+    textColor: "text-yellow-700",
+    icon: Clock,
+    description: "Awaiting approval from our team",
+    step: 1,
+  },
+  approved: {
+    label: "Approved",
+    color: "bg-green-500/10 text-green-600 border-green-500/20",
+    bgColor: "bg-green-500/10 border border-green-500/20",
+    textColor: "text-green-700",
+    icon: CheckCircle,
+    description: "Application approved. Shipping will begin soon.",
+    step: 2,
+  },
+  rejected: {
+    label: "Not Selected",
+    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+    bgColor: "bg-gray-500/10 border border-gray-500/20",
+    textColor: "text-gray-600",
+    icon: AlertCircle,
+    description: "Application was not selected for this campaign.",
+    step: 0,
+  },
+  shipped: {
+    label: "Shipped",
+    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    bgColor: "bg-blue-500/10 border border-blue-500/20",
+    textColor: "text-blue-700",
+    icon: Truck,
+    description: "Package is on the way!",
+    step: 3,
+  },
+  delivered: {
+    label: "Delivered",
+    color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    bgColor: "bg-purple-500/10 border border-purple-500/20",
+    textColor: "text-purple-700",
+    icon: Package,
+    description: "Package delivered. Awaiting content upload.",
+    step: 4,
+  },
+  uploaded: {
+    label: "Content Uploaded",
+    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    bgColor: "bg-emerald-500/10 border border-emerald-500/20",
+    textColor: "text-emerald-700",
+    icon: Upload,
+    description: "Content has been verified and uploaded.",
+    step: 5,
+  },
+  completed: {
+    label: "Completed",
+    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    bgColor: "bg-emerald-500/10 border border-emerald-500/20",
+    textColor: "text-emerald-700",
+    icon: CheckCircle,
+    description: "Campaign completed successfully!",
+    step: 5,
+  },
+  deadline_missed: {
+    label: "Deadline Missed",
+    color: "bg-red-500/10 text-red-600 border-red-500/20",
+    bgColor: "bg-red-500/10 border border-red-500/20",
+    textColor: "text-red-600",
+    icon: AlertCircle,
+    description: "The upload deadline has passed.",
+    step: 0,
+  },
+};
+
+const progressSteps = [
+  { label: "Applied", icon: Clock },
+  { label: "Approved", icon: CheckCircle },
+  { label: "Shipped", icon: Truck },
+  { label: "Delivered", icon: Package },
+  { label: "Uploaded", icon: Upload },
+];
+
 export function InfluencerDetailSheet({
   open,
   onClose,
@@ -94,6 +187,7 @@ export function InfluencerDetailSheet({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newNote, setNewNote] = useState("");
+  const [expandedCampaigns, setExpandedCampaigns] = useState<string[]>([]);
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -122,7 +216,7 @@ export function InfluencerDetailSheet({
     enabled: !!influencerId && open,
   });
 
-  const { data: applications } = useQuery<ApplicationWithCampaign[]>({
+  const { data: applications } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/admin/influencers", influencerId, "applications"],
     enabled: !!influencerId && open,
   });
@@ -199,6 +293,7 @@ export function InfluencerDetailSheet({
   const handleClose = () => {
     setNewNote("");
     setActiveTab("dashboard");
+    setExpandedCampaigns([]);
     onClose();
   };
 
@@ -231,6 +326,182 @@ export function InfluencerDetailSheet({
   });
 
   const stats = dashboardStats?.stats;
+
+  const renderProgressBar = (status: string) => {
+    const currentStep = statusConfig[status]?.step || 0;
+    if (status === "rejected" || status === "deadline_missed") return null;
+
+    return (
+      <div className="flex items-center gap-1 w-full mt-3">
+        {progressSteps.map((step, index) => {
+          const stepNum = index + 1;
+          const isComplete = stepNum <= currentStep;
+          const isCurrent = stepNum === currentStep;
+          return (
+            <div key={step.label} className="flex-1 flex flex-col items-center">
+              <div className="flex items-center w-full">
+                <div
+                  className={cn(
+                    "h-1 flex-1 rounded-full transition-colors",
+                    isComplete ? "bg-primary" : "bg-muted"
+                  )}
+                />
+              </div>
+              <div className="flex items-center gap-0.5 mt-1">
+                <step.icon
+                  className={cn(
+                    "h-2.5 w-2.5",
+                    isComplete ? "text-primary" : "text-muted-foreground"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-[9px]",
+                    isCurrent ? "text-primary font-medium" : isComplete ? "text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  {step.label}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderApplicationDetails = (app: ApplicationWithDetails) => {
+    const campaign = app.campaign;
+    const status = statusConfig[app.status] || statusConfig.pending;
+    const issues = app.issues || [];
+
+    return (
+      <div className="space-y-3 pt-2">
+        {renderProgressBar(app.status)}
+
+        <div className={cn("rounded-lg p-3 mt-3", status.bgColor)}>
+          <p className={cn("text-xs", status.textColor)}>
+            {app.status === "uploaded" && app.pointsAwarded && app.pointsAwarded > 0
+              ? `Content verified! +${app.pointsAwarded} points awarded.`
+              : status.description}
+          </p>
+        </div>
+
+        {app.shipping && (app.status === "shipped" || app.status === "delivered") && (
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-2 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <Truck className="h-3 w-3 text-blue-600" />
+              <span className="text-xs font-medium text-blue-600">Shipping Info</span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {app.shipping.courier && <span>Courier: {app.shipping.courier}</span>}
+              {app.shipping.trackingNumber && (
+                <span className="ml-2">Tracking: {app.shipping.trackingNumber}</span>
+              )}
+            </div>
+            {app.shipping.trackingUrl && (
+              <a
+                href={app.shipping.trackingUrl.startsWith('http') 
+                  ? app.shipping.trackingUrl 
+                  : `https://${app.shipping.trackingUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <ExternalLink className="h-2.5 w-2.5" />
+                Track Package
+              </a>
+            )}
+          </div>
+        )}
+
+        {app.status === "uploaded" && app.contentUrl && (
+          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Upload className="h-3 w-3 text-emerald-600" />
+                <span className="text-xs font-medium text-emerald-600">Uploaded Video</span>
+              </div>
+              {app.pointsAwarded && app.pointsAwarded > 0 && (
+                <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600">
+                  +{app.pointsAwarded} pts
+                </Badge>
+              )}
+            </div>
+            <a
+              href={app.contentUrl.startsWith('http') ? app.contentUrl : `https://${app.contentUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+            >
+              <ExternalLink className="h-2.5 w-2.5" />
+              View TikTok Video
+            </a>
+          </div>
+        )}
+
+        {issues.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Comment History</p>
+            {issues.map((issue) => (
+              <div 
+                key={issue.id} 
+                className={cn(
+                  "rounded-lg p-2 space-y-1.5 text-xs",
+                  issue.status === "open" 
+                    ? "bg-amber-500/5 border border-amber-500/20" 
+                    : issue.status === "resolved"
+                    ? "bg-green-500/5 border border-green-500/20"
+                    : "bg-gray-500/5 border border-gray-500/20"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className={cn(
+                      "h-3 w-3",
+                      issue.status === "open" ? "text-amber-600" : 
+                      issue.status === "resolved" ? "text-green-600" : "text-gray-500"
+                    )} />
+                    <span className="font-medium">Influencer Comment</span>
+                  </div>
+                  <Badge 
+                    variant="secondary"
+                    className={cn(
+                      "text-[10px] h-4",
+                      issue.status === "resolved" && "bg-green-500/10 text-green-600"
+                    )}
+                  >
+                    {issue.status}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground">{issue.message}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {issue.createdAt ? format(new Date(issue.createdAt), "MMM d, yyyy") : ""}
+                </p>
+                
+                {issue.adminResponse && (
+                  <div className="bg-blue-500/5 border border-blue-500/20 rounded p-2 mt-1">
+                    <div className="flex items-center gap-1 mb-1">
+                      <CheckCircle className="h-2.5 w-2.5 text-blue-600" />
+                      <span className="text-[10px] font-medium text-blue-600">Admin Reply</span>
+                    </div>
+                    <p className="text-muted-foreground">{issue.adminResponse}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="text-[10px] text-muted-foreground pt-1 border-t">
+          <p>Applied: {app.appliedAt ? format(new Date(app.appliedAt), "MMM d, yyyy") : "-"}</p>
+          {campaign?.deadline && (
+            <p>Deadline: {format(new Date(campaign.deadline), "MMM d, yyyy")}</p>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
@@ -344,34 +615,6 @@ export function InfluencerDetailSheet({
                   </Card>
                 </div>
 
-                <Card>
-                  <CardContent className="p-4">
-                    <h4 className="text-sm font-medium mb-3">Campaign Status Breakdown</h4>
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="p-2 bg-yellow-500/10 rounded-lg">
-                        <Clock className="h-4 w-4 mx-auto text-yellow-600 mb-1" />
-                        <p className="text-lg font-bold">{stats?.statusCounts?.pending ?? 0}</p>
-                        <p className="text-[10px] text-muted-foreground">Pending</p>
-                      </div>
-                      <div className="p-2 bg-green-500/10 rounded-lg">
-                        <CheckCircle className="h-4 w-4 mx-auto text-green-600 mb-1" />
-                        <p className="text-lg font-bold">{stats?.statusCounts?.approved ?? 0}</p>
-                        <p className="text-[10px] text-muted-foreground">Approved</p>
-                      </div>
-                      <div className="p-2 bg-blue-500/10 rounded-lg">
-                        <Truck className="h-4 w-4 mx-auto text-blue-600 mb-1" />
-                        <p className="text-lg font-bold">{stats?.statusCounts?.shipped ?? 0}</p>
-                        <p className="text-[10px] text-muted-foreground">Shipped</p>
-                      </div>
-                      <div className="p-2 bg-purple-500/10 rounded-lg">
-                        <Package className="h-4 w-4 mx-auto text-purple-600 mb-1" />
-                        <p className="text-lg font-bold">{stats?.statusCounts?.delivered ?? 0}</p>
-                        <p className="text-[10px] text-muted-foreground">Delivered</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 <div className="grid grid-cols-2 gap-3">
                   <Card>
                     <CardContent className="p-3">
@@ -457,29 +700,51 @@ export function InfluencerDetailSheet({
                 {dashboardStats?.recentApplications && dashboardStats.recentApplications.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Recent Campaigns</h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {dashboardStats.recentApplications.slice(0, 5).map((app) => (
-                        <div key={app.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg text-sm">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{app.campaign?.name || "Unknown"}</p>
-                            <p className="text-xs text-muted-foreground">{app.campaign?.brandName}</p>
-                          </div>
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              "text-xs ml-2",
-                              app.status === "completed" || app.status === "uploaded"
-                                ? "bg-green-500/10 text-green-600"
-                                : app.status === "deadline_missed"
-                                ? "bg-red-500/10 text-red-600"
-                                : ""
-                            )}
+                    <Accordion 
+                      type="multiple" 
+                      value={expandedCampaigns}
+                      onValueChange={setExpandedCampaigns}
+                      className="space-y-2"
+                    >
+                      {dashboardStats.recentApplications.map((app) => {
+                        const status = statusConfig[app.status] || statusConfig.pending;
+                        const StatusIcon = status.icon;
+                        const hasComments = app.issues && app.issues.length > 0;
+
+                        return (
+                          <AccordionItem
+                            key={app.id}
+                            value={app.id}
+                            className="border rounded-lg overflow-hidden bg-card"
                           >
-                            {app.status}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
+                            <AccordionTrigger className="hover:no-underline px-3 py-2 [&>svg]:hidden">
+                              <div className="flex items-center gap-3 w-full">
+                                <div className="flex-1 min-w-0 text-left">
+                                  <p className="font-medium text-sm truncate">{app.campaign?.name || "Unknown"}</p>
+                                  <p className="text-xs text-muted-foreground">{app.campaign?.brandName}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {hasComments && (
+                                    <MessageSquare className="h-3 w-3 text-amber-500" />
+                                  )}
+                                  <Badge
+                                    variant="secondary"
+                                    className={cn("text-xs", status.color)}
+                                  >
+                                    <StatusIcon className="h-3 w-3 mr-1" />
+                                    {status.label}
+                                  </Badge>
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                </div>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-3 pb-3">
+                              {renderApplicationDetails(app)}
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
                   </div>
                 )}
 
