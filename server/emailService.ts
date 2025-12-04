@@ -259,24 +259,53 @@ export async function sendUploadVerifiedEmail(
     }
 
     const pointsText = pointsAwarded > 0 
-      ? `You've earned +${pointsAwarded} points for this campaign!`
-      : `This campaign did not include bonus points.`;
+      ? `+${pointsAwarded} points have been added to your account!`
+      : "";
     
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
       subject,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <p style="font-size: 16px; color: #333;">Hi ${influencerName},</p>
+          
+          <p style="font-size: 16px; color: #333;">
+            Great news! Your video for <strong>"${campaignName}"</strong> by <strong>${brandName}</strong> has been reviewed and verified.
+          </p>
+          
+          ${pointsAwarded > 0 ? `
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 24px; border-radius: 12px; margin: 20px 0; text-align: center;">
+            <span style="font-size: 24px; font-weight: bold;">+${pointsAwarded} Points</span>
+            <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Added to your Collaboom score!</p>
+          </div>
+          ` : ""}
+          
+          <p style="font-size: 16px; color: #333;">
+            Thank you for participating in this campaign. We appreciate your creativity and effort!
+          </p>
+          
+          <div style="margin: 30px 0;">
+            <a href="https://collaboom.io/dashboard" style="display: inline-block; background: #6366f1; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+              Go to Dashboard →
+            </a>
+          </div>
+          
+          <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            - The Collaboom Team
+          </p>
+        </div>
+      `,
       text: `Hi ${influencerName},
 
-Great job! Your video for "${campaignName}" by ${brandName} has been reviewed and verified.
+Great news! Your video for "${campaignName}" by ${brandName} has been reviewed and verified.
 
 ${pointsText}
 
 Thank you for participating in this campaign. We appreciate your creativity and effort!
 
-Check your updated score and explore new campaigns in your dashboard:
-https://collaboom.io/dashboard
+Go to Dashboard: https://collaboom.io/dashboard
 
 - The Collaboom Team`,
     });
