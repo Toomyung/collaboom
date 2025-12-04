@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
@@ -12,6 +13,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Accordion,
   AccordionContent,
@@ -195,6 +204,15 @@ export function InfluencerDetailSheet({
   const [newNote, setNewNote] = useState("");
   const [expandedCampaigns, setExpandedCampaigns] = useState<string[]>([]);
   const [detailView, setDetailView] = useState<DetailView>(null);
+  
+  // Score/Penalty editing states
+  const [editingScore, setEditingScore] = useState<number | null>(null);
+  const [editingPenalty, setEditingPenalty] = useState<number | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    type: "score" | "penalty";
+    currentValue: number;
+    newValue: number;
+  } | null>(null);
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -297,11 +315,64 @@ export function InfluencerDetailSheet({
     }
   };
 
+  // Reset editing states when influencer changes
+  useEffect(() => {
+    if (selectedInfluencer) {
+      setEditingScore(null);
+      setEditingPenalty(null);
+    }
+  }, [selectedInfluencer?.id]);
+
+  // Handlers for score/penalty editing
+  const handleScoreConfirm = () => {
+    if (editingScore !== null && selectedInfluencer) {
+      const currentScore = selectedInfluencer.score ?? 0;
+      if (editingScore !== currentScore) {
+        setConfirmDialog({
+          type: "score",
+          currentValue: currentScore,
+          newValue: editingScore,
+        });
+      }
+    }
+  };
+
+  const handlePenaltyConfirm = () => {
+    if (editingPenalty !== null && selectedInfluencer) {
+      const currentPenalty = selectedInfluencer.penalty ?? 0;
+      if (editingPenalty !== currentPenalty) {
+        setConfirmDialog({
+          type: "penalty",
+          currentValue: currentPenalty,
+          newValue: editingPenalty,
+        });
+      }
+    }
+  };
+
+  const handleConfirmChange = () => {
+    if (!confirmDialog || !selectedInfluencer) return;
+    
+    const delta = confirmDialog.newValue - confirmDialog.currentValue;
+    
+    if (confirmDialog.type === "score") {
+      adjustScoreMutation.mutate({ id: selectedInfluencer.id, delta });
+      setEditingScore(null);
+    } else {
+      adjustPenaltyMutation.mutate({ id: selectedInfluencer.id, delta });
+      setEditingPenalty(null);
+    }
+    setConfirmDialog(null);
+  };
+
   const handleClose = () => {
     setNewNote("");
     setActiveTab("dashboard");
     setExpandedCampaigns([]);
     setDetailView(null);
+    setEditingScore(null);
+    setEditingPenalty(null);
+    setConfirmDialog(null);
     onClose();
   };
 
@@ -865,36 +936,26 @@ export function InfluencerDetailSheet({
                           <p className="text-xs text-muted-foreground">Score</p>
                           <Star className="h-3 w-3 text-yellow-500" />
                         </div>
-                        <p className="text-lg font-bold">{selectedInfluencer.score ?? 0}</p>
-                        <div className="flex gap-1 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 w-7 p-0"
-                            onClick={() =>
-                              adjustScoreMutation.mutate({
-                                id: selectedInfluencer.id,
-                                delta: -5,
-                              })
-                            }
-                            data-testid="button-score-minus"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 w-7 p-0"
-                            onClick={() =>
-                              adjustScoreMutation.mutate({
-                                id: selectedInfluencer.id,
-                                delta: 5,
-                              })
-                            }
-                            data-testid="button-score-plus"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={editingScore ?? selectedInfluencer.score ?? 0}
+                            onChange={(e) => setEditingScore(parseInt(e.target.value) || 0)}
+                            className="h-8 w-16 text-center font-bold text-lg px-2"
+                            data-testid="input-score"
+                          />
+                          {editingScore !== null && editingScore !== (selectedInfluencer.score ?? 0) && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="h-7 text-xs px-2"
+                              onClick={handleScoreConfirm}
+                              disabled={adjustScoreMutation.isPending}
+                              data-testid="button-score-confirm"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -905,36 +966,26 @@ export function InfluencerDetailSheet({
                           <p className="text-xs text-muted-foreground">Penalty</p>
                           <AlertTriangle className="h-3 w-3 text-red-500" />
                         </div>
-                        <p className="text-lg font-bold">{selectedInfluencer.penalty ?? 0}</p>
-                        <div className="flex gap-1 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 w-7 p-0"
-                            onClick={() =>
-                              adjustPenaltyMutation.mutate({
-                                id: selectedInfluencer.id,
-                                delta: -1,
-                              })
-                            }
-                            data-testid="button-penalty-minus"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 w-7 p-0"
-                            onClick={() =>
-                              adjustPenaltyMutation.mutate({
-                                id: selectedInfluencer.id,
-                                delta: 1,
-                              })
-                            }
-                            data-testid="button-penalty-plus"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={editingPenalty ?? selectedInfluencer.penalty ?? 0}
+                            onChange={(e) => setEditingPenalty(parseInt(e.target.value) || 0)}
+                            className="h-8 w-16 text-center font-bold text-lg px-2"
+                            data-testid="input-penalty"
+                          />
+                          {editingPenalty !== null && editingPenalty !== (selectedInfluencer.penalty ?? 0) && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="h-7 text-xs px-2"
+                              onClick={handlePenaltyConfirm}
+                              disabled={adjustPenaltyMutation.isPending}
+                              data-testid="button-penalty-confirm"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -1272,6 +1323,57 @@ export function InfluencerDetailSheet({
           </>
         )}
       </SheetContent>
+
+      {/* Confirmation Dialog for Score/Penalty Changes */}
+      <Dialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              포인트를 수정하려 합니다
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              {confirmDialog?.type === "score" ? (
+                <>
+                  Score를 <strong>{confirmDialog.currentValue}</strong>에서{" "}
+                  <strong>{confirmDialog.newValue}</strong>로 변경합니다.
+                  <br />
+                  <span className={confirmDialog.newValue > confirmDialog.currentValue ? "text-green-600" : "text-red-600"}>
+                    ({confirmDialog.newValue > confirmDialog.currentValue ? "+" : ""}
+                    {confirmDialog.newValue - confirmDialog.currentValue} 변경)
+                  </span>
+                </>
+              ) : (
+                <>
+                  Penalty를 <strong>{confirmDialog?.currentValue}</strong>에서{" "}
+                  <strong>{confirmDialog?.newValue}</strong>로 변경합니다.
+                  <br />
+                  <span className={(confirmDialog?.newValue ?? 0) > (confirmDialog?.currentValue ?? 0) ? "text-red-600" : "text-green-600"}>
+                    ({(confirmDialog?.newValue ?? 0) > (confirmDialog?.currentValue ?? 0) ? "+" : ""}
+                    {(confirmDialog?.newValue ?? 0) - (confirmDialog?.currentValue ?? 0)} 변경)
+                  </span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialog(null)}
+              data-testid="button-cancel-change"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleConfirmChange}
+              disabled={adjustScoreMutation.isPending || adjustPenaltyMutation.isPending}
+              data-testid="button-confirm-change"
+            >
+              {(adjustScoreMutation.isPending || adjustPenaltyMutation.isPending) ? "저장 중..." : "확인"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
