@@ -186,6 +186,8 @@ export const applications = pgTable("applications", {
   shippingState: text("shipping_state"),
   shippingZipCode: text("shipping_zip_code"),
   shippingCountry: text("shipping_country"),
+  // Email threading - stores the first email's Message-ID for threading subsequent emails
+  emailThreadId: text("email_thread_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
