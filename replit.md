@@ -37,7 +37,16 @@ Preferred communication style: Simple, everyday language.
   - Sidebar badge showing count of open issues for quick visibility
 - **Ghosting Detection:** Automated penalties for missed deadlines, leading to account restriction.
 - **Enhanced Admin Influencer Management:** Tabbed interface for profile, history, notes, and applications.
-- **Email Notification System:** Resend API integration sends automated emails on: (1) influencer signup (welcome email), (2) application approval, (3) shipping info entry. Uses non-blocking async sending with beautiful HTML templates. Also logs to notifications table for audit trail.
+- **Email Notification System:** Resend API integration sends automated emails on: (1) influencer signup (welcome email), (2) application approval, (3) shipping info entry, (4) admin reply to comments. Uses non-blocking async sending with beautiful HTML templates. Also logs to notifications table for audit trail.
+- **Email Threading System (IMPORTANT):** All campaign-related emails are threaded together per influencer+campaign combination:
+  - **Thread Structure:** Welcome emails are standalone. Campaign emails (Approval → Shipping → Admin Reply → future emails) are threaded together.
+  - **Implementation:** 
+    - Approval email sets custom `Message-ID` header: `<collaboom-{timestamp}-{random}@collaboom.io>`
+    - This Message-ID is stored in `applications.emailThreadId` column (PostgreSQL)
+    - Subsequent emails reference this via `In-Reply-To` and `References` headers
+    - Subject format: `[Collaboom] {Campaign Name} by {Brand Name}` with `Re:` prefix for replies
+  - **Key Rule:** Any future campaign-related email type MUST use the stored `emailThreadId` to maintain threading
+  - **Database Storage:** Thread IDs persist in PostgreSQL, survives server restarts
 - **Pagination & Filtering:** Server-side pagination and filtering for admin interfaces (influencers, campaigns) based on search terms, campaign ID, or status.
 - **Influencer Campaign Stats:** Displays aggregated stats (applied, accepted, completed campaigns) per influencer.
 - **Influencer Transparency Features:** APIs for influencers to view their own notifications, score, and penalty event history.
