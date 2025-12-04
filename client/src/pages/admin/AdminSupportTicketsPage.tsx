@@ -401,120 +401,112 @@ export default function AdminSupportTicketsPage() {
       </div>
 
       <Sheet open={!!selectedInfluencer} onOpenChange={(open) => !open && setSelectedInfluencer(null)}>
-        <SheetContent className="sm:max-w-md overflow-y-auto">
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
           {selectedInfluencer && (
-            <>
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Influencer Profile
-                </SheetTitle>
-              </SheetHeader>
+            <div className="space-y-6">
+              <div className="border-b pb-4">
+                <h2 className="text-xl font-bold">{selectedInfluencer.name || "Unnamed"}</h2>
+                <p className="text-sm text-muted-foreground">{selectedInfluencer.email}</p>
+              </div>
               
-              <div className="mt-6 space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">{selectedInfluencer.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={selectedInfluencer.restricted ? "destructive" : "default"}>
-                        {selectedInfluencer.restricted ? "Restricted" : "Active"}
-                      </Badge>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Star className="h-4 w-4 text-yellow-500" />
-                        <span className="font-medium">{selectedInfluencer.score ?? 0}</span>
-                      </div>
-                      {(selectedInfluencer.penalty ?? 0) > 0 && (
-                        <div className="flex items-center gap-1 text-sm text-destructive">
-                          <AlertTriangle className="h-4 w-4" />
-                          <span>{selectedInfluencer.penalty}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
+              <div className="space-y-6">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-muted-foreground">Contact</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span>{selectedInfluencer.email}</span>
-                      </div>
-                      {selectedInfluencer.phone && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{selectedInfluencer.phone}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-muted-foreground">Social Media</h4>
-                    <div className="space-y-2">
-                      {selectedInfluencer.tiktokHandle && (
+                  <h3 className="font-semibold text-sm text-muted-foreground">Profile</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">TikTok</p>
+                      {selectedInfluencer.tiktokHandle ? (
                         <a
                           href={`https://tiktok.com/@${selectedInfluencer.tiktokHandle.replace("@", "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-primary hover:underline"
+                          className="flex items-center gap-1 text-sm text-primary hover:underline"
                         >
-                          <SiTiktok className="h-4 w-4" />
+                          <SiTiktok className="h-3 w-3" />
                           @{selectedInfluencer.tiktokHandle.replace("@", "")}
                           <ExternalLink className="h-3 w-3" />
                         </a>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
-                      {selectedInfluencer.instagramHandle && (
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Instagram</p>
+                      {selectedInfluencer.instagramHandle ? (
                         <a
                           href={`https://instagram.com/${selectedInfluencer.instagramHandle.replace("@", "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-primary hover:underline"
+                          className="flex items-center gap-1 text-sm text-primary hover:underline"
                         >
-                          <SiInstagram className="h-4 w-4" />
+                          <SiInstagram className="h-3 w-3" />
                           @{selectedInfluencer.instagramHandle.replace("@", "")}
                           <ExternalLink className="h-3 w-3" />
                         </a>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Phone</p>
+                      <p className="text-sm">{selectedInfluencer.phone || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">PayPal</p>
+                      <p className="text-sm">{selectedInfluencer.paypalEmail || "-"}</p>
+                    </div>
                   </div>
+                </div>
 
-                  {(selectedInfluencer.addressLine1 || selectedInfluencer.city) && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Shipping Address</h4>
-                      <div className="flex items-start gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <div>
-                          {selectedInfluencer.addressLine1 && <div>{selectedInfluencer.addressLine1}</div>}
-                          {selectedInfluencer.addressLine2 && <div>{selectedInfluencer.addressLine2}</div>}
-                          {(selectedInfluencer.city || selectedInfluencer.state || selectedInfluencer.zipCode) && (
-                            <div>
-                              {selectedInfluencer.city}{selectedInfluencer.city && selectedInfluencer.state ? ", " : ""}
-                              {selectedInfluencer.state} {selectedInfluencer.zipCode}
-                            </div>
-                          )}
-                          {selectedInfluencer.country && <div>{selectedInfluencer.country}</div>}
-                        </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Shipping Address</h3>
+                  <div className="text-sm">
+                    {selectedInfluencer.addressLine1 ? (
+                      <div className="space-y-0.5">
+                        <p>{selectedInfluencer.addressLine1}</p>
+                        {selectedInfluencer.addressLine2 && <p>{selectedInfluencer.addressLine2}</p>}
+                        <p>
+                          {selectedInfluencer.city}{selectedInfluencer.city && selectedInfluencer.state ? ", " : ""}
+                          {selectedInfluencer.state} {selectedInfluencer.zipCode}
+                        </p>
+                        {selectedInfluencer.country && <p>{selectedInfluencer.country}</p>}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-muted-foreground">Score</span>
+                        <Star className="h-4 w-4 text-yellow-500" />
+                      </div>
+                      <p className="text-2xl font-bold">{selectedInfluencer.score ?? 0}</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-muted-foreground">Penalty</span>
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      </div>
+                      <p className="text-2xl font-bold">{selectedInfluencer.penalty ?? 0}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="pt-4 border-t text-sm text-muted-foreground">
+                  <p>Profile: {selectedInfluencer.profileCompleted ? "Complete" : "Incomplete"}</p>
                   {selectedInfluencer.createdAt && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Member Since</h4>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{format(new Date(selectedInfluencer.createdAt), "MMM d, yyyy")}</span>
-                      </div>
-                    </div>
+                    <p>Joined: {format(new Date(selectedInfluencer.createdAt), "MMMM d, yyyy")}</p>
                   )}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </SheetContent>
       </Sheet>
