@@ -65,6 +65,8 @@ export default function CampaignListPage() {
       return new Set(ids);
     },
     enabled: isAuthenticated,
+    staleTime: 0, // Always refetch on mount
+    refetchOnMount: true,
     initialData: new Set<string>(),
   });
 
