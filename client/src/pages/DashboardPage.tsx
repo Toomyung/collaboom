@@ -48,11 +48,13 @@ import { getCampaignThumbnail } from "@/lib/imageUtils";
 
 const statusConfig: Record<
   string,
-  { label: string; color: string; icon: typeof Clock; description: string; step: number }
+  { label: string; color: string; bgColor: string; textColor: string; icon: typeof Clock; description: string; step: number }
 > = {
   pending: {
     label: "Pending Review",
     color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    bgColor: "bg-yellow-500/10 border border-yellow-500/20",
+    textColor: "text-yellow-700",
     icon: Clock,
     description: "Awaiting approval from our team",
     step: 1,
@@ -60,6 +62,8 @@ const statusConfig: Record<
   approved: {
     label: "Approved",
     color: "bg-green-500/10 text-green-600 border-green-500/20",
+    bgColor: "bg-green-500/10 border border-green-500/20",
+    textColor: "text-green-700",
     icon: CheckCircle,
     description: "Your application has been approved! Shipping will begin soon.",
     step: 2,
@@ -67,6 +71,8 @@ const statusConfig: Record<
   rejected: {
     label: "Not Selected",
     color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+    bgColor: "bg-gray-500/10 border border-gray-500/20",
+    textColor: "text-gray-600",
     icon: XCircle,
     description: "Unfortunately, due to the brand's circumstances, we couldn't work together on this campaign. We hope to collaborate with you on future opportunities!",
     step: 0,
@@ -74,6 +80,8 @@ const statusConfig: Record<
   shipped: {
     label: "Shipped",
     color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    bgColor: "bg-blue-500/10 border border-blue-500/20",
+    textColor: "text-blue-700",
     icon: Truck,
     description: "Your package is on the way!",
     step: 3,
@@ -81,6 +89,8 @@ const statusConfig: Record<
   delivered: {
     label: "Delivered",
     color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    bgColor: "bg-purple-500/10 border border-purple-500/20",
+    textColor: "text-purple-700",
     icon: Package,
     description: "Package delivered! If you've posted with the correct hashtags and mentions, our team reviews content daily and will move it to Uploaded automatically.",
     step: 4,
@@ -88,6 +98,8 @@ const statusConfig: Record<
   uploaded: {
     label: "Content Uploaded",
     color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    bgColor: "bg-emerald-500/10 border border-emerald-500/20",
+    textColor: "text-emerald-700",
     icon: Upload,
     description: "We've confirmed your video upload - thank you so much for participating! We'll be sharing your content with the brand. Please keep your video live for at least 6 weeks and avoid changing your TikTok handle during this period.",
     step: 5,
@@ -95,6 +107,8 @@ const statusConfig: Record<
   completed: {
     label: "Completed",
     color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    bgColor: "bg-emerald-500/10 border border-emerald-500/20",
+    textColor: "text-emerald-700",
     icon: CheckCircle,
     description: "Campaign completed successfully!",
     step: 5,
@@ -102,6 +116,8 @@ const statusConfig: Record<
   deadline_missed: {
     label: "Deadline Missed",
     color: "bg-red-500/10 text-red-600 border-red-500/20",
+    bgColor: "bg-red-500/10 border border-red-500/20",
+    textColor: "text-red-600",
     icon: AlertCircle,
     description: "The upload deadline has passed.",
     step: 0,
@@ -395,8 +411,8 @@ export default function DashboardPage() {
       <div className="space-y-4 pt-4">
         {renderProgressBar(application.status)}
 
-        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-          <p className="text-sm text-muted-foreground">
+        <div className={cn("rounded-lg p-4 mt-4", status.bgColor)}>
+          <p className={cn("text-sm", status.textColor)}>
             {application.status === "uploaded" && application.pointsAwarded && application.pointsAwarded > 0
               ? `We've confirmed your video upload and you've earned +${application.pointsAwarded} points! Thank you so much for participating. We'll be sharing your content with the brand. Please keep your video live for at least 6 weeks and avoid changing your TikTok handle during this period.`
               : status.description}
@@ -554,7 +570,7 @@ export default function DashboardPage() {
               Approved: {format(new Date(application.approvedAt), "MMM d, yyyy")}
             </span>
           )}
-          <span>Deadline: {format(deadline, "MMM d, yyyy")} PST</span>
+          <span className="text-red-500 font-medium">Deadline: {format(deadline, "MMM d, yyyy")} PST</span>
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">

@@ -303,7 +303,7 @@ export function ApplicationCard({
                   Approved: {format(new Date(application.approvedAt), "MMM d, yyyy")}
                 </span>
               )}
-              <span>Deadline: {format(deadline, "MMM d, yyyy")} PST</span>
+              <span className="text-red-500 font-medium">Deadline: {format(deadline, "MMM d, yyyy")} PST</span>
             </div>
 
             {/* Actions */}
