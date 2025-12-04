@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   Headphones,
   Search,
   CheckCircle,
@@ -26,12 +32,16 @@ import {
   ChevronUp,
   Mail,
   ExternalLink,
+  MapPin,
+  Phone,
+  Star,
+  AlertTriangle,
 } from "lucide-react";
-import { Link } from "wouter";
+import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import type { SupportTicketWithDetails } from "@shared/schema";
+import type { SupportTicketWithDetails, Influencer } from "@shared/schema";
 
 type TicketStatus = "open" | "resolved" | "closed" | "all";
 
@@ -43,6 +53,7 @@ export default function AdminSupportTicketsPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyStatus, setReplyStatus] = useState<"resolved" | "closed">("resolved");
+  const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
 
   const { data: tickets, isLoading } = useQuery<SupportTicketWithDetails[]>({
     queryKey: ["/api/admin/support-tickets"],
@@ -250,9 +261,18 @@ export default function AdminSupportTicketsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">
+                            <button
+                              className="font-medium text-primary hover:underline cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (ticket.influencer) {
+                                  setSelectedInfluencer(ticket.influencer);
+                                }
+                              }}
+                              data-testid={`button-influencer-name-${ticket.id}`}
+                            >
                               {ticket.influencer?.name || "Unknown Influencer"}
-                            </span>
+                            </button>
                             {getStatusBadge(ticket.status)}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -370,14 +390,6 @@ export default function AdminSupportTicketsPage() {
                           </>
                         )}
 
-                        <div className="flex items-center justify-end">
-                          <Link href={`/admin/influencers/${ticket.influencerId}`}>
-                            <Button variant="outline" size="sm" data-testid={`button-view-influencer-${ticket.id}`}>
-                              <User className="h-4 w-4 mr-2" />
-                              View Influencer Profile
-                            </Button>
-                          </Link>
-                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -387,6 +399,125 @@ export default function AdminSupportTicketsPage() {
           </div>
         )}
       </div>
+
+      <Sheet open={!!selectedInfluencer} onOpenChange={(open) => !open && setSelectedInfluencer(null)}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          {selectedInfluencer && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Influencer Profile
+                </SheetTitle>
+              </SheetHeader>
+              
+              <div className="mt-6 space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">{selectedInfluencer.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={selectedInfluencer.restricted ? "destructive" : "default"}>
+                        {selectedInfluencer.restricted ? "Restricted" : "Active"}
+                      </Badge>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <span className="font-medium">{selectedInfluencer.score ?? 0}</span>
+                      </div>
+                      {(selectedInfluencer.penalty ?? 0) > 0 && (
+                        <div className="flex items-center gap-1 text-sm text-destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>{selectedInfluencer.penalty}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">Contact</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span>{selectedInfluencer.email}</span>
+                      </div>
+                      {selectedInfluencer.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span>{selectedInfluencer.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">Social Media</h4>
+                    <div className="space-y-2">
+                      {selectedInfluencer.tiktokHandle && (
+                        <a
+                          href={`https://tiktok.com/@${selectedInfluencer.tiktokHandle.replace("@", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-primary hover:underline"
+                        >
+                          <SiTiktok className="h-4 w-4" />
+                          @{selectedInfluencer.tiktokHandle.replace("@", "")}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                      {selectedInfluencer.instagramHandle && (
+                        <a
+                          href={`https://instagram.com/${selectedInfluencer.instagramHandle.replace("@", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-primary hover:underline"
+                        >
+                          <SiInstagram className="h-4 w-4" />
+                          @{selectedInfluencer.instagramHandle.replace("@", "")}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {(selectedInfluencer.addressLine1 || selectedInfluencer.city) && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">Shipping Address</h4>
+                      <div className="flex items-start gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          {selectedInfluencer.addressLine1 && <div>{selectedInfluencer.addressLine1}</div>}
+                          {selectedInfluencer.addressLine2 && <div>{selectedInfluencer.addressLine2}</div>}
+                          {(selectedInfluencer.city || selectedInfluencer.state || selectedInfluencer.zipCode) && (
+                            <div>
+                              {selectedInfluencer.city}{selectedInfluencer.city && selectedInfluencer.state ? ", " : ""}
+                              {selectedInfluencer.state} {selectedInfluencer.zipCode}
+                            </div>
+                          )}
+                          {selectedInfluencer.country && <div>{selectedInfluencer.country}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedInfluencer.createdAt && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">Member Since</h4>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>{format(new Date(selectedInfluencer.createdAt), "MMM d, yyyy")}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </AdminLayout>
   );
 }
