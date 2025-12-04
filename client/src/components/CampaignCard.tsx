@@ -15,6 +15,7 @@ interface CampaignCardProps {
   isApplied?: boolean;
   canApply?: boolean;
   applyDisabledReason?: string;
+  priority?: boolean;
 }
 
 export function CampaignCard({
@@ -24,6 +25,7 @@ export function CampaignCard({
   isApplied = false,
   canApply = true,
   applyDisabledReason,
+  priority = false,
 }: CampaignCardProps) {
   // Application deadline - when users can apply (fallback to upload deadline if not set)
   const applicationDeadlineDate = campaign.applicationDeadline 
@@ -140,8 +142,11 @@ export function CampaignCard({
             src={getCampaignThumbnail(campaign)!}
             alt={campaign.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
-            decoding="async"
+            loading={priority ? "eager" : "lazy"}
+            decoding={priority ? "sync" : "async"}
+            fetchPriority={priority ? "high" : "low"}
+            width={400}
+            height={225}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">

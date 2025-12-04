@@ -93,6 +93,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     size="icon"
                     onClick={() => logout()}
                     data-testid="button-logout"
+                    aria-label="Sign out"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
@@ -118,6 +119,8 @@ export function MainLayout({ children }: MainLayoutProps) {
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>

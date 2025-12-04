@@ -218,7 +218,7 @@ export default function CampaignListPage() {
         ) : paginatedCampaigns && paginatedCampaigns.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedCampaigns.map((campaign) => (
+              {paginatedCampaigns.map((campaign, index) => (
                 <CampaignCard
                   key={campaign.id}
                   campaign={campaign}
@@ -226,6 +226,7 @@ export default function CampaignListPage() {
                   canApply={canApply(campaign)}
                   applyDisabledReason={getApplyDisabledReason(campaign)}
                   onApply={() => handleApplyClick(campaign)}
+                  priority={currentPage === 1 && index < 3}
                 />
               ))}
             </div>

@@ -1,0 +1,16 @@
+# Collaboom - Influencer Campaign Platform
+# https://collaboom.io
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://collaboom.io/sitemap.xml
+
+# Disallow admin pages from indexing
+Disallow: /admin
+Disallow: /admin/*
+
+# Allow all other public pages
+Allow: /campaigns
+Allow: /dashboard

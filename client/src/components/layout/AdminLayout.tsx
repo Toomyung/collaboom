@@ -133,6 +133,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                           toggleExpand(item.label);
                         }}
                         data-testid={`nav-${item.label.toLowerCase()}-expand`}
+                        aria-label={expandedItems.includes(item.label) ? `Collapse ${item.label}` : `Expand ${item.label}`}
+                        aria-expanded={expandedItems.includes(item.label)}
                       >
                         {expandedItems.includes(item.label) ? (
                           <ChevronDown className="h-4 w-4" />
@@ -220,6 +222,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          role="button"
+          aria-label="Close sidebar"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Escape' && setSidebarOpen(false)}
         />
       )}
 
@@ -233,6 +239,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
             data-testid="button-sidebar-toggle"
+            aria-label="Open sidebar"
           >
             <Menu className="h-5 w-5" />
           </Button>
