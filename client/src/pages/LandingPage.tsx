@@ -346,7 +346,7 @@ export default function LandingPage() {
               <Card key={i} className="relative overflow-hidden group hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-4xl font-bold text-primary/20">{step.number}</span>
+                    <span className="text-4xl font-bold text-muted-foreground/60">{step.number}</span>
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                       <step.icon className="h-5 w-5" />
                     </div>
