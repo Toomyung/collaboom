@@ -83,5 +83,18 @@ Preferred communication style: Simple, everyday language.
 
 - **PostgreSQL Database:** Primary data store, connected via Drizzle ORM and `@neondatabase/serverless`. Migrations handled by `drizzle-kit`.
 - **Email Notifications:** Implemented via Resend API for transactional emails (welcome, approval, shipping notifications).
+- **Supabase Storage:** Campaign images stored in `collaboom-campaign` bucket. Requires DELETE policy for anon role.
 - **Third-Party UI Components:** Radix UI primitives, shadcn/ui, Tailwind CSS, and Google Fonts (Inter).
 - **Development Tools (Replit-specific):** `@replit/vite-plugin-runtime-error-modal`, `@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner` for enhanced development experience within Replit.
+
+### Supabase Storage Configuration
+- **Bucket Name:** `collaboom-campaign`
+- **Image Path Format:** `campaigns/{campaignId}-{index}-{timestamp}.{ext}`
+- **Required RLS Policies:**
+  - SELECT: Allow anon role (for public image access)
+  - DELETE: Allow anon role (for campaign deletion cleanup)
+- **Auto Cleanup:** When a campaign is deleted, associated images are automatically removed from Storage
+- **Orphan Cleanup APIs:**
+  - `GET /api/admin/orphan-images` - Preview orphan files (dry run)
+  - `POST /api/admin/cleanup-orphan-images` - Delete orphan files
+- **Migration Endpoint:** `POST /api/admin/migrate-images` - Converts base64 images to Storage URLs
