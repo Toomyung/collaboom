@@ -19,37 +19,60 @@ interface EmailResult {
   error?: string;
 }
 
+// Store for email thread tracking (in production, use database)
+const emailThreadStore = new Map<string, string>();
+
 /**
- * Generate a stable Message-ID for email threading
- * Uses a hash of the identifier to create a consistent ID that can be referenced
+ * Generate a stable thread key for a campaign+influencer combination
  */
-function generateThreadId(type: "influencer" | "campaign", identifier: string): string {
-  const hash = crypto.createHash("sha256").update(identifier).digest("hex").slice(0, 16);
-  return `<${type}-${hash}@${EMAIL_DOMAIN}>`;
+function getThreadKey(campaignId: string, influencerId: string): string {
+  return `${campaignId}-${influencerId}`;
+}
+
+/**
+ * Get stored Message-ID for a thread, if exists
+ */
+function getStoredMessageId(threadKey: string): string | null {
+  return emailThreadStore.get(threadKey) || null;
+}
+
+/**
+ * Store Message-ID for a thread
+ */
+function storeMessageId(threadKey: string, messageId: string): void {
+  emailThreadStore.set(threadKey, messageId);
 }
 
 /**
  * Generate threading headers for email clients
- * - Message-ID: Unique ID for this specific email
- * - In-Reply-To: References the thread's root message
- * - References: Chain of all message IDs in the thread
+ * Uses stored Message-ID from first email for proper threading
  */
-function getThreadingHeaders(threadId: string, isFirstEmail: boolean = false): Record<string, string> {
-  const uniqueId = `<msg-${Date.now()}-${crypto.randomBytes(8).toString("hex")}@${EMAIL_DOMAIN}>`;
+function getThreadingHeaders(
+  threadKey: string | null,
+  resendEmailId: string | null = null
+): Record<string, string> {
+  if (!threadKey) return {};
   
-  if (isFirstEmail) {
-    // First email in thread uses the thread ID as its Message-ID
-    return {
-      "Message-ID": threadId,
-    };
+  const storedMessageId = getStoredMessageId(threadKey);
+  
+  if (!storedMessageId) {
+    // First email - we'll store the Resend ID after sending
+    return {};
   }
   
-  // Subsequent emails reference the thread root
+  // Reply email - reference the first email
   return {
-    "Message-ID": uniqueId,
-    "In-Reply-To": threadId,
-    "References": threadId,
+    "In-Reply-To": storedMessageId,
+    "References": storedMessageId,
   };
+}
+
+/**
+ * Convert Resend email ID to Message-ID format
+ * Resend typically uses this format for Message-IDs
+ */
+function toMessageId(resendEmailId: string): string {
+  return `<${resendEmailId}@resend.dev>`;
 }
 
 export async function sendWelcomeEmail(
@@ -60,15 +83,10 @@ export async function sendWelcomeEmail(
   try {
     const recipient = TEST_EMAIL_OVERRIDE || to;
     
-    // Create a thread ID based on influencer for all their Collaboom emails
-    const threadId = generateThreadId("influencer", influencerId || to);
-    const headers = getThreadingHeaders(threadId, true); // First email starts the thread
-    
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
-      subject: "[Collaboom] Welcome to Collaboom!",
-      headers,
+      subject: "Welcome to Collaboom!",
       text: `Hi ${influencerName},
 
 Welcome to Collaboom! We're excited to have you join our community of creators.
@@ -92,7 +110,7 @@ Questions? Just reply to this email.
       return { success: false, error: error.message };
     }
 
-    console.log(`Welcome email sent to ${to}, ID: ${data?.id}, Thread: ${threadId}`);
+    console.log(`Welcome email sent to ${to}, ID: ${data?.id}`);
     return { success: true, emailId: data?.id };
   } catch (err) {
     console.error("Error sending welcome email:", err);
@@ -111,18 +129,18 @@ export async function sendApplicationApprovedEmail(
   try {
     const recipient = TEST_EMAIL_OVERRIDE || to;
     
-    // Thread by campaign+influencer combination for campaign-specific emails
+    // Thread key for campaign emails
     const threadKey = campaignId && influencerId 
-      ? `${campaignId}-${influencerId}` 
-      : `${campaignName}-${to}`;
-    const threadId = generateThreadId("campaign", threadKey);
-    const headers = getThreadingHeaders(threadId, true); // First campaign email starts new thread
+      ? getThreadKey(campaignId, influencerId) 
+      : null;
+    
+    // Use consistent subject for threading
+    const subject = `[Collaboom] ${campaignName} by ${brandName}`;
     
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
-      subject: `[Collaboom] Approved: ${campaignName}`,
-      headers,
+      subject,
       text: `Hi ${influencerName},
 
 Great news! Your application for "${campaignName}" by ${brandName} has been approved.
@@ -146,7 +164,15 @@ Make sure your shipping address is up to date in your profile!
       return { success: false, error: error.message };
     }
 
-    console.log(`Approval email sent to ${to}, ID: ${data?.id}, Thread: ${threadId}`);
+    // Store Message-ID for threading subsequent emails
+    if (threadKey && data?.id) {
+      const messageId = toMessageId(data.id);
+      storeMessageId(threadKey, messageId);
+      console.log(`Approval email sent to ${to}, ID: ${data.id}, Stored Thread MessageId: ${messageId}`);
+    } else {
+      console.log(`Approval email sent to ${to}, ID: ${data?.id}`);
+    }
+    
     return { success: true, emailId: data?.id };
   } catch (err) {
     console.error("Error sending approval email:", err);
@@ -171,18 +197,23 @@ export async function sendShippingNotificationEmail(
       ? `Track your package: ${trackingUrl}`
       : `Track your package on the ${courier} website using the tracking number above.`;
 
-    // Use same thread as approval email for this campaign+influencer
+    // Thread key for campaign emails
     const threadKey = campaignId && influencerId 
-      ? `${campaignId}-${influencerId}` 
-      : `${campaignName}-${to}`;
-    const threadId = generateThreadId("campaign", threadKey);
-    const headers = getThreadingHeaders(threadId, false); // This replies to the approval email thread
+      ? getThreadKey(campaignId, influencerId) 
+      : null;
+    
+    // Get threading headers (references the approval email)
+    const headers = getThreadingHeaders(threadKey);
+    
+    // Use same subject as approval email for threading (with Re: prefix)
+    const baseSubject = `[Collaboom] ${campaignName} by ${brandName}`;
+    const subject = Object.keys(headers).length > 0 ? `Re: ${baseSubject}` : baseSubject;
     
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [recipient],
-      subject: `[Collaboom] Shipped: ${campaignName}`,
-      headers,
+      subject,
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
       text: `Hi ${influencerName},
 
 Your product from ${brandName} for the "${campaignName}" campaign has been shipped!
@@ -205,7 +236,8 @@ View in dashboard: https://collaboom.io/dashboard
       return { success: false, error: error.message };
     }
 
-    console.log(`Shipping notification sent to ${to}, ID: ${data?.id}, Thread: ${threadId}`);
+    const referencedId = headers["In-Reply-To"] || "none";
+    console.log(`Shipping notification sent to ${to}, ID: ${data?.id}, In-Reply-To: ${referencedId}`);
     return { success: true, emailId: data?.id };
   } catch (err) {
     console.error("Error sending shipping notification:", err);
