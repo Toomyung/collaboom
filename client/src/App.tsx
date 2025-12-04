@@ -60,6 +60,7 @@ function Router() {
         <Route path="/admin/campaigns/:id/edit" component={AdminCampaignFormPage} />
         <Route path="/admin/campaigns/:id" component={AdminCampaignDetailPage} />
         <Route path="/admin/influencers" component={AdminInfluencersPage} />
+        <Route path="/admin/influencers/:id" component={AdminInfluencersPage} />
         <Route path="/admin/issues" component={AdminIssuesPage} />
         <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
         

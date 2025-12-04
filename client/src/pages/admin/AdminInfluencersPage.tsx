@@ -31,7 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Influencer, AdminNote, ScoreEvent, PenaltyEvent, Application, Campaign } from "@shared/schema";
-import { Redirect } from "wouter";
+import { Redirect, useRoute, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -78,6 +78,10 @@ const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50];
 export default function AdminInfluencersPage() {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [, params] = useRoute("/admin/influencers/:id");
+  const [, setLocation] = useLocation();
+  const influencerIdFromUrl = params?.id;
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedInfluencer, setSelectedInfluencer] = useState<InfluencerWithStats | null>(null);
@@ -92,6 +96,17 @@ export default function AdminInfluencersPage() {
     queryKey: [influencersQueryUrl],
     enabled: isAuthenticated && isAdmin,
   });
+  
+  const { data: specificInfluencer } = useQuery<InfluencerWithStats>({
+    queryKey: ["/api/admin/influencers", influencerIdFromUrl],
+    enabled: !!influencerIdFromUrl && isAuthenticated && isAdmin,
+  });
+  
+  useEffect(() => {
+    if (specificInfluencer && influencerIdFromUrl && !selectedInfluencer) {
+      setSelectedInfluencer(specificInfluencer);
+    }
+  }, [specificInfluencer, influencerIdFromUrl, selectedInfluencer]);
 
   const { data: notes } = useQuery<AdminNote[]>({
     queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "notes"],
@@ -222,6 +237,9 @@ export default function AdminInfluencersPage() {
   const handleCloseDrawer = () => {
     setSelectedInfluencer(null);
     setNewNote("");
+    if (influencerIdFromUrl) {
+      setLocation("/admin/influencers");
+    }
   };
 
   const handleAddNote = () => {
