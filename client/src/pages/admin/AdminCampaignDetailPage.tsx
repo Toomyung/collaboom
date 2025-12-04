@@ -1765,10 +1765,13 @@ export default function AdminCampaignDetailPage() {
                                 min={0}
                                 max={100}
                                 value={pointsForms[app.id] ?? 5}
-                                onChange={(e) => setPointsForms(prev => ({
-                                  ...prev,
-                                  [app.id]: parseInt(e.target.value) || 5
-                                }))}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
+                                  setPointsForms(prev => ({
+                                    ...prev,
+                                    [app.id]: isNaN(val) ? 0 : val
+                                  }));
+                                }}
                                 className="h-8 w-16 text-center text-sm"
                                 data-testid={`input-points-${app.id}`}
                               />
