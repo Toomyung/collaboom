@@ -125,6 +125,8 @@ export default function DashboardPage() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [applicationToCancel, setApplicationToCancel] = useState<ApplicationWithDetails | null>(null);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [showDismissDialog, setShowDismissDialog] = useState(false);
+  const [applicationToDismiss, setApplicationToDismiss] = useState<ApplicationWithDetails | null>(null);
 
   const { data: applications, isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/applications/detailed"],
@@ -197,8 +199,33 @@ export default function DashboardPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      toast({
+        title: "Campaign dismissed",
+        description: "This campaign has been removed from your dashboard.",
+      });
+      setShowDismissDialog(false);
+      setApplicationToDismiss(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to dismiss",
+        description: error.message,
+        variant: "destructive",
+      });
+      setShowDismissDialog(false);
+      setApplicationToDismiss(null);
     },
   });
+
+  const handleDismiss = (application: ApplicationWithDetails) => {
+    setApplicationToDismiss(application);
+    setShowDismissDialog(true);
+  };
+
+  const confirmDismiss = () => {
+    if (!applicationToDismiss) return;
+    dismissMutation.mutate(applicationToDismiss.id);
+  };
 
   const markRejectionViewedMutation = useMutation({
     mutationFn: async (applicationIds: string[]) => {
@@ -245,8 +272,8 @@ export default function DashboardPage() {
   }
 
   const visibleApplications = applications?.filter((app) => {
+    if (app.dismissedAt) return false;
     if (app.status === "rejected") {
-      if (app.dismissedAt) return false;
       if (app.rejectionViewedAt) {
         const viewedTime = new Date(app.rejectionViewedAt).getTime();
         const now = Date.now();
@@ -553,7 +580,7 @@ export default function DashboardPage() {
             </Button>
           )}
 
-          {["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status) && (
+          {["pending", "approved", "shipped", "delivered"].includes(application.status) && (
             <Button
               variant="outline"
               size="sm"
@@ -565,11 +592,11 @@ export default function DashboardPage() {
             </Button>
           )}
 
-          {application.status === "rejected" && (
+          {(application.status === "rejected" || application.status === "uploaded" || application.status === "completed") && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => dismissMutation.mutate(application.id)}
+              onClick={() => handleDismiss(application)}
               data-testid={`button-dismiss-${application.id}`}
             >
               <XCircle className="h-3 w-3 mr-1" />
@@ -887,6 +914,48 @@ export default function DashboardPage() {
               data-testid="button-confirm-cancel"
             >
               {cancelMutation.isPending ? "Cancelling..." : "Cancel Application"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDismissDialog} onOpenChange={setShowDismissDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dismiss Campaign</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to dismiss{" "}
+              <span className="font-medium">{applicationToDismiss?.campaign.name}</span> from your dashboard?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-700 dark:text-blue-300">
+                <p className="font-medium">Your records are safe!</p>
+                <p className="text-muted-foreground mt-1">
+                  All your campaign history, points, and achievements are permanently saved in Collaboom. Dismissing this campaign will only remove it from your dashboard view - nothing else will be affected.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDismissDialog(false);
+                setApplicationToDismiss(null);
+              }}
+              data-testid="button-dismiss-dialog-close"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDismiss}
+              disabled={dismissMutation.isPending}
+              data-testid="button-confirm-dismiss"
+            >
+              {dismissMutation.isPending ? "Dismissing..." : "Dismiss"}
             </Button>
           </DialogFooter>
         </DialogContent>

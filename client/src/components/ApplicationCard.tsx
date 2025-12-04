@@ -333,7 +333,7 @@ export function ApplicationCard({
                 </>
               )}
 
-              {["pending", "approved", "shipped", "delivered", "uploaded"].includes(application.status) &&
+              {["pending", "approved", "shipped", "delivered"].includes(application.status) &&
                 onReportIssue && (
                   (() => {
                     const hasPendingComment = issues?.some(issue => issue.status === "open");
@@ -356,7 +356,7 @@ export function ApplicationCard({
                   })()
                 )}
 
-              {application.status === "rejected" && onDismiss && (
+              {(application.status === "rejected" || application.status === "uploaded" || application.status === "completed") && onDismiss && (
                 <Button
                   variant="outline"
                   size="sm"

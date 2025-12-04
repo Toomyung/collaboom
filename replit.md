@@ -69,6 +69,15 @@ Preferred communication style: Simple, everyday language.
   - Step 1: Address confirmation dialog with "Confirm" and "Change my address" buttons
   - Step 2: TikTok verification dialog with clickable handle link, restriction warning, and agreement checkbox
   - Prevents application if no TikTok handle exists
+- **Comment System Lifecycle:**
+  - Comment button visible for: pending, approved, shipped, delivered statuses
+  - Comment button hidden after video upload (uploaded/completed status) to prevent post-completion inquiries
+  - Existing comments remain visible with response history
+- **Campaign Dismiss Feature:**
+  - Dismiss button visible for: rejected, uploaded, completed statuses
+  - Confirmation popup explains: "Your records are safe! All your campaign history, points, and achievements are permanently saved in Collaboom. Dismissing this campaign will only remove it from your dashboard view."
+  - Dismissed campaigns immediately hidden from influencer dashboard
+  - Records remain in database for admin visibility and historical tracking
 
 ### Performance Optimizations
 - **Route-Level Code Splitting:** All page components use React.lazy and Suspense for on-demand loading. This reduces initial bundle size by deferring admin-specific dependencies (recharts, react-dropzone) until needed.
