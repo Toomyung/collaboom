@@ -691,8 +691,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      if (application.status !== "rejected") {
-        return res.status(400).json({ message: "Only rejected applications can be dismissed" });
+      if (!["rejected", "uploaded", "completed"].includes(application.status)) {
+        return res.status(400).json({ message: "Only rejected, uploaded, or completed applications can be dismissed" });
       }
 
       await storage.updateApplication(application.id, {
