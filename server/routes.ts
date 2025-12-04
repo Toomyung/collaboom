@@ -6,6 +6,7 @@ import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail } from "./emailService";
+import { ensureBucketExists, uploadMultipleImages, isBase64Image } from "./supabaseStorage";
 import {
   authLimiter,
   strictAuthLimiter,
@@ -865,9 +866,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (applicationDeadline && typeof applicationDeadline === 'string') {
         applicationDeadline = new Date(applicationDeadline);
       }
+
+      // Generate a temporary ID for image upload
+      const tempId = `new-${Date.now()}`;
+      
+      // Upload base64 images to Supabase Storage
+      let imageUrls = sanitizedBody.imageUrls || [];
+      if (imageUrls.length > 0 && imageUrls.some((img: string) => isBase64Image(img))) {
+        try {
+          await ensureBucketExists();
+          imageUrls = await uploadMultipleImages(imageUrls, tempId);
+          console.log(`[Storage] Uploaded ${imageUrls.length} images for new campaign`);
+        } catch (uploadError: any) {
+          console.error('[Storage] Failed to upload images:', uploadError);
+          return res.status(500).json({ message: "Failed to upload images: " + uploadError.message });
+        }
+      }
       
       const data = insertCampaignSchema.parse({
         ...sanitizedBody,
+        imageUrls,
         deadline,
         applicationDeadline,
         // Clear rewardAmount if gift type
@@ -910,6 +928,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clear rewardAmount if switching to gift type
       if (data.rewardType === 'gift') {
         data.rewardAmount = null;
+      }
+
+      // Upload any new base64 images to Supabase Storage
+      if (data.imageUrls && data.imageUrls.length > 0 && data.imageUrls.some((img: string) => isBase64Image(img))) {
+        try {
+          await ensureBucketExists();
+          data.imageUrls = await uploadMultipleImages(data.imageUrls, req.params.id);
+          console.log(`[Storage] Uploaded ${data.imageUrls.length} images for campaign ${req.params.id}`);
+        } catch (uploadError: any) {
+          console.error('[Storage] Failed to upload images:', uploadError);
+          return res.status(500).json({ message: "Failed to upload images: " + uploadError.message });
+        }
       }
       
       const campaign = await storage.updateCampaign(req.params.id, data);
@@ -1917,6 +1947,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       return res.json({ success: true, issue });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // =====================
+  // IMAGE MIGRATION
+  // =====================
+
+  // Migrate base64 images to Supabase Storage (admin only)
+  app.post("/api/admin/migrate-images", requireAuth("admin"), async (req, res) => {
+    try {
+      await ensureBucketExists();
+      
+      // Get all campaigns
+      const result = await storage.getCampaignsPaginated({ page: 1, pageSize: 1000 });
+      const campaigns = result.items;
+      
+      let migratedCount = 0;
+      let skippedCount = 0;
+      const errors: string[] = [];
+      
+      for (const campaign of campaigns) {
+        const imageUrls = campaign.imageUrls || [];
+        
+        // Check if any images are base64
+        const hasBase64 = imageUrls.some((url: string) => isBase64Image(url));
+        
+        if (!hasBase64) {
+          skippedCount++;
+          continue;
+        }
+        
+        try {
+          const newUrls = await uploadMultipleImages(imageUrls, campaign.id);
+          await storage.updateCampaign(campaign.id, { imageUrls: newUrls });
+          migratedCount++;
+          console.log(`[Migration] Migrated images for campaign: ${campaign.name}`);
+        } catch (err: any) {
+          errors.push(`Campaign ${campaign.name}: ${err.message}`);
+          console.error(`[Migration] Failed for campaign ${campaign.name}:`, err);
+        }
+      }
+      
+      return res.json({
+        success: true,
+        migrated: migratedCount,
+        skipped: skippedCount,
+        errors,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Check migration status
+  app.get("/api/admin/migration-status", requireAuth("admin"), async (req, res) => {
+    try {
+      const result = await storage.getCampaignsPaginated({ page: 1, pageSize: 1000 });
+      const campaigns = result.items;
+      
+      let base64Count = 0;
+      let urlCount = 0;
+      
+      for (const campaign of campaigns) {
+        const imageUrls = campaign.imageUrls || [];
+        const hasBase64 = imageUrls.some((url: string) => isBase64Image(url));
+        
+        if (hasBase64) {
+          base64Count++;
+        } else if (imageUrls.length > 0) {
+          urlCount++;
+        }
+      }
+      
+      return res.json({
+        total: campaigns.length,
+        needsMigration: base64Count,
+        alreadyMigrated: urlCount,
+        noImages: campaigns.length - base64Count - urlCount,
+      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
