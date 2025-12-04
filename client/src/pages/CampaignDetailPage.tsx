@@ -559,11 +559,18 @@ export default function CampaignDetailPage() {
         )}
 
         {/* Apply Section - Always at bottom */}
-        <Card className="bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
+        <Card className={cn(
+          "border-primary/20",
+          isClosed 
+            ? "bg-gradient-to-br from-gray-500/5 to-gray-600/5" 
+            : "bg-gradient-to-br from-primary/5 to-purple-500/5"
+        )}>
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h2 className="font-semibold text-lg mb-1">Ready to Apply?</h2>
+                <h2 className="font-semibold text-lg mb-1">
+                  {isClosed ? "This campaign is closed" : "Ready to Apply?"}
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   {isApplied
                     ? "You've already applied to this campaign."

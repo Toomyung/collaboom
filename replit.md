@@ -55,6 +55,7 @@ Preferred communication style: Simple, everyday language.
   - Influencers view via Sheet component with TikTok embeds for reference videos
 - **Admin Campaign Workflow:** Streamlined tabbed interface for managing applicants, approved influencers, shipping, and uploads.
 - **Admin Campaign Navigation:** Expandable sidebar sub-menu organizes campaigns into Active (draft/active/full), Finished (closed), and Archived views. Supports multi-status filtering via `statuses` query parameter.
+- **Campaign Finish Feature:** Admins can manually finish (close) campaigns via "Finish" button in the dropdown menu (above Archive). Shows Korean confirmation dialog "정말로 닫으시겠습니까?" before closing. Finished campaigns move to the "Finished" sidebar section, and influencers see "This campaign is closed" message with gray styling on the campaign detail page. Works regardless of deadline status.
 - **Campaign Archive & Delete:** Full lifecycle management with Archive (hide from influencers), Restore (unarchive), and Delete (cascade removal of applications, shipping, uploads, issues) functionality with confirmation dialogs. Server-side security enforces that only archived campaigns can be permanently deleted.
 - **Inline Shipping Entry & Bulk Upload:** Admins can enter shipping details individually or via CSV upload, including courier, tracking number, and URL.
 - **Enhanced Shipping Display:** Clear display of shipping information for both admins and influencers.

@@ -48,6 +48,7 @@ import {
   ChevronRight,
   Trash2,
   RotateCcw,
+  CheckCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,7 @@ export default function AdminCampaignListPage() {
   const pageSize = DEFAULT_PAGE_SIZE;
   
   // Dialog states
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -162,6 +164,22 @@ export default function AdminCampaignListPage() {
     enabled: isAuthenticated && isAdmin,
   });
 
+  // Finish mutation (close campaign)
+  const finishMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      return apiRequest("POST", `/api/admin/campaigns/${campaignId}/finish`);
+    },
+    onSuccess: () => {
+      toast({ title: "캠페인 종료됨", description: "캠페인이 종료되었습니다. Finished 탭에서 확인할 수 있습니다." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+      refetch();
+      setFinishDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to finish campaign", variant: "destructive" });
+    },
+  });
+
   // Archive mutation
   const archiveMutation = useMutation({
     mutationFn: async (campaignId: string) => {
@@ -205,6 +223,11 @@ export default function AdminCampaignListPage() {
       toast({ title: "Error", description: error.message || "Failed to delete campaign", variant: "destructive" });
     },
   });
+
+  const handleFinish = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setFinishDialogOpen(true);
+  };
 
   const handleArchive = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
@@ -394,14 +417,26 @@ export default function AdminCampaignListPage() {
                                 </DropdownMenuItem>
                               </>
                             ) : (
-                              <DropdownMenuItem 
-                                className="text-orange-600"
-                                onClick={() => handleArchive(campaign)}
-                                data-testid={`archive-${campaign.id}`}
-                              >
-                                <Archive className="h-4 w-4 mr-2" />
-                                Archive
-                              </DropdownMenuItem>
+                              <>
+                                {campaign.status !== "closed" && (
+                                  <DropdownMenuItem 
+                                    className="text-blue-600"
+                                    onClick={() => handleFinish(campaign)}
+                                    data-testid={`finish-${campaign.id}`}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Finish
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem 
+                                  className="text-orange-600"
+                                  onClick={() => handleArchive(campaign)}
+                                  data-testid={`archive-${campaign.id}`}
+                                >
+                                  <Archive className="h-4 w-4 mr-2" />
+                                  Archive
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -486,6 +521,28 @@ export default function AdminCampaignListPage() {
           </div>
         )}
       </div>
+
+      {/* Finish Confirmation Dialog */}
+      <AlertDialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>캠페인 종료</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말로 "{selectedCampaign?.name}" 캠페인을 종료하시겠습니까? 
+              종료된 캠페인은 인플루언서에게 "This campaign is closed"로 표시됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedCampaign && finishMutation.mutate(selectedCampaign.id)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              종료
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Archive Confirmation Dialog */}
       <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>

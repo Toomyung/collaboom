@@ -952,6 +952,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Finish campaign (close it - sets status to 'closed')
+  app.post("/api/admin/campaigns/:id/finish", requireAuth("admin"), async (req, res) => {
+    try {
+      const campaign = await storage.getCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      if (campaign.status === "archived") {
+        return res.status(400).json({ message: "Cannot finish an archived campaign" });
+      }
+
+      if (campaign.status === "closed") {
+        return res.status(400).json({ message: "Campaign is already finished" });
+      }
+
+      const updated = await storage.updateCampaign(req.params.id, { status: "closed" });
+      return res.json({ success: true, campaign: updated });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Archive campaign
   app.post("/api/admin/campaigns/:id/archive", requireAuth("admin"), async (req, res) => {
     try {
