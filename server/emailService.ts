@@ -244,3 +244,64 @@ View in dashboard: https://collaboom.io/dashboard
     return { success: false, error: (err as Error).message };
   }
 }
+
+export async function sendAdminReplyEmail(
+  to: string,
+  influencerName: string,
+  campaignName: string,
+  brandName: string,
+  originalMessage: string,
+  adminResponse: string,
+  influencerId?: string,
+  campaignId?: string
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+
+    // Thread key for campaign emails
+    const threadKey = campaignId && influencerId 
+      ? getThreadKey(campaignId, influencerId) 
+      : null;
+    
+    // Get threading headers (references the approval email)
+    const headers = getThreadingHeaders(threadKey);
+    
+    // Use same subject as approval email for threading (with Re: prefix)
+    const baseSubject = `[Collaboom] ${campaignName} by ${brandName}`;
+    const subject = Object.keys(headers).length > 0 ? `Re: ${baseSubject}` : baseSubject;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject,
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
+      text: `Hi ${influencerName},
+
+You have a new response from the Collaboom team regarding your message for "${campaignName}" by ${brandName}.
+
+Your Message:
+"${originalMessage}"
+
+Our Response:
+"${adminResponse}"
+
+If you have any further questions, you can reply through your dashboard.
+
+View in dashboard: https://collaboom.io/dashboard
+
+- The Collaboom Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send admin reply email:", error);
+      return { success: false, error: error.message };
+    }
+
+    const referencedId = headers["In-Reply-To"] || "none";
+    console.log(`Admin reply email sent to ${to}, ID: ${data?.id}, In-Reply-To: ${referencedId}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending admin reply email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}

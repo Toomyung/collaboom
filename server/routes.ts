@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail } from "./emailService";
+import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail } from "./emailService";
 import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
 import {
   authLimiter,
@@ -1948,6 +1948,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { response } = req.body;
       
+      // Get issue details first for email
+      const allIssues = await storage.getAllShippingIssues();
+      const issueWithDetails = allIssues.find(i => i.id === req.params.id);
+      
       const issue = await storage.updateShippingIssue(req.params.id, {
         status: "resolved",
         resolvedByAdminId: req.session.userId,
@@ -1957,6 +1961,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!issue) {
         return res.status(404).json({ message: "Issue not found" });
+      }
+
+      // Send email to influencer if there's a response
+      if (response && issueWithDetails?.influencer && issueWithDetails?.campaign) {
+        const { influencer, campaign, message } = issueWithDetails;
+        sendAdminReplyEmail(
+          influencer.email,
+          influencer.name || "Creator",
+          campaign.name,
+          campaign.brandName,
+          message,
+          response,
+          influencer.id,
+          campaign.id
+        ).catch(err => {
+          console.error("Failed to send admin reply email:", err);
+        });
       }
 
       return res.json({ success: true, issue });
