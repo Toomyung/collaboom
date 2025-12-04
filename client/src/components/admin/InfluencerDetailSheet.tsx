@@ -205,13 +205,13 @@ export function InfluencerDetailSheet({
   const [expandedCampaigns, setExpandedCampaigns] = useState<string[]>([]);
   const [detailView, setDetailView] = useState<DetailView>(null);
   
-  // Score/Penalty editing states
-  const [editingScore, setEditingScore] = useState<number | null>(null);
-  const [editingPenalty, setEditingPenalty] = useState<number | null>(null);
+  // Score/Penalty adjustment states (delta values to add/subtract)
+  const [scoreDelta, setScoreDelta] = useState<string>("");
+  const [penaltyDelta, setPenaltyDelta] = useState<string>("");
   const [confirmDialog, setConfirmDialog] = useState<{
     type: "score" | "penalty";
     currentValue: number;
-    newValue: number;
+    delta: number;
   } | null>(null);
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
@@ -318,49 +318,43 @@ export function InfluencerDetailSheet({
   // Reset editing states when influencer changes
   useEffect(() => {
     if (selectedInfluencer) {
-      setEditingScore(null);
-      setEditingPenalty(null);
+      setScoreDelta("");
+      setPenaltyDelta("");
     }
   }, [selectedInfluencer?.id]);
 
-  // Handlers for score/penalty editing
+  // Handlers for score/penalty adjustment
   const handleScoreConfirm = () => {
-    if (editingScore !== null && selectedInfluencer) {
-      const currentScore = selectedInfluencer.score ?? 0;
-      if (editingScore !== currentScore) {
-        setConfirmDialog({
-          type: "score",
-          currentValue: currentScore,
-          newValue: editingScore,
-        });
-      }
+    const delta = parseInt(scoreDelta);
+    if (!isNaN(delta) && delta !== 0 && selectedInfluencer) {
+      setConfirmDialog({
+        type: "score",
+        currentValue: selectedInfluencer.score ?? 0,
+        delta: delta,
+      });
     }
   };
 
   const handlePenaltyConfirm = () => {
-    if (editingPenalty !== null && selectedInfluencer) {
-      const currentPenalty = selectedInfluencer.penalty ?? 0;
-      if (editingPenalty !== currentPenalty) {
-        setConfirmDialog({
-          type: "penalty",
-          currentValue: currentPenalty,
-          newValue: editingPenalty,
-        });
-      }
+    const delta = parseInt(penaltyDelta);
+    if (!isNaN(delta) && delta !== 0 && selectedInfluencer) {
+      setConfirmDialog({
+        type: "penalty",
+        currentValue: selectedInfluencer.penalty ?? 0,
+        delta: delta,
+      });
     }
   };
 
   const handleConfirmChange = () => {
     if (!confirmDialog || !selectedInfluencer) return;
     
-    const delta = confirmDialog.newValue - confirmDialog.currentValue;
-    
     if (confirmDialog.type === "score") {
-      adjustScoreMutation.mutate({ id: selectedInfluencer.id, delta });
-      setEditingScore(null);
+      adjustScoreMutation.mutate({ id: selectedInfluencer.id, delta: confirmDialog.delta });
+      setScoreDelta("");
     } else {
-      adjustPenaltyMutation.mutate({ id: selectedInfluencer.id, delta });
-      setEditingPenalty(null);
+      adjustPenaltyMutation.mutate({ id: selectedInfluencer.id, delta: confirmDialog.delta });
+      setPenaltyDelta("");
     }
     setConfirmDialog(null);
   };
@@ -370,8 +364,8 @@ export function InfluencerDetailSheet({
     setActiveTab("dashboard");
     setExpandedCampaigns([]);
     setDetailView(null);
-    setEditingScore(null);
-    setEditingPenalty(null);
+    setScoreDelta("");
+    setPenaltyDelta("");
     setConfirmDialog(null);
     onClose();
   };
@@ -932,60 +926,60 @@ export function InfluencerDetailSheet({
                   <div className="grid grid-cols-2 gap-3">
                     <Card>
                       <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-1">
                           <p className="text-xs text-muted-foreground">Score</p>
                           <Star className="h-3 w-3 text-yellow-500" />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <p className="text-xl font-bold mb-2">{selectedInfluencer.score ?? 0}</p>
+                        <div className="flex items-center gap-1">
                           <Input
                             type="number"
-                            value={editingScore ?? selectedInfluencer.score ?? 0}
-                            onChange={(e) => setEditingScore(parseInt(e.target.value) || 0)}
-                            className="h-8 w-16 text-center font-bold text-lg px-2"
-                            data-testid="input-score"
+                            value={scoreDelta}
+                            onChange={(e) => setScoreDelta(e.target.value)}
+                            placeholder="+5 or -3"
+                            className="h-7 w-20 text-center text-sm px-1"
+                            data-testid="input-score-delta"
                           />
-                          {editingScore !== null && editingScore !== (selectedInfluencer.score ?? 0) && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="h-7 text-xs px-2"
-                              onClick={handleScoreConfirm}
-                              disabled={adjustScoreMutation.isPending}
-                              data-testid="button-score-confirm"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-7 text-xs px-2"
+                            onClick={handleScoreConfirm}
+                            disabled={!scoreDelta || parseInt(scoreDelta) === 0 || adjustScoreMutation.isPending}
+                            data-testid="button-score-confirm"
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
 
                     <Card>
                       <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-1">
                           <p className="text-xs text-muted-foreground">Penalty</p>
                           <AlertTriangle className="h-3 w-3 text-red-500" />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <p className="text-xl font-bold mb-2">{selectedInfluencer.penalty ?? 0}</p>
+                        <div className="flex items-center gap-1">
                           <Input
                             type="number"
-                            value={editingPenalty ?? selectedInfluencer.penalty ?? 0}
-                            onChange={(e) => setEditingPenalty(parseInt(e.target.value) || 0)}
-                            className="h-8 w-16 text-center font-bold text-lg px-2"
-                            data-testid="input-penalty"
+                            value={penaltyDelta}
+                            onChange={(e) => setPenaltyDelta(e.target.value)}
+                            placeholder="+1 or -1"
+                            className="h-7 w-20 text-center text-sm px-1"
+                            data-testid="input-penalty-delta"
                           />
-                          {editingPenalty !== null && editingPenalty !== (selectedInfluencer.penalty ?? 0) && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="h-7 text-xs px-2"
-                              onClick={handlePenaltyConfirm}
-                              disabled={adjustPenaltyMutation.isPending}
-                              data-testid="button-penalty-confirm"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-7 text-xs px-2"
+                            onClick={handlePenaltyConfirm}
+                            disabled={!penaltyDelta || parseInt(penaltyDelta) === 0 || adjustPenaltyMutation.isPending}
+                            data-testid="button-penalty-confirm"
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -1330,30 +1324,37 @@ export function InfluencerDetailSheet({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              포인트를 수정하려 합니다
+              포인트를 부여하려 합니다
             </DialogTitle>
-            <DialogDescription className="pt-2">
+            <DialogDescription className="pt-2 space-y-2">
               {confirmDialog?.type === "score" ? (
-                <>
-                  Score를 <strong>{confirmDialog.currentValue}</strong>에서{" "}
-                  <strong>{confirmDialog.newValue}</strong>로 변경합니다.
-                  <br />
-                  <span className={confirmDialog.newValue > confirmDialog.currentValue ? "text-green-600" : "text-red-600"}>
-                    ({confirmDialog.newValue > confirmDialog.currentValue ? "+" : ""}
-                    {confirmDialog.newValue - confirmDialog.currentValue} 변경)
-                  </span>
-                </>
+                <div className="space-y-2">
+                  <p>
+                    현재 Score: <strong>{confirmDialog.currentValue}</strong>
+                  </p>
+                  <p className={confirmDialog.delta > 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                    {confirmDialog.delta > 0 ? "+" : ""}{confirmDialog.delta} 포인트 부여
+                  </p>
+                  <p>
+                    변경 후 Score: <strong>{confirmDialog.currentValue + confirmDialog.delta}</strong>
+                  </p>
+                </div>
               ) : (
-                <>
-                  Penalty를 <strong>{confirmDialog?.currentValue}</strong>에서{" "}
-                  <strong>{confirmDialog?.newValue}</strong>로 변경합니다.
-                  <br />
-                  <span className={(confirmDialog?.newValue ?? 0) > (confirmDialog?.currentValue ?? 0) ? "text-red-600" : "text-green-600"}>
-                    ({(confirmDialog?.newValue ?? 0) > (confirmDialog?.currentValue ?? 0) ? "+" : ""}
-                    {(confirmDialog?.newValue ?? 0) - (confirmDialog?.currentValue ?? 0)} 변경)
-                  </span>
-                </>
+                <div className="space-y-2">
+                  <p>
+                    현재 Penalty: <strong>{confirmDialog?.currentValue}</strong>
+                  </p>
+                  <p className={(confirmDialog?.delta ?? 0) > 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
+                    {(confirmDialog?.delta ?? 0) > 0 ? "+" : ""}{confirmDialog?.delta} 페널티 부여
+                  </p>
+                  <p>
+                    변경 후 Penalty: <strong>{(confirmDialog?.currentValue ?? 0) + (confirmDialog?.delta ?? 0)}</strong>
+                  </p>
+                </div>
               )}
+              <p className="text-sm text-muted-foreground pt-2">
+                확실하신가요?
+              </p>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
