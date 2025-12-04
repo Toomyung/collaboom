@@ -1789,6 +1789,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single influencer by ID (admin)
+  app.get("/api/admin/influencers/:id", requireAuth("admin"), async (req, res) => {
+    try {
+      if (!validateUUID(req.params.id)) {
+        return res.status(400).json({ message: "Invalid influencer ID" });
+      }
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+      return res.json(influencer);
+    } catch (error: any) {
+      console.error("Error fetching influencer:", error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Adjust influencer score
   app.post("/api/admin/influencers/:id/score", requireAuth("admin"), async (req, res) => {
     try {
