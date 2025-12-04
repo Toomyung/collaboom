@@ -80,16 +80,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const { type } = req.body;
     
+    // Test IDs for consistent threading in tests
+    const testInfluencerId = "test-influencer-001";
+    const testCampaignId = "test-campaign-001";
+    
     try {
       if (type === "welcome") {
-        const result = await sendWelcomeEmail("hello@collaboom.io", "Test User");
+        const result = await sendWelcomeEmail("hello@collaboom.io", "Test User", testInfluencerId);
         return res.json({ success: true, result });
       } else if (type === "approval") {
         const result = await sendApplicationApprovedEmail(
           "hello@collaboom.io",
           "Test User",
           "Summer K-Beauty Campaign",
-          "Glow Beauty"
+          "Glow Beauty",
+          testInfluencerId,
+          testCampaignId
         );
         return res.json({ success: true, result });
       } else if (type === "shipping") {
@@ -100,7 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Glow Beauty",
           "FedEx",
           "123456789012",
-          "https://fedex.com/track/123456789012"
+          "https://fedex.com/track/123456789012",
+          testInfluencerId,
+          testCampaignId
         );
         return res.json({ success: true, result });
       }
@@ -158,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Send welcome email for new signups
           const influencerName = influencer.name || user.user_metadata?.full_name || "Creator";
-          sendWelcomeEmail(user.email, influencerName).catch(err => {
+          sendWelcomeEmail(user.email, influencerName, influencer.id).catch(err => {
             console.error("Failed to send welcome email:", err);
           });
         } else {
@@ -285,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       logSecurityEvent('registration_success', { ip: req.ip, userId: influencer.id });
 
-      sendWelcomeEmail(email, "Creator").catch(err => {
+      sendWelcomeEmail(email, "Creator", influencer.id).catch(err => {
         console.error("Failed to send welcome email:", err);
       });
 
@@ -1097,7 +1105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           influencer.email,
           influencer.name || "Creator",
           campaign.name,
-          campaign.brandName
+          campaign.brandName,
+          application.influencerId,
+          application.campaignId
         ).catch(err => {
           console.error("Failed to send approval email:", err);
         });
@@ -1436,7 +1446,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           campaign.brandName,
           courier,
           trackingNumber,
-          trackingUrl
+          trackingUrl,
+          application.influencerId,
+          application.campaignId
         ).catch(err => {
           console.error("Failed to send shipping notification:", err);
         });
