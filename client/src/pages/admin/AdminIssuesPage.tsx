@@ -33,6 +33,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { ShippingIssueWithDetails } from "@shared/schema";
+import { InfluencerDetailSheet } from "@/components/admin/InfluencerDetailSheet";
 
 type IssueStatus = "open" | "resolved" | "dismissed" | "all";
 
@@ -74,6 +75,7 @@ export default function AdminIssuesPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyAction, setReplyAction] = useState<"resolve" | "dismiss">("resolve");
+  const [selectedInfluencerId, setSelectedInfluencerId] = useState<string | null>(null);
 
   const { data: issues, isLoading } = useQuery<ShippingIssueWithDetails[]>({
     queryKey: ["/api/admin/issues"],
@@ -302,9 +304,18 @@ export default function AdminIssuesPage() {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="font-medium" data-testid={`issue-influencer-name-${issue.id}`}>
+                          <button
+                            className="font-medium text-primary hover:underline cursor-pointer bg-transparent border-none p-0 h-auto"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (issue.influencer?.id) {
+                                setSelectedInfluencerId(issue.influencer.id);
+                              }
+                            }}
+                            data-testid={`issue-influencer-name-${issue.id}`}
+                          >
                             {issue.influencer?.name || "Unknown"}
-                          </span>
+                          </button>
                           {getIssueStatusBadge(issue.status)}
                           <Badge 
                             variant="outline" 
@@ -512,6 +523,13 @@ export default function AdminIssuesPage() {
           </div>
         )}
       </div>
+
+      {/* Influencer Detail Sheet */}
+      <InfluencerDetailSheet
+        open={!!selectedInfluencerId}
+        onClose={() => setSelectedInfluencerId(null)}
+        influencerId={selectedInfluencerId}
+      />
     </AdminLayout>
   );
 }

@@ -35,14 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Campaign, ApplicationWithDetails, Influencer, AdminNote, ScoreEvent, PenaltyEvent, Application } from "@shared/schema";
+import { Campaign, ApplicationWithDetails, Application } from "@shared/schema";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -66,18 +59,13 @@ import {
   UploadCloud,
   Download,
   RotateCcw,
-  Plus,
-  Minus,
-  History,
   MessageSquare,
-  Send,
-  TrendingUp,
-  TrendingDown,
   Link2,
   Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversationSheet } from "@/components/ConversationSheet";
+import { InfluencerDetailSheet } from "@/components/admin/InfluencerDetailSheet";
 
 interface ShippingFormData {
   courier: string;
@@ -101,9 +89,7 @@ export default function AdminCampaignDetailPage() {
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set());
   const [showCsvDialog, setShowCsvDialog] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
-  const [influencerDetailTab, setInfluencerDetailTab] = useState("profile");
-  const [newNote, setNewNote] = useState("");
+  const [selectedInfluencerId, setSelectedInfluencerId] = useState<string | null>(null);
   const [contentUrlForms, setContentUrlForms] = useState<Record<string, string>>({});
   const [editingContentUrl, setEditingContentUrl] = useState<Set<string>>(new Set());
   const [pointsForms, setPointsForms] = useState<Record<string, number>>({});
@@ -114,8 +100,6 @@ export default function AdminCampaignDetailPage() {
   const [conversationApp, setConversationApp] = useState<{ id: string; influencerName: string } | null>(null);
   const APPROVED_PAGE_SIZE = 20;
 
-  type ApplicationWithCampaign = Application & { campaign?: Campaign };
-
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
     queryKey: ["/api/admin/campaigns", id],
     enabled: isAuthenticated && isAdmin && !!id,
@@ -124,26 +108,6 @@ export default function AdminCampaignDetailPage() {
   const { data: applications, isLoading: applicationsLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/admin/campaigns", id, "applications"],
     enabled: isAuthenticated && isAdmin && !!id,
-  });
-
-  const { data: influencerNotes } = useQuery<AdminNote[]>({
-    queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "notes"],
-    enabled: !!selectedInfluencer,
-  });
-
-  const { data: influencerScoreEvents } = useQuery<ScoreEvent[]>({
-    queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "score-events"],
-    enabled: !!selectedInfluencer,
-  });
-
-  const { data: influencerPenaltyEvents } = useQuery<PenaltyEvent[]>({
-    queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "penalty-events"],
-    enabled: !!selectedInfluencer,
-  });
-
-  const { data: influencerApplications } = useQuery<ApplicationWithCampaign[]>({
-    queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "applications"],
-    enabled: !!selectedInfluencer,
   });
 
   // Get all issues to show conversation counts
@@ -215,61 +179,15 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  const adjustScoreMutation = useMutation({
-    mutationFn: async ({ influencerId, delta, reason }: { influencerId: string; delta: number; reason: string }) => {
-      await apiRequest("POST", `/api/admin/influencers/${influencerId}/adjust-score`, { delta, reason });
-      return delta;
-    },
-    onSuccess: (delta) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "score-events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      if (selectedInfluencer) {
-        setSelectedInfluencer({
-          ...selectedInfluencer,
-          score: (selectedInfluencer.score ?? 0) + delta
-        });
+  const invalidateInfluencerQueries = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.startsWith('/api/admin/influencers');
       }
-      toast({ title: "Score adjusted" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Failed to adjust score", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const adjustPenaltyMutation = useMutation({
-    mutationFn: async ({ influencerId, delta, reason }: { influencerId: string; delta: number; reason: string }) => {
-      await apiRequest("POST", `/api/admin/influencers/${influencerId}/adjust-penalty`, { delta, reason });
-      return delta;
-    },
-    onSuccess: (delta) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "penalty-events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      if (selectedInfluencer) {
-        setSelectedInfluencer({
-          ...selectedInfluencer,
-          penalty: (selectedInfluencer.penalty ?? 0) + delta
-        });
-      }
-      toast({ title: "Penalty adjusted" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Failed to adjust penalty", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const addNoteMutation = useMutation({
-    mutationFn: async ({ influencerId, note }: { influencerId: string; note: string }) => {
-      await apiRequest("POST", `/api/admin/influencers/${influencerId}/notes`, { note });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers", selectedInfluencer?.id, "notes"] });
-      setNewNote("");
-      toast({ title: "Note added" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Failed to add note", description: error.message, variant: "destructive" });
-    },
-  });
+    });
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+  };
 
   const saveContentUrlMutation = useMutation({
     mutationFn: async ({ applicationId, contentUrl }: { applicationId: string; contentUrl: string }) => {
@@ -1056,7 +974,7 @@ export default function AdminCampaignDetailPage() {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (inf) {
-                                        setSelectedInfluencer(inf);
+                                        setSelectedInfluencerId(inf.id);
                                       }
                                     }}
                                     data-testid={`influencer-name-${app.id}`}
@@ -1220,7 +1138,7 @@ export default function AdminCampaignDetailPage() {
                                   <div className="flex items-center gap-1">
                                     <button
                                       className="text-left hover:underline font-medium text-xs truncate"
-                                      onClick={() => setSelectedInfluencer(app.influencer || null)}
+                                      onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                                       data-testid={`influencer-name-${app.id}`}
                                     >
                                       {app.influencer?.name}
@@ -1625,8 +1543,7 @@ export default function AdminCampaignDetailPage() {
                                   className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
                                   onClick={() => {
                                     if (app.influencer) {
-                                      setSelectedInfluencer(app.influencer);
-                                      setInfluencerDetailTab("profile");
+                                      setSelectedInfluencerId(app.influencer?.id || null);
                                     }
                                   }}
                                   data-testid={`link-influencer-${app.id}`}
@@ -1854,12 +1771,7 @@ export default function AdminCampaignDetailPage() {
                             <div className="flex items-center gap-1">
                               <button
                                 className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
-                                onClick={() => {
-                                  if (app.influencer) {
-                                    setSelectedInfluencer(app.influencer);
-                                    setInfluencerDetailTab("profile");
-                                  }
-                                }}
+                                onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                                 data-testid={`link-influencer-result-${app.id}`}
                               >
                                 {app.influencer?.name}
@@ -1952,7 +1864,7 @@ export default function AdminCampaignDetailPage() {
                           <TableCell className="font-medium">
                             <button
                               className="text-left hover:underline"
-                              onClick={() => setSelectedInfluencer(app.influencer || null)}
+                              onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                             >
                               {app.influencer?.name}
                             </button>
@@ -2026,7 +1938,7 @@ export default function AdminCampaignDetailPage() {
                           <TableCell className="font-medium">
                             <button
                               className="text-left hover:underline"
-                              onClick={() => setSelectedInfluencer(app.influencer || null)}
+                              onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                             >
                               {app.influencer?.name}
                             </button>
@@ -2165,308 +2077,12 @@ export default function AdminCampaignDetailPage() {
       </Dialog>
 
       {/* Influencer Detail Sheet */}
-      <Sheet open={!!selectedInfluencer} onOpenChange={(open) => {
-        if (!open) {
-          setSelectedInfluencer(null);
-          setNewNote("");
-        }
-      }}>
-        <SheetContent className="sm:max-w-lg overflow-y-auto">
-          {selectedInfluencer && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selectedInfluencer.name || "Influencer Details"}</SheetTitle>
-                <SheetDescription className="flex items-center gap-2">
-                  {selectedInfluencer.email}
-                  {selectedInfluencer.tiktokHandle && (
-                    <a
-                      href={`https://tiktok.com/@${selectedInfluencer.tiktokHandle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-muted-foreground hover:text-primary"
-                    >
-                      <SiTiktok className="h-3 w-3" />
-                      @{selectedInfluencer.tiktokHandle}
-                    </a>
-                  )}
-                </SheetDescription>
-              </SheetHeader>
-
-              <Tabs value={influencerDetailTab} onValueChange={setInfluencerDetailTab} className="mt-4">
-                <TabsList className="w-full grid grid-cols-4">
-                  <TabsTrigger value="profile" className="text-xs">Profile</TabsTrigger>
-                  <TabsTrigger value="history" className="text-xs">History</TabsTrigger>
-                  <TabsTrigger value="notes" className="text-xs">Notes</TabsTrigger>
-                  <TabsTrigger value="campaigns" className="text-xs">Campaigns</TabsTrigger>
-                </TabsList>
-
-                {/* Profile Tab */}
-                <TabsContent value="profile" className="mt-4 space-y-4">
-                  {/* Score & Penalty with controls */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <Card>
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-yellow-500" />
-                            <span className="text-xs text-muted-foreground">Score</span>
-                          </div>
-                          <span className="text-xl font-bold">{selectedInfluencer.score ?? 0}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 flex-1"
-                            onClick={() => adjustScoreMutation.mutate({
-                              influencerId: selectedInfluencer.id,
-                              delta: 1,
-                              reason: "Manual +1"
-                            })}
-                            disabled={adjustScoreMutation.isPending}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 flex-1"
-                            onClick={() => adjustScoreMutation.mutate({
-                              influencerId: selectedInfluencer.id,
-                              delta: -1,
-                              reason: "Manual -1"
-                            })}
-                            disabled={adjustScoreMutation.isPending}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-1">
-                            <AlertTriangle className="h-4 w-4 text-red-500" />
-                            <span className="text-xs text-muted-foreground">Penalty</span>
-                          </div>
-                          <span className="text-xl font-bold">{selectedInfluencer.penalty ?? 0}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 flex-1"
-                            onClick={() => adjustPenaltyMutation.mutate({
-                              influencerId: selectedInfluencer.id,
-                              delta: 1,
-                              reason: "Manual +1"
-                            })}
-                            disabled={adjustPenaltyMutation.isPending}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 flex-1"
-                            onClick={() => adjustPenaltyMutation.mutate({
-                              influencerId: selectedInfluencer.id,
-                              delta: -1,
-                              reason: "Manual -1"
-                            })}
-                            disabled={adjustPenaltyMutation.isPending}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Social */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-muted-foreground">Social Profiles</h4>
-                    <div className="flex gap-3">
-                      {selectedInfluencer.tiktokHandle && (
-                        <a
-                          href={`https://tiktok.com/@${selectedInfluencer.tiktokHandle}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm hover:text-primary"
-                        >
-                          <SiTiktok className="h-4 w-4" />
-                          @{selectedInfluencer.tiktokHandle}
-                        </a>
-                      )}
-                      {selectedInfluencer.instagramHandle && (
-                        <a
-                          href={`https://instagram.com/${selectedInfluencer.instagramHandle}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm hover:text-primary"
-                        >
-                          <SiInstagram className="h-4 w-4" />
-                          @{selectedInfluencer.instagramHandle}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Contact */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-muted-foreground">Contact</h4>
-                    <div className="text-sm space-y-1">
-                      <p>Phone: {selectedInfluencer.phone || "-"}</p>
-                      <p>PayPal: {selectedInfluencer.paypalEmail || "-"}</p>
-                    </div>
-                  </div>
-
-                  {/* Address */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-muted-foreground">Shipping Address</h4>
-                    <p className="text-sm">
-                      {selectedInfluencer.addressLine1 || "No address"}
-                      {selectedInfluencer.addressLine2 && <><br />{selectedInfluencer.addressLine2}</>}
-                      {selectedInfluencer.city && (
-                        <><br />{selectedInfluencer.city}, {selectedInfluencer.state} {selectedInfluencer.zipCode}</>
-                      )}
-                    </p>
-                  </div>
-                </TabsContent>
-
-                {/* History Tab */}
-                <TabsContent value="history" className="mt-4 space-y-4">
-                  {/* Score Events */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      Score History
-                    </h4>
-                    {influencerScoreEvents && influencerScoreEvents.length > 0 ? (
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {influencerScoreEvents.map((event) => (
-                          <div key={event.id} className="flex items-center justify-between text-xs p-2 bg-muted/50 rounded">
-                            <span>{event.reason}</span>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={event.delta > 0 ? "default" : "destructive"} className="text-xs">
-                                {event.delta > 0 ? "+" : ""}{event.delta}
-                              </Badge>
-                              <span className="text-muted-foreground">
-                                {format(new Date(event.createdAt!), "MMM d")}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No score events</p>
-                    )}
-                  </div>
-
-                  {/* Penalty Events */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      <TrendingDown className="h-3 w-3" />
-                      Penalty History
-                    </h4>
-                    {influencerPenaltyEvents && influencerPenaltyEvents.length > 0 ? (
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {influencerPenaltyEvents.map((event) => (
-                          <div key={event.id} className="flex items-center justify-between text-xs p-2 bg-muted/50 rounded">
-                            <span>{event.reason}</span>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="destructive" className="text-xs">
-                                {event.delta > 0 ? "+" : ""}{event.delta}
-                              </Badge>
-                              <span className="text-muted-foreground">
-                                {format(new Date(event.createdAt!), "MMM d")}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No penalty events</p>
-                    )}
-                  </div>
-                </TabsContent>
-
-                {/* Notes Tab */}
-                <TabsContent value="notes" className="mt-4 space-y-4">
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder="Add a note..."
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      className="text-sm min-h-[60px]"
-                    />
-                    <Button
-                      size="icon"
-                      onClick={() => {
-                        if (newNote.trim()) {
-                          addNoteMutation.mutate({
-                            influencerId: selectedInfluencer.id,
-                            note: newNote.trim()
-                          });
-                        }
-                      }}
-                      disabled={!newNote.trim() || addNoteMutation.isPending}
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {influencerNotes && influencerNotes.length > 0 ? (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {influencerNotes.map((note) => (
-                        <div key={note.id} className="p-3 bg-muted/50 rounded-lg">
-                          <p className="text-sm">{note.note}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(note.createdAt!), "MMM d, yyyy 'at' h:mm a")}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">No notes yet</p>
-                  )}
-                </TabsContent>
-
-                {/* Campaigns Tab */}
-                <TabsContent value="campaigns" className="mt-4">
-                  {influencerApplications && influencerApplications.length > 0 ? (
-                    <div className="space-y-2 max-h-80 overflow-y-auto">
-                      {influencerApplications.map((app) => (
-                        <div key={app.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="text-sm font-medium">{app.campaign?.name || "Unknown Campaign"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Applied: {format(new Date(app.appliedAt!), "MMM d, yyyy")}
-                            </p>
-                          </div>
-                          <Badge
-                            variant={
-                              app.status === "completed" ? "default" :
-                              app.status === "rejected" || app.status === "deadline_missed" ? "destructive" :
-                              "secondary"
-                            }
-                            className="text-xs"
-                          >
-                            {app.status}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">No campaign history</p>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <InfluencerDetailSheet
+        open={!!selectedInfluencerId}
+        onClose={() => setSelectedInfluencerId(null)}
+        influencerId={selectedInfluencerId}
+        onDataChange={invalidateInfluencerQueries}
+      />
 
       {/* Conversation History Sheet */}
       <ConversationSheet
