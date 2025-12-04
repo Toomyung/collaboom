@@ -16,7 +16,7 @@ function getSupabaseAdmin(): SupabaseClient {
   return supabaseAdmin;
 }
 
-const BUCKET_NAME = 'campaign-images';
+const BUCKET_NAME = 'collaboom-campaign';
 
 export async function ensureBucketExists(): Promise<void> {
   const supabase = getSupabaseAdmin();
