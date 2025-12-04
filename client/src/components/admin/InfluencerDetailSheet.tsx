@@ -936,13 +936,12 @@ export function InfluencerDetailSheet({
                             type="number"
                             value={scoreDelta}
                             onChange={(e) => setScoreDelta(e.target.value)}
-                            placeholder="+5 or -3"
-                            className="h-7 w-20 text-center text-sm px-1"
+                            className="h-7 w-16 text-center text-sm"
                             data-testid="input-score-delta"
                           />
                           <Button
                             size="sm"
-                            variant="default"
+                            variant="outline"
                             className="h-7 text-xs px-2"
                             onClick={handleScoreConfirm}
                             disabled={!scoreDelta || parseInt(scoreDelta) === 0 || adjustScoreMutation.isPending}
@@ -966,13 +965,12 @@ export function InfluencerDetailSheet({
                             type="number"
                             value={penaltyDelta}
                             onChange={(e) => setPenaltyDelta(e.target.value)}
-                            placeholder="+1 or -1"
-                            className="h-7 w-20 text-center text-sm px-1"
+                            className="h-7 w-16 text-center text-sm"
                             data-testid="input-penalty-delta"
                           />
                           <Button
                             size="sm"
-                            variant="default"
+                            variant="outline"
                             className="h-7 text-xs px-2"
                             onClick={handlePenaltyConfirm}
                             disabled={!penaltyDelta || parseInt(penaltyDelta) === 0 || adjustPenaltyMutation.isPending}
