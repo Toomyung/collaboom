@@ -21,20 +21,21 @@ const BUCKET_NAME = 'campaign-images';
 export async function ensureBucketExists(): Promise<void> {
   const supabase = getSupabaseAdmin();
   
-  const { data: buckets } = await supabase.storage.listBuckets();
-  const bucketExists = buckets?.some(b => b.name === BUCKET_NAME);
-  
-  if (!bucketExists) {
-    const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
-      public: true,
-      fileSizeLimit: 10 * 1024 * 1024, // 10MB max
-    });
+  try {
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
-    if (error && !error.message.includes('already exists')) {
-      console.error('Failed to create bucket:', error);
-      throw error;
+    if (listError) {
+      console.log('[Storage] Could not list buckets (RLS policy), assuming bucket exists');
+      return;
     }
-    console.log(`Created storage bucket: ${BUCKET_NAME}`);
+    
+    const bucketExists = buckets?.some(b => b.name === BUCKET_NAME);
+    
+    if (!bucketExists) {
+      console.log(`[Storage] Bucket ${BUCKET_NAME} not found in list. Please create it manually in Supabase Dashboard.`);
+    }
+  } catch (error: any) {
+    console.log('[Storage] Bucket check skipped:', error.message);
   }
 }
 
