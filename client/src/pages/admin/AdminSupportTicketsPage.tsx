@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { InfluencerDetailSheet } from "@/components/admin/InfluencerDetailSheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
   Headphones,
   Search,
   CheckCircle,
@@ -32,16 +27,11 @@ import {
   ChevronUp,
   Mail,
   ExternalLink,
-  MapPin,
-  Phone,
-  Star,
-  AlertTriangle,
 } from "lucide-react";
-import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import type { SupportTicketWithDetails, Influencer } from "@shared/schema";
+import type { SupportTicketWithDetails } from "@shared/schema";
 
 type TicketStatus = "open" | "resolved" | "closed" | "all";
 
@@ -53,7 +43,7 @@ export default function AdminSupportTicketsPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyStatus, setReplyStatus] = useState<"resolved" | "closed">("resolved");
-  const [selectedInfluencer, setSelectedInfluencer] = useState<Influencer | null>(null);
+  const [selectedInfluencerId, setSelectedInfluencerId] = useState<string | null>(null);
 
   const { data: tickets, isLoading } = useQuery<SupportTicketWithDetails[]>({
     queryKey: ["/api/admin/support-tickets"],
@@ -266,7 +256,7 @@ export default function AdminSupportTicketsPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (ticket.influencer) {
-                                  setSelectedInfluencer(ticket.influencer);
+                                  setSelectedInfluencerId(ticket.influencer.id);
                                 }
                               }}
                               data-testid={`button-influencer-name-${ticket.id}`}
@@ -400,116 +390,11 @@ export default function AdminSupportTicketsPage() {
         )}
       </div>
 
-      <Sheet open={!!selectedInfluencer} onOpenChange={(open) => !open && setSelectedInfluencer(null)}>
-        <SheetContent className="sm:max-w-lg overflow-y-auto">
-          {selectedInfluencer && (
-            <div className="space-y-6">
-              <div className="border-b pb-4">
-                <h2 className="text-xl font-bold">{selectedInfluencer.name || "Unnamed"}</h2>
-                <p className="text-sm text-muted-foreground">{selectedInfluencer.email}</p>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm text-muted-foreground">Profile</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">TikTok</p>
-                      {selectedInfluencer.tiktokHandle ? (
-                        <a
-                          href={`https://tiktok.com/@${selectedInfluencer.tiktokHandle.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-primary hover:underline"
-                        >
-                          <SiTiktok className="h-3 w-3" />
-                          @{selectedInfluencer.tiktokHandle.replace("@", "")}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Instagram</p>
-                      {selectedInfluencer.instagramHandle ? (
-                        <a
-                          href={`https://instagram.com/${selectedInfluencer.instagramHandle.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-primary hover:underline"
-                        >
-                          <SiInstagram className="h-3 w-3" />
-                          @{selectedInfluencer.instagramHandle.replace("@", "")}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Phone</p>
-                      <p className="text-sm">{selectedInfluencer.phone || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">PayPal</p>
-                      <p className="text-sm">{selectedInfluencer.paypalEmail || "-"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">Shipping Address</h3>
-                  <div className="text-sm">
-                    {selectedInfluencer.addressLine1 ? (
-                      <div className="space-y-0.5">
-                        <p>{selectedInfluencer.addressLine1}</p>
-                        {selectedInfluencer.addressLine2 && <p>{selectedInfluencer.addressLine2}</p>}
-                        <p>
-                          {selectedInfluencer.city}{selectedInfluencer.city && selectedInfluencer.state ? ", " : ""}
-                          {selectedInfluencer.state} {selectedInfluencer.zipCode}
-                        </p>
-                        {selectedInfluencer.country && <p>{selectedInfluencer.country}</p>}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Score</span>
-                        <Star className="h-4 w-4 text-yellow-500" />
-                      </div>
-                      <p className="text-2xl font-bold">{selectedInfluencer.score ?? 0}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Penalty</span>
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                      </div>
-                      <p className="text-2xl font-bold">{selectedInfluencer.penalty ?? 0}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="pt-4 border-t text-sm text-muted-foreground">
-                  <p>Profile: {selectedInfluencer.profileCompleted ? "Complete" : "Incomplete"}</p>
-                  {selectedInfluencer.createdAt && (
-                    <p>Joined: {format(new Date(selectedInfluencer.createdAt), "MMMM d, yyyy")}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      <InfluencerDetailSheet
+        open={!!selectedInfluencerId}
+        onClose={() => setSelectedInfluencerId(null)}
+        influencerId={selectedInfluencerId}
+      />
     </AdminLayout>
   );
 }
