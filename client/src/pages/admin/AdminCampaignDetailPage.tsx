@@ -1385,7 +1385,13 @@ export default function AdminCampaignDetailPage() {
                               <TableCell className="p-2">
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1">
-                                    <span className="font-medium text-xs">{app.influencer?.name}</span>
+                                    <button
+                                      className="font-medium text-xs text-primary hover:underline cursor-pointer bg-transparent border-none p-0 h-auto"
+                                      onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
+                                      data-testid={`link-influencer-shipping-${app.id}`}
+                                    >
+                                      {app.influencer?.name}
+                                    </button>
                                     {(() => {
                                       const counts = getIssueCount(app.id);
                                       if (counts.total === 0) return null;
