@@ -407,9 +407,13 @@ export class DatabaseStorage implements IStorage {
       if (imageUrls.length > 0) {
         try {
           const result = await deleteImagesFromStorage(imageUrls);
-          console.log(`[Campaign Delete] Storage cleanup: ${result.deleted} images deleted`);
-          if (result.errors.length > 0) {
-            console.warn('[Campaign Delete] Storage cleanup errors:', result.errors);
+          if (result.verified) {
+            console.log(`[Campaign Delete] Storage cleanup: ${result.deleted} images deleted (verified)`);
+          } else {
+            console.warn(`[Campaign Delete] Storage cleanup incomplete: ${result.deleted}/${imageUrls.length} deleted`);
+            if (result.errors.length > 0) {
+              console.warn('[Campaign Delete] Storage errors:', result.errors);
+            }
           }
         } catch (error) {
           console.error('[Campaign Delete] Storage cleanup failed (continuing with DB deletion):', error);

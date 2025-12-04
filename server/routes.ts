@@ -2095,12 +2095,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const deleteResult = await deleteImagesFromStorage(orphanUrls);
       
       return res.json({
-        success: true,
-        message: `Cleaned up ${deleteResult.deleted} orphan images`,
+        success: deleteResult.verified,
+        message: deleteResult.verified 
+          ? `Successfully cleaned up ${deleteResult.deleted} orphan images`
+          : `Cleanup incomplete: ${deleteResult.deleted}/${orphanFiles.length} deleted. Check Supabase Storage RLS policies.`,
         totalInStorage: storageFiles.length,
         validCount: validFilePaths.size,
         orphanCount: orphanFiles.length,
         deletedCount: deleteResult.deleted,
+        verified: deleteResult.verified,
         errors: deleteResult.errors,
       });
     } catch (error: any) {

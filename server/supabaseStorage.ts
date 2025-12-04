@@ -122,23 +122,22 @@ export function extractFilePathFromUrl(url: string): string | null {
   }
 }
 
-export async function deleteImagesFromStorage(imageUrls: string[]): Promise<{ deleted: number; errors: string[] }> {
+export async function deleteImagesFromStorage(imageUrls: string[]): Promise<{ deleted: number; errors: string[]; verified: boolean }> {
   const supabase = getSupabaseAdmin();
   const errors: string[] = [];
   let deleted = 0;
+  let verified = false;
 
-  console.log('[Storage Delete] Received URLs:', imageUrls);
+  console.log('[Storage Delete] Received URLs:', imageUrls.length, 'files');
 
   const filePaths: string[] = [];
   
   for (const url of imageUrls) {
     if (!url || !url.includes('supabase.co/storage')) {
-      console.log('[Storage Delete] Skipping non-storage URL:', url);
       continue;
     }
     
     const filePath = extractFilePathFromUrl(url);
-    console.log('[Storage Delete] Extracted path from URL:', { url: url.substring(0, 80) + '...', filePath });
     if (filePath) {
       filePaths.push(filePath);
     }
@@ -148,7 +147,7 @@ export async function deleteImagesFromStorage(imageUrls: string[]): Promise<{ de
 
   if (filePaths.length === 0) {
     console.log('[Storage Delete] No valid file paths found');
-    return { deleted: 0, errors: [] };
+    return { deleted: 0, errors: [], verified: true };
   }
 
   try {
@@ -157,21 +156,38 @@ export async function deleteImagesFromStorage(imageUrls: string[]): Promise<{ de
       .from(BUCKET_NAME)
       .remove(filePaths);
 
-    console.log('[Storage Delete] API Response:', { data, error });
-
     if (error) {
-      console.error('[Storage] Delete error:', error);
+      console.error('[Storage Delete] API error:', error);
       errors.push(error.message);
+      return { deleted: 0, errors, verified: false };
+    }
+
+    // Verify deletion by checking if files still exist
+    const folderName = filePaths[0]?.split('/')[0] || 'campaigns';
+    const { data: remainingFiles } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list(folderName, { limit: 1000 });
+
+    const remainingSet = new Set(remainingFiles?.map(f => `${folderName}/${f.name}`) || []);
+    const stillExists = filePaths.filter(p => remainingSet.has(p));
+
+    if (stillExists.length > 0) {
+      const errorMsg = `DELETE blocked by RLS policy - ${stillExists.length} files still exist`;
+      console.error('[Storage Delete]', errorMsg);
+      errors.push(errorMsg);
+      deleted = filePaths.length - stillExists.length;
+      verified = false;
     } else {
-      deleted = data?.length || filePaths.length;
-      console.log(`[Storage] Deleted ${deleted} images from bucket`);
+      deleted = filePaths.length;
+      verified = true;
+      console.log(`[Storage Delete] Successfully deleted ${deleted} images (verified)`);
     }
   } catch (error: any) {
-    console.error('[Storage] Delete failed:', error);
+    console.error('[Storage Delete] Exception:', error);
     errors.push(error.message);
   }
 
-  return { deleted, errors };
+  return { deleted, errors, verified };
 }
 
 export async function listAllStorageImages(): Promise<string[]> {
