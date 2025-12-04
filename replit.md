@@ -87,6 +87,13 @@ Preferred communication style: Simple, everyday language.
   - Confirmation popup explains: "Your records are safe! All your campaign history, points, and achievements are permanently saved in Collaboom. Dismissing this campaign will only remove it from your dashboard view."
   - Dismissed campaigns immediately hidden from influencer dashboard
   - Records remain in database for admin visibility and historical tracking
+- **Phone Number Input with Validation:**
+  - Custom `PhoneInput` component at `client/src/components/ui/phone-input.tsx`
+  - Country code dropdown (currently US +1 only)
+  - Auto-formatting to (XXX) XXX-XXXX format
+  - Validation regex: `^\+1\s?\(\d{3}\)\s?\d{3}-\d{4}$`
+  - Prevents submission of invalid phone numbers
+  - Used in Profile page for influencer contact information
 
 ### Performance Optimizations
 - **Route-Level Code Splitting:** All page components use React.lazy and Suspense for on-demand loading. This reduces initial bundle size by deferring admin-specific dependencies (recharts, react-dropzone) until needed.

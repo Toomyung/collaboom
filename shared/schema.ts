@@ -71,7 +71,7 @@ export const updateProfileSchema = z.object({
     .or(z.literal("")),
   phone: z.string()
     .min(1, "Phone number is required")
-    .regex(/^[\d\s\-\+\(\)]+$/, "Phone number can only contain digits, spaces, and +/- characters"),
+    .regex(/^\+1\s?\(\d{3}\)\s?\d{3}-\d{4}$/, "Please enter a valid US phone number"),
   addressLine1: z.string()
     .min(1, "Address is required")
     .regex(/^[a-zA-Z0-9\s\.,#\-\/]+$/, "Address must contain only English letters, numbers, and common punctuation"),

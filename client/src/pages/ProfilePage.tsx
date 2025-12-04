@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -312,7 +313,12 @@ export default function ProfilePage() {
                         Phone Number *
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="+1 (555) 000-0000" {...field} data-testid="input-phone" />
+                        <PhoneInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          data-testid="input-phone"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
