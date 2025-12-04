@@ -1806,6 +1806,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get influencer dashboard stats (admin) - same data influencer sees on their dashboard
+  app.get("/api/admin/influencers/:id/dashboard-stats", requireAuth("admin"), async (req, res) => {
+    try {
+      if (!validateUUID(req.params.id)) {
+        return res.status(400).json({ message: "Invalid influencer ID" });
+      }
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      // Get all applications for this influencer
+      const applications = await storage.getApplicationsByInfluencer(req.params.id);
+      
+      // Enrich with campaign data
+      const enrichedApplications = await Promise.all(
+        applications.map(async (app) => {
+          const campaign = await storage.getCampaign(app.campaignId);
+          return { ...app, campaign };
+        })
+      );
+
+      // Calculate stats
+      const completedApps = enrichedApplications.filter(
+        (a) => a.status === "uploaded" || a.status === "completed"
+      );
+      const missedApps = enrichedApplications.filter(
+        (a) => a.status === "deadline_missed"
+      );
+      const cashEarned = completedApps
+        .filter((a) => a.campaign?.rewardType === "gift_paid")
+        .reduce((sum, a) => sum + (a.campaign?.rewardAmount || 0), 0);
+      
+      // Total points earned from campaigns
+      const totalPointsFromCampaigns = completedApps.reduce(
+        (sum, a) => sum + (a.pointsAwarded || 0),
+        0
+      );
+
+      // Get score events for history
+      const scoreEvents = await storage.getScoreEventsByInfluencer(req.params.id);
+      const penaltyEvents = await storage.getPenaltyEventsByInfluencer(req.params.id);
+
+      // Application status breakdown
+      const statusCounts = {
+        pending: enrichedApplications.filter((a) => a.status === "pending").length,
+        approved: enrichedApplications.filter((a) => a.status === "approved").length,
+        shipped: enrichedApplications.filter((a) => a.status === "shipped").length,
+        delivered: enrichedApplications.filter((a) => a.status === "delivered").length,
+        uploaded: completedApps.length,
+        rejected: enrichedApplications.filter((a) => a.status === "rejected").length,
+        deadline_missed: missedApps.length,
+      };
+
+      return res.json({
+        influencer,
+        stats: {
+          score: influencer.score ?? 0,
+          penalty: influencer.penalty ?? 0,
+          completedCount: completedApps.length,
+          missedCount: missedApps.length,
+          cashEarned,
+          totalPointsFromCampaigns,
+          totalApplications: enrichedApplications.length,
+          statusCounts,
+        },
+        recentApplications: enrichedApplications
+          .sort((a, b) => new Date(b.appliedAt!).getTime() - new Date(a.appliedAt!).getTime())
+          .slice(0, 10),
+        scoreEventsCount: scoreEvents.length,
+        penaltyEventsCount: penaltyEvents.length,
+      });
+    } catch (error: any) {
+      console.error("Error fetching influencer dashboard stats:", error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Adjust influencer score
   app.post("/api/admin/influencers/:id/score", requireAuth("admin"), async (req, res) => {
     try {

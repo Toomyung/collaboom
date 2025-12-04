@@ -26,6 +26,15 @@ import {
   Send,
   TrendingUp,
   TrendingDown,
+  Trophy,
+  DollarSign,
+  AlertCircle,
+  LayoutDashboard,
+  Clock,
+  CheckCircle,
+  Truck,
+  Upload,
+  ExternalLink,
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -41,6 +50,31 @@ type InfluencerWithStats = Influencer & {
   acceptedCount?: number;
   completedCount?: number;
 };
+
+interface DashboardStats {
+  influencer: Influencer;
+  stats: {
+    score: number;
+    penalty: number;
+    completedCount: number;
+    missedCount: number;
+    cashEarned: number;
+    totalPointsFromCampaigns: number;
+    totalApplications: number;
+    statusCounts: {
+      pending: number;
+      approved: number;
+      shipped: number;
+      delivered: number;
+      uploaded: number;
+      rejected: number;
+      deadline_missed: number;
+    };
+  };
+  recentApplications: ApplicationWithCampaign[];
+  scoreEventsCount: number;
+  penaltyEventsCount: number;
+}
 
 interface InfluencerDetailSheetProps {
   open: boolean;
@@ -58,7 +92,7 @@ export function InfluencerDetailSheet({
   onDataChange,
 }: InfluencerDetailSheetProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [newNote, setNewNote] = useState("");
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
@@ -67,6 +101,11 @@ export function InfluencerDetailSheet({
   });
 
   const selectedInfluencer = influencer || initialInfluencer;
+
+  const { data: dashboardStats } = useQuery<DashboardStats>({
+    queryKey: ["/api/admin/influencers", influencerId, "dashboard-stats"],
+    enabled: !!influencerId && open,
+  });
 
   const { data: notes } = useQuery<AdminNote[]>({
     queryKey: ["/api/admin/influencers", influencerId, "notes"],
@@ -159,7 +198,7 @@ export function InfluencerDetailSheet({
 
   const handleClose = () => {
     setNewNote("");
-    setActiveTab("profile");
+    setActiveTab("dashboard");
     onClose();
   };
 
@@ -190,6 +229,8 @@ export function InfluencerDetailSheet({
     if (!a.createdAt || !b.createdAt) return 0;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  const stats = dashboardStats?.stats;
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
@@ -224,47 +265,279 @@ export function InfluencerDetailSheet({
             )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="dashboard" data-testid="tab-dashboard">
+                  <LayoutDashboard className="h-4 w-4" />
+                </TabsTrigger>
                 <TabsTrigger value="profile" data-testid="tab-profile">
-                  <User className="h-4 w-4 mr-1" />
-                  Profile
+                  <User className="h-4 w-4" />
                 </TabsTrigger>
                 <TabsTrigger value="history" data-testid="tab-history">
-                  <History className="h-4 w-4 mr-1" />
-                  History
+                  <History className="h-4 w-4" />
                 </TabsTrigger>
                 <TabsTrigger value="notes" data-testid="tab-notes">
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  Notes
+                  <MessageSquare className="h-4 w-4" />
                   {notes && notes.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
                       {notes.length}
                     </Badge>
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="campaigns" data-testid="tab-campaigns">
-                  <Package className="h-4 w-4 mr-1" />
-                  Campaigns
+                  <Package className="h-4 w-4" />
                 </TabsTrigger>
               </TabsList>
 
+              <TabsContent value="dashboard" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Star className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-bold">{stats?.score ?? selectedInfluencer.score ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">Score</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                          <Trophy className="h-4 w-4 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-bold">{stats?.completedCount ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">Completed</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-bold">{stats?.missedCount ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">Missed</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                          <DollarSign className="h-4 w-4 text-emerald-500" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-bold">${stats?.cashEarned ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">Cash Earned</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <h4 className="text-sm font-medium mb-3">Campaign Status Breakdown</h4>
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div className="p-2 bg-yellow-500/10 rounded-lg">
+                        <Clock className="h-4 w-4 mx-auto text-yellow-600 mb-1" />
+                        <p className="text-lg font-bold">{stats?.statusCounts?.pending ?? 0}</p>
+                        <p className="text-[10px] text-muted-foreground">Pending</p>
+                      </div>
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <CheckCircle className="h-4 w-4 mx-auto text-green-600 mb-1" />
+                        <p className="text-lg font-bold">{stats?.statusCounts?.approved ?? 0}</p>
+                        <p className="text-[10px] text-muted-foreground">Approved</p>
+                      </div>
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Truck className="h-4 w-4 mx-auto text-blue-600 mb-1" />
+                        <p className="text-lg font-bold">{stats?.statusCounts?.shipped ?? 0}</p>
+                        <p className="text-[10px] text-muted-foreground">Shipped</p>
+                      </div>
+                      <div className="p-2 bg-purple-500/10 rounded-lg">
+                        <Package className="h-4 w-4 mx-auto text-purple-600 mb-1" />
+                        <p className="text-lg font-bold">{stats?.statusCounts?.delivered ?? 0}</p>
+                        <p className="text-[10px] text-muted-foreground">Delivered</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-muted-foreground">Score</p>
+                        <Star className="h-3 w-3 text-yellow-500" />
+                      </div>
+                      <p className="text-lg font-bold">{selectedInfluencer.score ?? 0}</p>
+                      <div className="flex gap-1 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 w-7 p-0"
+                          onClick={() =>
+                            adjustScoreMutation.mutate({
+                              id: selectedInfluencer.id,
+                              delta: -5,
+                            })
+                          }
+                          data-testid="button-score-minus"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 w-7 p-0"
+                          onClick={() =>
+                            adjustScoreMutation.mutate({
+                              id: selectedInfluencer.id,
+                              delta: 5,
+                            })
+                          }
+                          data-testid="button-score-plus"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-muted-foreground">Penalty</p>
+                        <AlertTriangle className="h-3 w-3 text-red-500" />
+                      </div>
+                      <p className="text-lg font-bold">{selectedInfluencer.penalty ?? 0}</p>
+                      <div className="flex gap-1 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 w-7 p-0"
+                          onClick={() =>
+                            adjustPenaltyMutation.mutate({
+                              id: selectedInfluencer.id,
+                              delta: -1,
+                            })
+                          }
+                          data-testid="button-penalty-minus"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 w-7 p-0"
+                          onClick={() =>
+                            adjustPenaltyMutation.mutate({
+                              id: selectedInfluencer.id,
+                              delta: 1,
+                            })
+                          }
+                          data-testid="button-penalty-plus"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {dashboardStats?.recentApplications && dashboardStats.recentApplications.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Recent Campaigns</h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {dashboardStats.recentApplications.slice(0, 5).map((app) => (
+                        <div key={app.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg text-sm">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{app.campaign?.name || "Unknown"}</p>
+                            <p className="text-xs text-muted-foreground">{app.campaign?.brandName}</p>
+                          </div>
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "text-xs ml-2",
+                              app.status === "completed" || app.status === "uploaded"
+                                ? "bg-green-500/10 text-green-600"
+                                : app.status === "deadline_missed"
+                                ? "bg-red-500/10 text-red-600"
+                                : ""
+                            )}
+                          >
+                            {app.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                  <p>Total Applications: {stats?.totalApplications ?? 0}</p>
+                  <p>Points from Campaigns: {stats?.totalPointsFromCampaigns ?? 0}</p>
+                  <p>
+                    Joined:{" "}
+                    {selectedInfluencer.createdAt
+                      ? format(new Date(selectedInfluencer.createdAt), "MMMM d, yyyy")
+                      : "-"}
+                  </p>
+                </div>
+              </TabsContent>
+
               <TabsContent value="profile" className="mt-4 space-y-6">
                 <div className="space-y-3">
-                  <h3 className="font-medium">Profile</h3>
+                  <h3 className="font-medium">Contact Info</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-muted-foreground">TikTok</p>
-                      <p className="flex items-center gap-1">
-                        <SiTiktok className="h-3 w-3" />
-                        @{selectedInfluencer.tiktokHandle || "-"}
-                      </p>
+                      {selectedInfluencer.tiktokHandle ? (
+                        <a
+                          href={`https://tiktok.com/@${selectedInfluencer.tiktokHandle.replace("@", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <SiTiktok className="h-3 w-3" />
+                          @{selectedInfluencer.tiktokHandle.replace("@", "")}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <p className="flex items-center gap-1">
+                          <SiTiktok className="h-3 w-3" />
+                          -
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p className="text-muted-foreground">Instagram</p>
-                      <p className="flex items-center gap-1">
-                        <SiInstagram className="h-3 w-3" />
-                        @{selectedInfluencer.instagramHandle || "-"}
-                      </p>
+                      {selectedInfluencer.instagramHandle ? (
+                        <a
+                          href={`https://instagram.com/${selectedInfluencer.instagramHandle.replace("@", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <SiInstagram className="h-3 w-3" />
+                          @{selectedInfluencer.instagramHandle.replace("@", "")}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <p className="flex items-center gap-1">
+                          <SiInstagram className="h-3 w-3" />
+                          -
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p className="text-muted-foreground">Phone</p>
@@ -294,85 +567,13 @@ export function InfluencerDetailSheet({
                         {selectedInfluencer.zipCode}
                       </>
                     )}
+                    {selectedInfluencer.country && (
+                      <>
+                        <br />
+                        {selectedInfluencer.country}
+                      </>
+                    )}
                   </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-muted-foreground">Score</p>
-                        <Star className="h-4 w-4 text-yellow-500" />
-                      </div>
-                      <p className="text-2xl font-bold">{selectedInfluencer.score ?? 0}</p>
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            adjustScoreMutation.mutate({
-                              id: selectedInfluencer.id,
-                              delta: -5,
-                            })
-                          }
-                          data-testid="button-score-minus"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            adjustScoreMutation.mutate({
-                              id: selectedInfluencer.id,
-                              delta: 5,
-                            })
-                          }
-                          data-testid="button-score-plus"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-muted-foreground">Penalty</p>
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                      </div>
-                      <p className="text-2xl font-bold">{selectedInfluencer.penalty ?? 0}</p>
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            adjustPenaltyMutation.mutate({
-                              id: selectedInfluencer.id,
-                              delta: -1,
-                            })
-                          }
-                          data-testid="button-penalty-minus"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            adjustPenaltyMutation.mutate({
-                              id: selectedInfluencer.id,
-                              delta: 1,
-                            })
-                          }
-                          data-testid="button-penalty-plus"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
 
                 <div className="text-xs text-muted-foreground">
@@ -523,7 +724,7 @@ export function InfluencerDetailSheet({
                             </div>
                             <Badge
                               className={cn(
-                                app.status === "completed"
+                                app.status === "completed" || app.status === "uploaded"
                                   ? "bg-green-500/10 text-green-600"
                                   : app.status === "rejected" || app.status === "deadline_missed"
                                   ? "bg-red-500/10 text-red-600"
@@ -535,6 +736,12 @@ export function InfluencerDetailSheet({
                               {app.status}
                             </Badge>
                           </div>
+                          {app.pointsAwarded && app.pointsAwarded > 0 && (
+                            <div className="flex items-center gap-1 mt-2 text-xs text-amber-600">
+                              <Star className="h-3 w-3 fill-amber-500" />
+                              +{app.pointsAwarded} points
+                            </div>
+                          )}
                           <p className="text-xs text-muted-foreground mt-2">
                             Applied:{" "}
                             {app.appliedAt
