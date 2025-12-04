@@ -2,11 +2,12 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "Collaboom <onboarding@resend.dev>";
+// Domain verified - use official Collaboom email
+const FROM_EMAIL = "Collaboom <hello@collaboom.io>";
 
-// For testing: Override recipient email until domain is verified
-// Set to null to send to actual recipients after domain verification
-const TEST_EMAIL_OVERRIDE = "hello@collaboom.io";
+// Set to null to send to actual recipients (domain is now verified)
+// Set to an email address to redirect all emails for testing
+const TEST_EMAIL_OVERRIDE: string | null = null;
 
 interface EmailResult {
   success: boolean;
