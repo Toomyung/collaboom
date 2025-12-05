@@ -76,23 +76,6 @@ export function useAuth() {
     let subscription: { unsubscribe: () => void } | null = null;
     let mounted = true;
 
-    // Handle popup auth messages
-    function handleAuthMessage(event: MessageEvent) {
-      if (event.origin !== window.location.origin) return;
-      
-      if (event.data?.type === 'AUTH_SUCCESS') {
-        console.log('[Auth] Popup auth success, refreshing session...');
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
-        // Navigate to dashboard
-        window.location.href = '/dashboard';
-      } else if (event.data?.type === 'AUTH_ERROR') {
-        console.error('[Auth] Popup auth error:', event.data.error);
-      }
-    }
-    
-    window.addEventListener('message', handleAuthMessage);
-
     async function initAuth() {
       try {
         const supabase = await getSupabase();
@@ -145,7 +128,6 @@ export function useAuth() {
 
     return () => {
       mounted = false;
-      window.removeEventListener('message', handleAuthMessage);
       if (subscription) {
         subscription.unsubscribe();
       }
@@ -163,38 +145,14 @@ export function useAuth() {
     if (!supabase) {
       throw new Error("Authentication service unavailable");
     }
-    
-    // Try popup mode first for faster UX (no page reload)
-    // Falls back to redirect if popup is blocked
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        skipBrowserRedirect: true, // Don't auto-redirect, we'll handle it
       },
     });
-    
     if (error) {
       throw error;
-    }
-    
-    if (data?.url) {
-      // Open Google OAuth in a popup window
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      const popup = window.open(
-        data.url,
-        'google-oauth',
-        `width=${width},height=${height},left=${left},top=${top},popup=yes`
-      );
-      
-      // If popup was blocked, fall back to redirect
-      if (!popup || popup.closed) {
-        window.location.href = data.url;
-      }
     }
   };
 
