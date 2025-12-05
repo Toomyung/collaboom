@@ -332,6 +332,7 @@ export default function CampaignDetailPage() {
                 Upload Deadline: <strong>{format(uploadDeadlineDate, "MMM d, yyyy")}</strong>
               </span>
             </div>
+            <span className="text-xs text-muted-foreground">(All times PST)</span>
           </div>
         </div>
 

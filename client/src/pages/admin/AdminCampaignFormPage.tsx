@@ -660,10 +660,15 @@ export default function AdminCampaignFormPage() {
                       <FormItem>
                         <FormLabel>Application Deadline *</FormLabel>
                         <FormControl>
-                          <Input type="datetime-local" {...field} data-testid="input-application-deadline" />
+                          <Input 
+                            type="date" 
+                            value={field.value ? field.value.split("T")[0] : ""}
+                            onChange={(e) => field.onChange(e.target.value + "T23:59:00")}
+                            data-testid="input-application-deadline" 
+                          />
                         </FormControl>
                         <FormDescription>
-                          Last date to apply for this campaign
+                          Last date to apply (PST - Pacific Standard Time)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -677,10 +682,15 @@ export default function AdminCampaignFormPage() {
                       <FormItem>
                         <FormLabel>Upload Deadline *</FormLabel>
                         <FormControl>
-                          <Input type="datetime-local" {...field} data-testid="input-deadline" />
+                          <Input 
+                            type="date" 
+                            value={field.value ? field.value.split("T")[0] : ""}
+                            onChange={(e) => field.onChange(e.target.value + "T23:59:00")}
+                            data-testid="input-deadline" 
+                          />
                         </FormControl>
                         <FormDescription>
-                          Content submission deadline
+                          Content submission deadline (PST - Pacific Standard Time)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
