@@ -12,10 +12,16 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     let mounted = true;
+    const startTime = performance.now();
 
     async function handleAuthCallback() {
       try {
+        console.log(`[Auth] Starting callback...`);
+        
+        const t1 = performance.now();
         const supabase = await getSupabase();
+        console.log(`[Auth] getSupabase: ${(performance.now() - t1).toFixed(0)}ms`);
+        
         if (!supabase) {
           throw new Error("Authentication service unavailable");
         }
@@ -33,25 +39,33 @@ export default function AuthCallbackPage() {
         
         // If we have a code, exchange it for a session (PKCE flow)
         if (code) {
+          const t2 = performance.now();
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          console.log(`[Auth] exchangeCodeForSession: ${(performance.now() - t2).toFixed(0)}ms`);
+          
           if (error) throw error;
           if (data.session) {
+            const t3 = performance.now();
             await syncWithBackend(data.session);
+            console.log(`[Auth] syncWithBackend: ${(performance.now() - t3).toFixed(0)}ms`);
+            
             if (mounted) {
               setStatus("success");
               setMessage("Login successful! Redirecting...");
-              await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-              await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
-              setTimeout(() => {
-                if (mounted) setLocation("/dashboard");
-              }, 1000);
+              // Invalidate cache - don't wait for refetch
+              queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+              console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
+              // Redirect immediately
+              setLocation("/dashboard");
             }
             return;
           }
         }
 
         // Get the session from the URL hash (Supabase puts tokens there for implicit flow)
+        const t4 = performance.now();
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log(`[Auth] getSession: ${(performance.now() - t4).toFixed(0)}ms`);
         
         if (sessionError) {
           throw sessionError;
@@ -64,39 +78,42 @@ export default function AuthCallbackPage() {
           const refreshToken = hashParams.get('refresh_token');
           
           if (accessToken && refreshToken) {
+            const t5 = performance.now();
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
             });
+            console.log(`[Auth] setSession: ${(performance.now() - t5).toFixed(0)}ms`);
             
             if (error) throw error;
             if (!data.session) throw new Error("Failed to establish session");
             
             // Sync with backend
+            const t6 = performance.now();
             await syncWithBackend(data.session);
+            console.log(`[Auth] syncWithBackend: ${(performance.now() - t6).toFixed(0)}ms`);
           } else {
             throw new Error("No authentication tokens found. Please try signing in again.");
           }
         } else {
           // Session already exists, sync with backend
+          const t7 = performance.now();
           await syncWithBackend(session);
+          console.log(`[Auth] syncWithBackend: ${(performance.now() - t7).toFixed(0)}ms`);
         }
 
         if (mounted) {
           setStatus("success");
           setMessage("Login successful! Redirecting...");
           
-          // Invalidate and refetch auth state
-          await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-          await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
-          
-          setTimeout(() => {
-            if (mounted) {
-              setLocation("/dashboard");
-            }
-          }, 1000);
+          // Invalidate cache - don't wait for refetch
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
+          // Redirect immediately
+          setLocation("/dashboard");
         }
       } catch (error) {
+        console.error(`[Auth] Error:`, error);
         if (mounted) {
           setStatus("error");
           setMessage(error instanceof Error ? error.message : "Authentication failed");
@@ -105,7 +122,7 @@ export default function AuthCallbackPage() {
             if (mounted) {
               setLocation("/login");
             }
-          }, 3000);
+          }, 2000);
         }
       }
     }

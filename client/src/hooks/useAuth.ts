@@ -103,46 +103,15 @@ export function useAuth() {
           
           setSupabaseUser(session?.user ?? null);
           
-          if (event === 'SIGNED_IN' && session) {
-            try {
-              // Check if user is already logged in - don't unnecessarily refresh session
-              const currentAuth = await fetch("/api/auth/me", { credentials: "include" });
-              if (currentAuth.ok) {
-                const authData = await currentAuth.json();
-                // If already logged in as admin, don't overwrite
-                if (authData.user?.role === 'admin') {
-                  return;
-                }
-                // If already logged in as the same influencer, don't refresh
-                if (authData.user?.role === 'influencer' && authData.user?.email === session.user.email) {
-                  return;
-                }
-              }
-              
-              const res = await fetch("/api/auth/supabase/callback", {
-                method: "POST",
-                headers: { 
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                  user: session.user,
-                  accessToken: session.access_token,
-                }),
-                credentials: "include",
-              });
-              
-              if (res.ok) {
-                await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-                await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
-              }
-            } catch {
-              // Silent auth sync error
-            }
+          // Note: SIGNED_IN from OAuth redirects is handled by AuthCallbackPage
+          // This handler only catches token refreshes and existing session changes
+          if (event === 'TOKEN_REFRESHED' && session) {
+            // Just invalidate the cache - don't call callback again
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
           }
           
           if (event === 'SIGNED_OUT') {
-            await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
           }
         });
 
