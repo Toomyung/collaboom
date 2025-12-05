@@ -317,8 +317,7 @@ Great news! Your video for "${campaignName}" by ${brandName} has been reviewed a
 
 ${pointsLine}Thank you for participating in this campaign. We appreciate your creativity and effort!
 
-View your dashboard here:
-https://collaboom.io/dashboard
+View your dashboard: https://collaboom.io/dashboard
 
 - The Collaboom Team`,
     });
