@@ -9,6 +9,9 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Processing your login...");
   const queryClient = useQueryClient();
+  
+  // Check if this is a popup window
+  const isPopup = window.opener && window.opener !== window;
 
   useEffect(() => {
     let mounted = true;
@@ -16,7 +19,7 @@ export default function AuthCallbackPage() {
 
     async function handleAuthCallback() {
       try {
-        console.log(`[Auth] Starting callback...`);
+        console.log(`[Auth] Starting callback... (popup: ${isPopup})`);
         
         const t1 = performance.now();
         const supabase = await getSupabase();
@@ -51,11 +54,18 @@ export default function AuthCallbackPage() {
             
             if (mounted) {
               setStatus("success");
-              setMessage("Login successful! Redirecting...");
-              // Invalidate cache - don't wait for refetch
-              queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+              setMessage("Login successful!");
               console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
-              // Redirect immediately
+              
+              // If popup, notify parent and close
+              if (isPopup && window.opener) {
+                window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
+                window.close();
+                return;
+              }
+              
+              // Otherwise redirect
+              queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
               setLocation("/dashboard");
             }
             return;
@@ -104,12 +114,18 @@ export default function AuthCallbackPage() {
 
         if (mounted) {
           setStatus("success");
-          setMessage("Login successful! Redirecting...");
-          
-          // Invalidate cache - don't wait for refetch
-          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          setMessage("Login successful!");
           console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
-          // Redirect immediately
+          
+          // If popup, notify parent and close
+          if (isPopup && window.opener) {
+            window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
+            window.close();
+            return;
+          }
+          
+          // Otherwise redirect
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
           setLocation("/dashboard");
         }
       } catch (error) {
@@ -117,6 +133,16 @@ export default function AuthCallbackPage() {
         if (mounted) {
           setStatus("error");
           setMessage(error instanceof Error ? error.message : "Authentication failed");
+          
+          // If popup, notify parent of error and close
+          if (isPopup && window.opener) {
+            window.opener.postMessage({ 
+              type: 'AUTH_ERROR', 
+              error: error instanceof Error ? error.message : "Authentication failed" 
+            }, window.location.origin);
+            setTimeout(() => window.close(), 1500);
+            return;
+          }
           
           setTimeout(() => {
             if (mounted) {
@@ -152,7 +178,7 @@ export default function AuthCallbackPage() {
     return () => {
       mounted = false;
     };
-  }, [setLocation, queryClient]);
+  }, [setLocation, queryClient, isPopup]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
