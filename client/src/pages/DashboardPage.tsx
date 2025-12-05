@@ -1357,41 +1357,64 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h4 className="font-medium text-sm">Submit a new ticket</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm text-muted-foreground">Subject</label>
-                    <input 
-                      type="text"
-                      className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      placeholder="Brief description of your question"
-                      value={supportSubject}
-                      onChange={(e) => setSupportSubject(e.target.value)}
-                      data-testid="input-support-subject"
-                    />
+              {(() => {
+                const hasUnansweredTicket = mySupportTickets?.some(
+                  ticket => ticket.status === "open" && !ticket.adminResponse
+                );
+                
+                if (hasUnansweredTicket) {
+                  return (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Submit a new ticket</h4>
+                      <div className="p-4 rounded-lg bg-muted/50 border border-border text-center">
+                        <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium">Waiting for response</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          You have an open ticket awaiting admin response. You can submit a new ticket once you receive a reply.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">Submit a new ticket</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm text-muted-foreground">Subject</label>
+                        <input 
+                          type="text"
+                          className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder="Brief description of your question"
+                          value={supportSubject}
+                          onChange={(e) => setSupportSubject(e.target.value)}
+                          data-testid="input-support-subject"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-muted-foreground">Message</label>
+                        <Textarea
+                          className="mt-1 min-h-[100px] text-sm"
+                          placeholder="Please describe your question in detail..."
+                          value={supportMessage}
+                          onChange={(e) => setSupportMessage(e.target.value)}
+                          data-testid="input-support-message"
+                        />
+                      </div>
+                      <Button 
+                        className="w-full"
+                        disabled={!supportSubject.trim() || !supportMessage.trim() || submitSupportTicketMutation.isPending}
+                        onClick={() => submitSupportTicketMutation.mutate({ subject: supportSubject, message: supportMessage })}
+                        data-testid="button-submit-support"
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        {submitSupportTicketMutation.isPending ? "Submitting..." : "Submit Ticket"}
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm text-muted-foreground">Message</label>
-                    <Textarea
-                      className="mt-1 min-h-[100px] text-sm"
-                      placeholder="Please describe your question in detail..."
-                      value={supportMessage}
-                      onChange={(e) => setSupportMessage(e.target.value)}
-                      data-testid="input-support-message"
-                    />
-                  </div>
-                  <Button 
-                    className="w-full"
-                    disabled={!supportSubject.trim() || !supportMessage.trim() || submitSupportTicketMutation.isPending}
-                    onClick={() => submitSupportTicketMutation.mutate({ subject: supportSubject, message: supportMessage })}
-                    data-testid="button-submit-support"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {submitSupportTicketMutation.isPending ? "Submitting..." : "Submit Ticket"}
-                  </Button>
-                </div>
-              </div>
+                );
+              })()}
 
               {mySupportTickets && mySupportTickets.length > 0 && (
                 <div className="space-y-3">

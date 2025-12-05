@@ -2146,6 +2146,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { subject, message } = req.body;
       
+      // Check if user has any unanswered tickets (open status without admin response)
+      const existingTickets = await storage.getSupportTicketsByInfluencer(req.session.userId!);
+      const hasUnansweredTicket = existingTickets.some(
+        ticket => ticket.status === "open" && !ticket.adminResponse
+      );
+      
+      if (hasUnansweredTicket) {
+        return res.status(400).json({ 
+          message: "You already have an open ticket waiting for a response. Please wait for admin to reply before submitting a new ticket." 
+        });
+      }
+      
       // Validate required fields
       if (!subject || typeof subject !== 'string' || subject.trim().length === 0) {
         return res.status(400).json({ message: "Subject is required" });
