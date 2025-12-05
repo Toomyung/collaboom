@@ -1,10 +1,16 @@
-import { db } from './db';
+import { db, warmupDatabase, startKeepAlive } from './db';
 import { admins, campaigns } from '../shared/schema';
 import * as bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 
 export async function seedDatabase() {
   try {
+    // Warm up database connection first
+    await warmupDatabase();
+    
+    // Start keep-alive ping to prevent cold starts
+    startKeepAlive();
+    
     const [existingAdmin] = await db.select().from(admins).where(eq(admins.email, 'admin@collaboom.com'));
     
     if (!existingAdmin) {
