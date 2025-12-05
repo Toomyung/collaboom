@@ -462,69 +462,85 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getApplicationsWithDetails(influencerId: string): Promise<ApplicationWithDetails[]> {
-    const apps = await this.getApplicationsByInfluencer(influencerId);
-    const detailed: ApplicationWithDetails[] = [];
+    // Optimized: Single query with LEFT JOINs instead of N+1 queries
+    const results = await db
+      .select({
+        application: applications,
+        campaign: campaigns,
+        shipping: shipping,
+        upload: uploads,
+      })
+      .from(applications)
+      .leftJoin(campaigns, eq(applications.campaignId, campaigns.id))
+      .leftJoin(shipping, eq(applications.id, shipping.applicationId))
+      .leftJoin(uploads, eq(applications.id, uploads.applicationId))
+      .where(eq(applications.influencerId, influencerId))
+      .orderBy(desc(applications.appliedAt));
 
-    for (const app of apps) {
-      const campaign = await this.getCampaign(app.campaignId);
-      if (campaign) {
-        const shippingData = await this.getShippingByApplication(app.id);
-        const upload = await this.getUploadByApplication(app.id);
-        detailed.push({
-          ...app,
-          campaign,
-          shipping: shippingData || undefined,
-          upload: upload || undefined,
-        });
-      }
-    }
-
-    return detailed;
+    return results
+      .filter(r => r.campaign !== null)
+      .map(r => ({
+        ...r.application,
+        campaign: r.campaign!,
+        shipping: r.shipping || undefined,
+        upload: r.upload || undefined,
+      }));
   }
 
   async getAllApplicationsHistory(influencerId: string): Promise<ApplicationWithDetails[]> {
+    // Optimized: Single query with LEFT JOINs instead of N+1 queries
     // Returns all applications including dismissed ones (full history)
-    const apps = await this.getApplicationsByInfluencer(influencerId);
-    const detailed: ApplicationWithDetails[] = [];
+    const results = await db
+      .select({
+        application: applications,
+        campaign: campaigns,
+        shipping: shipping,
+        upload: uploads,
+      })
+      .from(applications)
+      .leftJoin(campaigns, eq(applications.campaignId, campaigns.id))
+      .leftJoin(shipping, eq(applications.id, shipping.applicationId))
+      .leftJoin(uploads, eq(applications.id, uploads.applicationId))
+      .where(eq(applications.influencerId, influencerId))
+      .orderBy(desc(applications.appliedAt));
 
-    for (const app of apps) {
-      const campaign = await this.getCampaign(app.campaignId);
-      if (campaign) {
-        const shippingData = await this.getShippingByApplication(app.id);
-        const upload = await this.getUploadByApplication(app.id);
-        detailed.push({
-          ...app,
-          campaign,
-          shipping: shippingData || undefined,
-          upload: upload || undefined,
-        });
-      }
-    }
-
-    return detailed;
+    return results
+      .filter(r => r.campaign !== null)
+      .map(r => ({
+        ...r.application,
+        campaign: r.campaign!,
+        shipping: r.shipping || undefined,
+        upload: r.upload || undefined,
+      }));
   }
 
   async getApplicationsWithDetailsByCampaign(campaignId: string): Promise<ApplicationWithDetails[]> {
-    const apps = await this.getApplicationsByCampaign(campaignId);
-    const campaign = await this.getCampaign(campaignId);
-    if (!campaign) return [];
+    // Optimized: Single query with LEFT JOINs instead of N+1 queries
+    const results = await db
+      .select({
+        application: applications,
+        campaign: campaigns,
+        influencer: influencers,
+        shipping: shipping,
+        upload: uploads,
+      })
+      .from(applications)
+      .leftJoin(campaigns, eq(applications.campaignId, campaigns.id))
+      .leftJoin(influencers, eq(applications.influencerId, influencers.id))
+      .leftJoin(shipping, eq(applications.id, shipping.applicationId))
+      .leftJoin(uploads, eq(applications.id, uploads.applicationId))
+      .where(eq(applications.campaignId, campaignId))
+      .orderBy(desc(applications.appliedAt));
 
-    const detailed: ApplicationWithDetails[] = [];
-
-    for (const app of apps) {
-      const influencer = await this.getInfluencer(app.influencerId);
-      const shippingData = await this.getShippingByApplication(app.id);
-      const upload = await this.getUploadByApplication(app.id);
-      detailed.push({
-        ...app,
-        campaign,
-        influencer: influencer || undefined,
-        shipping: shippingData || undefined,
-        upload: upload || undefined,
-      });
-    }
-
-    return detailed;
+    return results
+      .filter(r => r.campaign !== null)
+      .map(r => ({
+        ...r.application,
+        campaign: r.campaign!,
+        influencer: r.influencer || undefined,
+        shipping: r.shipping || undefined,
+        upload: r.upload || undefined,
+      }));
   }
 
   async createApplication(application: InsertApplication): Promise<Application> {
@@ -731,26 +747,49 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllOpenShippingIssues(): Promise<ShippingIssueWithDetails[]> {
-    const openIssues = await db.select().from(shippingIssues)
-      .where(eq(shippingIssues.status, 'open'));
-    
-    return Promise.all(openIssues.map(async (issue) => {
-      const influencer = await this.getInfluencer(issue.influencerId);
-      const campaign = await this.getCampaign(issue.campaignId);
-      const application = await this.getApplication(issue.applicationId);
-      return { ...issue, influencer, campaign, applicationStatus: application?.status };
+    // Optimized: Single query with LEFT JOINs instead of N+1 queries
+    const results = await db
+      .select({
+        issue: shippingIssues,
+        influencer: influencers,
+        campaign: campaigns,
+        application: applications,
+      })
+      .from(shippingIssues)
+      .leftJoin(influencers, eq(shippingIssues.influencerId, influencers.id))
+      .leftJoin(campaigns, eq(shippingIssues.campaignId, campaigns.id))
+      .leftJoin(applications, eq(shippingIssues.applicationId, applications.id))
+      .where(eq(shippingIssues.status, 'open'))
+      .orderBy(desc(shippingIssues.createdAt));
+
+    return results.map(r => ({
+      ...r.issue,
+      influencer: r.influencer || undefined,
+      campaign: r.campaign || undefined,
+      applicationStatus: r.application?.status,
     }));
   }
 
   async getAllShippingIssues(): Promise<ShippingIssueWithDetails[]> {
-    const allIssues = await db.select().from(shippingIssues)
+    // Optimized: Single query with LEFT JOINs instead of N+1 queries
+    const results = await db
+      .select({
+        issue: shippingIssues,
+        influencer: influencers,
+        campaign: campaigns,
+        application: applications,
+      })
+      .from(shippingIssues)
+      .leftJoin(influencers, eq(shippingIssues.influencerId, influencers.id))
+      .leftJoin(campaigns, eq(shippingIssues.campaignId, campaigns.id))
+      .leftJoin(applications, eq(shippingIssues.applicationId, applications.id))
       .orderBy(desc(shippingIssues.createdAt));
-    
-    return Promise.all(allIssues.map(async (issue) => {
-      const influencer = await this.getInfluencer(issue.influencerId);
-      const campaign = await this.getCampaign(issue.campaignId);
-      const application = await this.getApplication(issue.applicationId);
-      return { ...issue, influencer, campaign, applicationStatus: application?.status };
+
+    return results.map(r => ({
+      ...r.issue,
+      influencer: r.influencer || undefined,
+      campaign: r.campaign || undefined,
+      applicationStatus: r.application?.status,
     }));
   }
 
@@ -780,30 +819,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllSupportTickets(): Promise<SupportTicketWithDetails[]> {
-    const tickets = await db.select().from(supportTickets)
+    // Optimized: Single query with LEFT JOIN instead of N+1 queries
+    const results = await db
+      .select({
+        ticket: supportTickets,
+        influencer: influencers,
+      })
+      .from(supportTickets)
+      .leftJoin(influencers, eq(supportTickets.influencerId, influencers.id))
       .orderBy(desc(supportTickets.createdAt));
-    
-    const result: SupportTicketWithDetails[] = [];
-    for (const ticket of tickets) {
-      const [influencer] = await db.select().from(influencers)
-        .where(eq(influencers.id, ticket.influencerId));
-      result.push({ ...ticket, influencer });
-    }
-    return result;
+
+    return results.map(r => ({
+      ...r.ticket,
+      influencer: r.influencer || undefined,
+    }));
   }
 
   async getAllOpenSupportTickets(): Promise<SupportTicketWithDetails[]> {
-    const tickets = await db.select().from(supportTickets)
+    // Optimized: Single query with LEFT JOIN instead of N+1 queries
+    const results = await db
+      .select({
+        ticket: supportTickets,
+        influencer: influencers,
+      })
+      .from(supportTickets)
+      .leftJoin(influencers, eq(supportTickets.influencerId, influencers.id))
       .where(eq(supportTickets.status, "open"))
       .orderBy(desc(supportTickets.createdAt));
-    
-    const result: SupportTicketWithDetails[] = [];
-    for (const ticket of tickets) {
-      const [influencer] = await db.select().from(influencers)
-        .where(eq(influencers.id, ticket.influencerId));
-      result.push({ ...ticket, influencer });
-    }
-    return result;
+
+    return results.map(r => ({
+      ...r.ticket,
+      influencer: r.influencer || undefined,
+    }));
   }
 
   async getSupportTicket(id: string): Promise<SupportTicket | undefined> {
