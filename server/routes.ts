@@ -137,6 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Supabase auth callback - sync Google login with backend session
   app.post("/api/auth/supabase/callback", async (req, res) => {
+    const startTime = Date.now();
     try {
       const { user, accessToken } = req.body;
       
@@ -145,42 +146,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // First try to find influencer by Supabase ID (most reliable)
+      const t1 = Date.now();
       let influencer = await storage.getInfluencerBySupabaseId(user.id);
+      console.log(`[Auth Timing] getInfluencerBySupabaseId: ${Date.now() - t1}ms`);
       
       if (!influencer) {
         // Fallback: Check by email (for legacy accounts or email changes)
+        const t2 = Date.now();
         influencer = await storage.getInfluencerByEmail(user.email);
+        console.log(`[Auth Timing] getInfluencerByEmail: ${Date.now() - t2}ms`);
         
         if (!influencer) {
           // Create new influencer from Google auth
+          const t3 = Date.now();
           influencer = await storage.createInfluencerFromSupabase({
             email: user.email,
             supabaseId: user.id,
             name: user.user_metadata?.full_name || user.user_metadata?.name || null,
             profileImageUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
           });
+          console.log(`[Auth Timing] createInfluencerFromSupabase: ${Date.now() - t3}ms`);
           
-          // Send welcome email for new signups
+          // Send welcome email for new signups (non-blocking)
           const influencerName = influencer.name || user.user_metadata?.full_name || "Creator";
           sendWelcomeEmail(user.email, influencerName).catch(err => {
             console.error("Failed to send welcome email:", err);
           });
         } else {
           // Update existing influencer with Supabase info
+          const t4 = Date.now();
           await storage.updateInfluencer(influencer.id, {
             supabaseId: user.id,
             name: influencer.name || user.user_metadata?.full_name || user.user_metadata?.name || null,
             profileImageUrl: influencer.profileImageUrl || user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
           });
           influencer = await storage.getInfluencer(influencer.id);
+          console.log(`[Auth Timing] updateInfluencer + refetch: ${Date.now() - t4}ms`);
         }
       } else {
         // Influencer found by supabaseId - update profile image if changed
         if (user.user_metadata?.avatar_url && influencer.profileImageUrl !== user.user_metadata.avatar_url) {
+          const t5 = Date.now();
           await storage.updateInfluencer(influencer.id, {
             profileImageUrl: user.user_metadata.avatar_url,
           });
           influencer = await storage.getInfluencer(influencer.id);
+          console.log(`[Auth Timing] update profile image: ${Date.now() - t5}ms`);
         }
       }
 
@@ -193,7 +204,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userType = "influencer";
 
       // Explicitly save session before responding
+      const t6 = Date.now();
       req.session.save((err) => {
+        console.log(`[Auth Timing] session.save: ${Date.now() - t6}ms`);
+        console.log(`[Auth Timing] TOTAL: ${Date.now() - startTime}ms`);
         if (err) {
           console.error("Session save error:", err);
           return res.status(500).json({ message: "Session save failed" });
