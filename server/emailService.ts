@@ -236,6 +236,50 @@ View in dashboard: https://collaboom.io/dashboard
   }
 }
 
+export async function sendSupportTicketResponseEmail(
+  to: string,
+  influencerName: string,
+  ticketSubject: string,
+  originalMessage: string,
+  adminResponse: string
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject: `[Collaboom Support] Re: ${ticketSubject}`,
+      text: `Hi ${influencerName},
+
+You have received a response to your support ticket.
+
+Your Question:
+"${originalMessage}"
+
+Our Response:
+"${adminResponse}"
+
+If you have any further questions, feel free to submit a new support ticket through your dashboard.
+
+View your dashboard: https://collaboom.io/dashboard
+
+- The Collaboom Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send support ticket response email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Support ticket response email sent to ${to}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending support ticket response email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}
+
 export async function sendUploadVerifiedEmail(
   to: string,
   influencerName: string,

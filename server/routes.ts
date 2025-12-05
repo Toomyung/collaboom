@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail } from "./emailService";
+import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail } from "./emailService";
 import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
 import {
   authLimiter,
@@ -2218,6 +2218,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Response must be 5000 characters or less" });
       }
       
+      // Get the ticket first to get influencer info for email
+      const existingTickets = await storage.getAllSupportTickets();
+      const existingTicket = existingTickets.find(t => t.id === req.params.id);
+      
+      if (!existingTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Get the influencer info
+      const influencer = await storage.getInfluencer(existingTicket.influencerId);
+      
       // Validate status
       const validStatuses = ["resolved", "closed"];
       const finalStatus = validStatuses.includes(status) ? status : "resolved";
@@ -2234,6 +2245,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!ticket) {
         return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Send email notification to influencer
+      if (influencer?.email) {
+        sendSupportTicketResponseEmail(
+          influencer.email,
+          influencer.name || "Creator",
+          existingTicket.subject,
+          existingTicket.message,
+          response.trim()
+        ).catch(err => {
+          console.error("Failed to send support ticket response email:", err);
+        });
       }
       
       return res.json({ success: true, ticket });
