@@ -28,10 +28,28 @@ const ITEMS_PER_PAGE = 12;
 
 const categories = [
   { id: "all", label: "All Campaigns" },
+  { id: "available", label: "Available" },
   { id: "beauty", label: "Beauty" },
   { id: "food", label: "Food" },
   { id: "lifestyle", label: "Lifestyle" },
 ];
+
+// Helper function to check if a campaign is available for application
+const isAvailableForApplication = (campaign: MinimalCampaign): boolean => {
+  // Must be active status
+  if (campaign.status !== "active") return false;
+  
+  // Check slots availability
+  if ((campaign.approvedCount ?? 0) >= campaign.inventory) return false;
+  
+  // Check deadline hasn't passed
+  const deadline = campaign.applicationDeadline 
+    ? new Date(campaign.applicationDeadline) 
+    : new Date(campaign.deadline);
+  if (deadline.getTime() < Date.now()) return false;
+  
+  return true;
+};
 
 export default function CampaignListPage() {
   const [activeCategory, setActiveCategory] = useState("all");
@@ -97,15 +115,23 @@ export default function CampaignListPage() {
   });
 
   const filteredCampaigns = campaigns?.filter((campaign) => {
-    const matchesCategory =
-      activeCategory === "all" || campaign.category === activeCategory;
+    // Handle "available" filter - only show campaigns that can be applied to
+    if (activeCategory === "available") {
+      if (!isAvailableForApplication(campaign)) return false;
+    } else {
+      // Handle category filter (all, beauty, food, lifestyle)
+      const matchesCategory =
+        activeCategory === "all" || campaign.category === activeCategory;
+      if (!matchesCategory) return false;
+    }
+    
     const matchesSearch =
       !searchQuery ||
       campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
     // Include 'closed' so influencers can still view closed campaigns (but not apply)
     const isVisible = campaign.status === "active" || campaign.status === "full" || campaign.status === "closed";
-    return matchesCategory && matchesSearch && isVisible;
+    return matchesSearch && isVisible;
   });
 
   // Pagination logic
