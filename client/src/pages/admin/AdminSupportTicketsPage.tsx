@@ -27,6 +27,7 @@ import {
   ChevronUp,
   Mail,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -263,6 +264,12 @@ export default function AdminSupportTicketsPage() {
                             >
                               {ticket.influencer?.name || "Unknown Influencer"}
                             </button>
+                            {ticket.influencer?.suspended && (
+                              <Badge variant="destructive" className="gap-1" data-testid={`badge-suspended-${ticket.id}`}>
+                                <AlertTriangle className="h-3 w-3" />
+                                Suspended
+                              </Badge>
+                            )}
                             {getStatusBadge(ticket.status)}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
