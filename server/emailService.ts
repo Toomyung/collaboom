@@ -335,3 +335,88 @@ View your dashboard: https://collaboom.io/dashboard
     return { success: false, error: (err as Error).message };
   }
 }
+
+export async function sendAccountSuspendedEmail(
+  to: string,
+  influencerName: string
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject: "[Collaboom] Your Account Has Been Suspended",
+      text: `Hi ${influencerName},
+
+We regret to inform you that your Collaboom account has been suspended.
+
+This action was taken due to a violation of our community guidelines or suspicious activity detected on your account.
+
+While your account is suspended, you will not be able to:
+- Apply to new campaigns
+- Participate in ongoing campaigns
+
+If you believe this decision was made in error, you can submit an appeal by logging into your account and providing additional information.
+
+Log in to submit an appeal: https://collaboom.io/login
+
+We take these matters seriously and will review any appeals promptly.
+
+- The Collaboom Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send account suspended email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Account suspended email sent to ${to}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending account suspended email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+export async function sendAccountUnsuspendedEmail(
+  to: string,
+  influencerName: string
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject: "[Collaboom] Your Account Has Been Reinstated",
+      text: `Hi ${influencerName},
+
+Good news! Your Collaboom account has been reinstated and is now fully active again.
+
+You can now:
+- Browse and apply to campaigns
+- Participate in collaborations
+- Access all platform features
+
+We appreciate your patience and understanding during this process.
+
+Visit your dashboard: https://collaboom.io/dashboard
+
+Welcome back!
+
+- The Collaboom Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send account unsuspended email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Account unsuspended email sent to ${to}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending account unsuspended email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}

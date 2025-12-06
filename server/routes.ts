@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail } from "./emailService";
+import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail, sendAccountSuspendedEmail, sendAccountUnsuspendedEmail } from "./emailService";
 import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
 import {
   authLimiter,
@@ -655,6 +655,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if restricted
       if (influencer.restricted) {
         return res.status(403).json({ message: "Your account is restricted" });
+      }
+
+      // Check if suspended
+      if (influencer.suspended) {
+        return res.status(403).json({ message: "Your account is suspended" });
       }
 
       // Get campaign
@@ -1972,6 +1977,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reason: "rollback",
         createdByAdminId: req.session.userId,
       });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Suspend influencer account (manual admin action)
+  app.post("/api/admin/influencers/:id/suspend", requireAuth("admin"), async (req, res) => {
+    try {
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      if (influencer.suspended) {
+        return res.status(400).json({ message: "Account is already suspended" });
+      }
+
+      await storage.updateInfluencer(req.params.id, {
+        suspended: true,
+        suspendedAt: new Date(),
+      });
+
+      // Send suspension email
+      if (influencer.email) {
+        await sendAccountSuspendedEmail(
+          influencer.email,
+          influencer.name || "Creator"
+        );
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Unsuspend influencer account
+  app.post("/api/admin/influencers/:id/unsuspend", requireAuth("admin"), async (req, res) => {
+    try {
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      if (!influencer.suspended) {
+        return res.status(400).json({ message: "Account is not suspended" });
+      }
+
+      await storage.updateInfluencer(req.params.id, {
+        suspended: false,
+        suspendedAt: null,
+      });
+
+      // Send unsuspension email
+      if (influencer.email) {
+        await sendAccountUnsuspendedEmail(
+          influencer.email,
+          influencer.name || "Creator"
+        );
+      }
 
       return res.json({ success: true });
     } catch (error: any) {
