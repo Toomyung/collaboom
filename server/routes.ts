@@ -2268,6 +2268,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Submit suspension appeal (influencer - creates a support ticket)
+  app.post("/api/suspension-appeal", requireAuth("influencer"), async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      // Check if user is actually suspended
+      const influencer = await storage.getInfluencer(req.session.userId!);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+      
+      if (!influencer.suspended) {
+        return res.status(400).json({ message: "Your account is not suspended" });
+      }
+      
+      // Check if user already has an open suspension appeal
+      const existingTickets = await storage.getSupportTicketsByInfluencer(req.session.userId!);
+      const hasOpenAppeal = existingTickets.some(
+        ticket => ticket.status === "open" && 
+        ticket.subject.includes("[Suspension Appeal]") && 
+        !ticket.adminResponse
+      );
+      
+      if (hasOpenAppeal) {
+        return res.status(400).json({ 
+          message: "You already have a pending suspension appeal. Please wait for admin to review it." 
+        });
+      }
+      
+      // Validate message
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({ message: "Appeal message is required" });
+      }
+      if (message.trim().length > 5000) {
+        return res.status(400).json({ message: "Message must be 5000 characters or less" });
+      }
+      
+      const ticket = await storage.createSupportTicket({
+        influencerId: req.session.userId!,
+        subject: "[Suspension Appeal] Account Review Request",
+        message: message.trim(),
+      });
+      
+      return res.json(ticket);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get my support tickets (influencer)
   app.get("/api/support-tickets/my", requireAuth("influencer"), async (req, res) => {
     try {

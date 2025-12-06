@@ -1,9 +1,10 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Sparkles, LayoutDashboard, User, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -13,9 +14,16 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { user, isAuthenticated, isAdmin, influencer, logout } = useAuth();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
 
   const isLanding = location === "/";
   const isInfluencer = isAuthenticated && !isAdmin;
+
+  useEffect(() => {
+    if (isInfluencer && influencer?.suspended) {
+      setShowSuspensionDialog(true);
+    }
+  }, [isInfluencer, influencer?.suspended]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -237,6 +245,14 @@ export function MainLayout({ children }: MainLayoutProps) {
             </div>
           </div>
         </footer>
+      )}
+
+      {isInfluencer && influencer?.suspended && (
+        <SuspensionAppealDialog
+          open={showSuspensionDialog}
+          onClose={() => setShowSuspensionDialog(false)}
+          influencerName={influencer.name || user?.name || ""}
+        />
       )}
     </div>
   );
