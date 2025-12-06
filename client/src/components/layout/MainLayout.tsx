@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Sparkles, LayoutDashboard, User, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
+import { BlockedUserDialog } from "@/components/BlockedUserDialog";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -15,16 +16,21 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
+  const [showBlockedDialog, setShowBlockedDialog] = useState(false);
 
   const isLanding = location === "/";
   const isInfluencer = isAuthenticated && !isAdmin;
 
   useEffect(() => {
-    // Only show suspension dialog if suspended AND haven't submitted an appeal yet
-    if (isInfluencer && influencer?.suspended && !influencer?.appealSubmitted) {
+    // Blocked takes priority over suspended
+    if (isInfluencer && influencer?.blocked) {
+      setShowBlockedDialog(true);
+      setShowSuspensionDialog(false);
+    } else if (isInfluencer && influencer?.suspended && !influencer?.appealSubmitted) {
+      // Only show suspension dialog if suspended AND haven't submitted an appeal yet
       setShowSuspensionDialog(true);
     }
-  }, [isInfluencer, influencer?.suspended, influencer?.appealSubmitted]);
+  }, [isInfluencer, influencer?.blocked, influencer?.suspended, influencer?.appealSubmitted]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -252,6 +258,13 @@ export function MainLayout({ children }: MainLayoutProps) {
         <SuspensionAppealDialog
           open={showSuspensionDialog}
           onClose={() => setShowSuspensionDialog(false)}
+          influencerName={influencer.name || user?.name || ""}
+        />
+      )}
+
+      {isInfluencer && influencer?.blocked && (
+        <BlockedUserDialog
+          open={showBlockedDialog}
           influencerName={influencer.name || user?.name || ""}
         />
       )}

@@ -67,6 +67,7 @@ import {
   ArrowLeft,
   Ban,
   UserCheck,
+  ShieldX,
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -227,6 +228,8 @@ export function InfluencerDetailSheet({
   } | null>(null);
   const [showUnsuspendConfirm, setShowUnsuspendConfirm] = useState(false);
   const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showUnblockConfirm, setShowUnblockConfirm] = useState(false);
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -329,6 +332,32 @@ export function InfluencerDetailSheet({
     onSuccess: () => {
       invalidateQueries();
       toast({ title: "Account unsuspended", description: "Email notification has been sent to the user." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const blockMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/admin/influencers/${id}/block`);
+    },
+    onSuccess: () => {
+      invalidateQueries();
+      toast({ title: "Account blocked", description: "This user can no longer access the platform." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/admin/influencers/${id}/unblock`);
+    },
+    onSuccess: () => {
+      invalidateQueries();
+      toast({ title: "Account unblocked", description: "This user can now access the platform again." });
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -840,7 +869,29 @@ export function InfluencerDetailSheet({
               <SheetDescription>{selectedInfluencer.email}</SheetDescription>
             </SheetHeader>
 
-            {selectedInfluencer.suspended && (
+            {selectedInfluencer.blocked && (
+              <div className="flex items-center gap-3 p-3 mt-4 bg-red-600/10 rounded-lg border border-red-600/30">
+                <ShieldX className="h-5 w-5 text-red-600" />
+                <div className="flex-1">
+                  <p className="font-medium text-red-600">Account Blocked</p>
+                  <p className="text-sm text-muted-foreground">
+                    This user is permanently blocked from the platform
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowUnblockConfirm(true)}
+                  disabled={unblockMutation.isPending}
+                  data-testid="button-unblock"
+                >
+                  <UserCheck className="h-4 w-4 mr-1" />
+                  Unblock
+                </Button>
+              </div>
+            )}
+
+            {selectedInfluencer.suspended && !selectedInfluencer.blocked && (
               <div className="flex items-center gap-3 p-3 mt-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
                 <Ban className="h-5 w-5 text-orange-500" />
                 <div className="flex-1">
@@ -862,7 +913,7 @@ export function InfluencerDetailSheet({
               </div>
             )}
 
-            {selectedInfluencer.restricted && (
+            {selectedInfluencer.restricted && !selectedInfluencer.blocked && (
               <div className="flex items-center gap-3 p-3 mt-4 bg-red-500/10 rounded-lg border border-red-500/20">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
                 <div className="flex-1">
@@ -884,8 +935,8 @@ export function InfluencerDetailSheet({
               </div>
             )}
 
-            {!selectedInfluencer.suspended && !selectedInfluencer.restricted && (
-              <div className="flex justify-end mt-4">
+            {!selectedInfluencer.suspended && !selectedInfluencer.restricted && !selectedInfluencer.blocked && (
+              <div className="flex justify-end gap-2 mt-4">
                 <Button
                   size="sm"
                   variant="outline"
@@ -895,7 +946,18 @@ export function InfluencerDetailSheet({
                   data-testid="button-suspend"
                 >
                   <Ban className="h-4 w-4 mr-1" />
-                  Suspend Account
+                  Suspend
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={() => setShowBlockConfirm(true)}
+                  disabled={blockMutation.isPending}
+                  data-testid="button-block"
+                >
+                  <ShieldX className="h-4 w-4 mr-1" />
+                  Block
                 </Button>
               </div>
             )}
@@ -1513,6 +1575,71 @@ export function InfluencerDetailSheet({
             >
               <UserCheck className="h-4 w-4 mr-2" />
               Unsuspend
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBlockConfirm} onOpenChange={setShowBlockConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <ShieldX className="h-5 w-5" />
+              Block this account?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You are about to permanently block <strong>{selectedInfluencer?.name || "this user"}</strong>'s account.
+              </p>
+              <p>
+                This is a severe action. The user will be completely locked out of the platform with no appeal option.
+              </p>
+              <p className="font-medium text-red-600">
+                Use this only for serious violations such as fraud, harassment, or repeated policy breaches.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-block">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (selectedInfluencer) {
+                  blockMutation.mutate(selectedInfluencer.id);
+                }
+                setShowBlockConfirm(false);
+              }}
+              data-testid="button-confirm-block"
+            >
+              <ShieldX className="h-4 w-4 mr-2" />
+              Block Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showUnblockConfirm} onOpenChange={setShowUnblockConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unblock this account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to unblock <strong>{selectedInfluencer?.name || "this user"}</strong>'s account. 
+              They will regain access to the platform and can participate in campaigns again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-unblock">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedInfluencer) {
+                  unblockMutation.mutate(selectedInfluencer.id);
+                }
+                setShowUnblockConfirm(false);
+              }}
+              data-testid="button-confirm-unblock"
+            >
+              <UserCheck className="h-4 w-4 mr-2" />
+              Unblock
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -2047,6 +2047,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Block influencer account (permanent ban - no appeal option)
+  app.post("/api/admin/influencers/:id/block", requireAuth("admin"), async (req, res) => {
+    try {
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      if (influencer.blocked) {
+        return res.status(400).json({ message: "Account is already blocked" });
+      }
+
+      await storage.updateInfluencer(req.params.id, {
+        blocked: true,
+        blockedAt: new Date(),
+        // Also ensure they're not just suspended
+        suspended: false,
+        suspendedAt: null,
+        appealSubmitted: false,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Unblock influencer account
+  app.post("/api/admin/influencers/:id/unblock", requireAuth("admin"), async (req, res) => {
+    try {
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      if (!influencer.blocked) {
+        return res.status(400).json({ message: "Account is not blocked" });
+      }
+
+      await storage.updateInfluencer(req.params.id, {
+        blocked: false,
+        blockedAt: null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // =====================
   // ADMIN NOTES
   // =====================
