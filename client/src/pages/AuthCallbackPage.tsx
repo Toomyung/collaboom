@@ -18,6 +18,18 @@ export default function AuthCallbackPage() {
       try {
         console.log(`[Auth] Starting callback...`);
         
+        // Check for OAuth errors first (fast path)
+        const urlParams = new URLSearchParams(window.location.search);
+        const errorParam = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        if (errorParam) {
+          throw new Error(errorDescription || `OAuth error: ${errorParam}`);
+        }
+        
+        // Get code from URL - this is the primary PKCE flow
+        const code = urlParams.get('code');
+        
         const t1 = performance.now();
         const supabase = await getSupabase();
         console.log(`[Auth] getSupabase: ${(performance.now() - t1).toFixed(0)}ms`);
@@ -25,88 +37,62 @@ export default function AuthCallbackPage() {
         if (!supabase) {
           throw new Error("Authentication service unavailable");
         }
-
-        // Check for PKCE flow (code in query params)
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const errorParam = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
         
-        // Handle OAuth errors from provider
-        if (errorParam) {
-          throw new Error(errorDescription || `OAuth error: ${errorParam}`);
-        }
-        
-        // If we have a code, exchange it for a session (PKCE flow)
+        // Primary path: PKCE flow with code
         if (code) {
           const t2 = performance.now();
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           console.log(`[Auth] exchangeCodeForSession: ${(performance.now() - t2).toFixed(0)}ms`);
           
           if (error) throw error;
-          if (data.session) {
-            const t3 = performance.now();
-            await syncWithBackend(data.session);
-            console.log(`[Auth] syncWithBackend: ${(performance.now() - t3).toFixed(0)}ms`);
-            
-            if (mounted) {
-              setStatus("success");
-              setMessage("Login successful!");
-              console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
-              queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-              setLocation("/dashboard");
-            }
-            return;
-          }
-        }
-
-        // Get the session from the URL hash (Supabase puts tokens there for implicit flow)
-        const t4 = performance.now();
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        console.log(`[Auth] getSession: ${(performance.now() - t4).toFixed(0)}ms`);
-        
-        if (sessionError) {
-          throw sessionError;
-        }
-
-        if (!session) {
-          // Try to exchange the hash for a session (implicit flow)
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
+          if (!data.session) throw new Error("Failed to establish session");
           
-          if (accessToken && refreshToken) {
-            const t5 = performance.now();
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-            console.log(`[Auth] setSession: ${(performance.now() - t5).toFixed(0)}ms`);
-            
-            if (error) throw error;
-            if (!data.session) throw new Error("Failed to establish session");
-            
-            // Sync with backend
-            const t6 = performance.now();
-            await syncWithBackend(data.session);
-            console.log(`[Auth] syncWithBackend: ${(performance.now() - t6).toFixed(0)}ms`);
-          } else {
-            throw new Error("No authentication tokens found. Please try signing in again.");
+          const t3 = performance.now();
+          await syncWithBackend(data.session);
+          console.log(`[Auth] syncWithBackend: ${(performance.now() - t3).toFixed(0)}ms`);
+          
+          if (mounted) {
+            setStatus("success");
+            setMessage("Login successful!");
+            console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+            setLocation("/dashboard");
           }
-        } else {
-          // Session already exists, sync with backend
-          const t7 = performance.now();
-          await syncWithBackend(session);
-          console.log(`[Auth] syncWithBackend: ${(performance.now() - t7).toFixed(0)}ms`);
+          return;
         }
 
-        if (mounted) {
-          setStatus("success");
-          setMessage("Login successful!");
-          console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
-          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-          setLocation("/dashboard");
+        // Fallback: Check for hash tokens (implicit flow - legacy)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          const t4 = performance.now();
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          console.log(`[Auth] setSession: ${(performance.now() - t4).toFixed(0)}ms`);
+          
+          if (error) throw error;
+          if (!data.session) throw new Error("Failed to establish session");
+          
+          const t5 = performance.now();
+          await syncWithBackend(data.session);
+          console.log(`[Auth] syncWithBackend: ${(performance.now() - t5).toFixed(0)}ms`);
+          
+          if (mounted) {
+            setStatus("success");
+            setMessage("Login successful!");
+            console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+            setLocation("/dashboard");
+          }
+          return;
         }
+
+        // No valid tokens found
+        throw new Error("No authentication tokens found. Please try signing in again.");
       } catch (error) {
         console.error(`[Auth] Error:`, error);
         if (mounted) {

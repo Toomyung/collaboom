@@ -125,6 +125,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Authentication configuration unavailable" });
     }
     
+    // Cache for 1 hour - config doesn't change frequently
+    res.set('Cache-Control', 'public, max-age=3600');
+    
     return res.json({
       url: providerUrl,
       anonKey: publicKey,
