@@ -2030,6 +2030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateInfluencer(req.params.id, {
         suspended: false,
         suspendedAt: null,
+        appealSubmitted: false, // Reset so they can submit a new appeal if suspended again
       });
 
       // Send unsuspension email
@@ -2310,6 +2311,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject: "[Suspension Appeal] Account Review Request",
         message: message.trim(),
       });
+      
+      // Mark that the user has submitted an appeal so the popup doesn't show again
+      await storage.updateInfluencer(req.session.userId!, { appealSubmitted: true });
       
       return res.json(ticket);
     } catch (error: any) {

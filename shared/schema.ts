@@ -45,6 +45,7 @@ export const influencers = pgTable("influencers", {
   restricted: boolean("restricted").default(false),
   suspended: boolean("suspended").default(false),
   suspendedAt: timestamp("suspended_at"),
+  appealSubmitted: boolean("appeal_submitted").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

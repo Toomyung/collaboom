@@ -20,10 +20,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   const isInfluencer = isAuthenticated && !isAdmin;
 
   useEffect(() => {
-    if (isInfluencer && influencer?.suspended) {
+    // Only show suspension dialog if suspended AND haven't submitted an appeal yet
+    if (isInfluencer && influencer?.suspended && !influencer?.appealSubmitted) {
       setShowSuspensionDialog(true);
     }
-  }, [isInfluencer, influencer?.suspended]);
+  }, [isInfluencer, influencer?.suspended, influencer?.appealSubmitted]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

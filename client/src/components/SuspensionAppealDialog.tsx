@@ -44,6 +44,7 @@ export function SuspensionAppealDialog({
     onSuccess: () => {
       setHasSubmitted(true);
       queryClient.invalidateQueries({ queryKey: ["/api/support-tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] }); // Refresh user data with updated appealSubmitted
       toast({
         title: "Appeal submitted",
         description: "We will review your appeal and get back to you soon.",
