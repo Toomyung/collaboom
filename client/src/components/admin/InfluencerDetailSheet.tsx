@@ -55,6 +55,8 @@ import {
   ChevronRight,
   X,
   ArrowLeft,
+  Ban,
+  UserCheck,
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -289,6 +291,32 @@ export function InfluencerDetailSheet({
     onSuccess: () => {
       invalidateQueries();
       toast({ title: "Account unlocked" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const suspendMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/admin/influencers/${id}/suspend`);
+    },
+    onSuccess: () => {
+      invalidateQueries();
+      toast({ title: "Account suspended", description: "Email notification has been sent to the user." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const unsuspendMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/admin/influencers/${id}/unsuspend`);
+    },
+    onSuccess: () => {
+      invalidateQueries();
+      toast({ title: "Account unsuspended", description: "Email notification has been sent to the user." });
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -800,6 +828,28 @@ export function InfluencerDetailSheet({
               <SheetDescription>{selectedInfluencer.email}</SheetDescription>
             </SheetHeader>
 
+            {selectedInfluencer.suspended && (
+              <div className="flex items-center gap-3 p-3 mt-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                <Ban className="h-5 w-5 text-orange-500" />
+                <div className="flex-1">
+                  <p className="font-medium text-orange-600">Account Suspended</p>
+                  <p className="text-sm text-muted-foreground">
+                    This user cannot apply to any campaigns
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => unsuspendMutation.mutate(selectedInfluencer.id)}
+                  disabled={unsuspendMutation.isPending}
+                  data-testid="button-unsuspend"
+                >
+                  <UserCheck className="h-4 w-4 mr-1" />
+                  Unsuspend
+                </Button>
+              </div>
+            )}
+
             {selectedInfluencer.restricted && (
               <div className="flex items-center gap-3 p-3 mt-4 bg-red-500/10 rounded-lg border border-red-500/20">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
@@ -818,6 +868,22 @@ export function InfluencerDetailSheet({
                 >
                   <Unlock className="h-4 w-4 mr-1" />
                   Unlock
+                </Button>
+              </div>
+            )}
+
+            {!selectedInfluencer.suspended && !selectedInfluencer.restricted && (
+              <div className="flex justify-end mt-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                  onClick={() => suspendMutation.mutate(selectedInfluencer.id)}
+                  disabled={suspendMutation.isPending}
+                  data-testid="button-suspend"
+                >
+                  <Ban className="h-4 w-4 mr-1" />
+                  Suspend Account
                 </Button>
               </div>
             )}
