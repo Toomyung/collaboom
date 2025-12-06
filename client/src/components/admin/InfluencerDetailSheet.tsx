@@ -22,6 +22,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -215,6 +225,7 @@ export function InfluencerDetailSheet({
     currentValue: number;
     delta: number;
   } | null>(null);
+  const [showUnsuspendConfirm, setShowUnsuspendConfirm] = useState(false);
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -840,7 +851,7 @@ export function InfluencerDetailSheet({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => unsuspendMutation.mutate(selectedInfluencer.id)}
+                  onClick={() => setShowUnsuspendConfirm(true)}
                   disabled={unsuspendMutation.isPending}
                   data-testid="button-unsuspend"
                 >
@@ -1439,6 +1450,34 @@ export function InfluencerDetailSheet({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showUnsuspendConfirm} onOpenChange={setShowUnsuspendConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsuspend this account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to unsuspend <strong>{selectedInfluencer?.name || "this user"}</strong>'s account. 
+              They will regain the ability to apply to campaigns and participate in collaborations.
+              An email notification will be sent to inform them of this change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-unsuspend">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedInfluencer) {
+                  unsuspendMutation.mutate(selectedInfluencer.id);
+                }
+                setShowUnsuspendConfirm(false);
+              }}
+              data-testid="button-confirm-unsuspend"
+            >
+              <UserCheck className="h-4 w-4 mr-2" />
+              Unsuspend
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
