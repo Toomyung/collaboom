@@ -240,8 +240,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActiveCampaigns(): Promise<Campaign[]> {
+    // Include 'closed' so influencers can still view closed campaigns (but not apply)
     return await db.select().from(campaigns).where(
-      sql`${campaigns.status} IN ('active', 'full')`
+      sql`${campaigns.status} IN ('active', 'full', 'closed')`
     ).orderBy(desc(campaigns.createdAt));
   }
 
@@ -250,16 +251,16 @@ export class DatabaseStorage implements IStorage {
     const pageSize = Math.min(50, Math.max(1, options.pageSize));
     const offset = (page - 1) * pageSize;
 
-    // Get total count of active campaigns
+    // Get total count of active campaigns (including closed for visibility)
     const countResult = await db.select({ count: sql<number>`count(*)` })
       .from(campaigns)
-      .where(sql`${campaigns.status} IN ('active', 'full')`);
+      .where(sql`${campaigns.status} IN ('active', 'full', 'closed')`);
     const totalCount = Number(countResult[0]?.count || 0);
 
     // Get paginated items
     const items = await db.select()
       .from(campaigns)
-      .where(sql`${campaigns.status} IN ('active', 'full')`)
+      .where(sql`${campaigns.status} IN ('active', 'full', 'closed')`)
       .orderBy(desc(campaigns.createdAt))
       .limit(pageSize)
       .offset(offset);

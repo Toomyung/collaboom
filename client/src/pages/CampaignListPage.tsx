@@ -103,8 +103,9 @@ export default function CampaignListPage() {
       !searchQuery ||
       campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
-    const isActive = campaign.status === "active" || campaign.status === "full";
-    return matchesCategory && matchesSearch && isActive;
+    // Include 'closed' so influencers can still view closed campaigns (but not apply)
+    const isVisible = campaign.status === "active" || campaign.status === "full" || campaign.status === "closed";
+    return matchesCategory && matchesSearch && isVisible;
   });
 
   // Pagination logic
@@ -152,16 +153,19 @@ export default function CampaignListPage() {
   };
 
   const canApply = (campaign: MinimalCampaign) => {
+    // Check campaign status first (before auth check)
+    if (campaign.status === "closed" || campaign.status === "archived") return false;
+    if ((campaign.approvedCount ?? 0) >= campaign.inventory) return false;
     if (!isAuthenticated) return true; // Will redirect to login
     if (!influencer?.profileCompleted) return false;
     if (influencer?.restricted) return false;
-    if ((campaign.approvedCount ?? 0) >= campaign.inventory) return false;
     return true;
   };
 
   const getApplyDisabledReason = (campaign: MinimalCampaign) => {
     if (!influencer?.profileCompleted) return "Complete your profile to apply";
     if (influencer?.restricted) return "Account restricted";
+    if (campaign.status === "closed" || campaign.status === "archived") return "Campaign is closed";
     if ((campaign.approvedCount ?? 0) >= campaign.inventory) return "Campaign is full";
     return undefined;
   };
