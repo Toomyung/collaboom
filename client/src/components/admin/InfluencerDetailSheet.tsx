@@ -226,6 +226,7 @@ export function InfluencerDetailSheet({
     delta: number;
   } | null>(null);
   const [showUnsuspendConfirm, setShowUnsuspendConfirm] = useState(false);
+  const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -889,7 +890,7 @@ export function InfluencerDetailSheet({
                   size="sm"
                   variant="outline"
                   className="text-orange-600 border-orange-300 hover:bg-orange-50"
-                  onClick={() => suspendMutation.mutate(selectedInfluencer.id)}
+                  onClick={() => setShowSuspendConfirm(true)}
                   disabled={suspendMutation.isPending}
                   data-testid="button-suspend"
                 >
@@ -1450,6 +1451,44 @@ export function InfluencerDetailSheet({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showSuspendConfirm} onOpenChange={setShowSuspendConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-orange-600">
+              <Ban className="h-5 w-5" />
+              Suspend this account?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You are about to suspend <strong>{selectedInfluencer?.name || "this user"}</strong>'s account.
+              </p>
+              <p>
+                This will prevent them from applying to any campaigns. An email notification will be sent to inform them.
+              </p>
+              <p className="font-medium text-orange-600">
+                This action should only be used for policy violations or suspicious activity.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-suspend">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-orange-600 hover:bg-orange-700"
+              onClick={() => {
+                if (selectedInfluencer) {
+                  suspendMutation.mutate(selectedInfluencer.id);
+                }
+                setShowSuspendConfirm(false);
+              }}
+              data-testid="button-confirm-suspend"
+            >
+              <Ban className="h-4 w-4 mr-2" />
+              Suspend Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showUnsuspendConfirm} onOpenChange={setShowUnsuspendConfirm}>
         <AlertDialogContent>
