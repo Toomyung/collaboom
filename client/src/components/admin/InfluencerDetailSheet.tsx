@@ -68,6 +68,7 @@ import {
   Ban,
   UserCheck,
   ShieldX,
+  Trash2,
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -230,6 +231,7 @@ export function InfluencerDetailSheet({
   const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [showUnblockConfirm, setShowUnblockConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -358,6 +360,20 @@ export function InfluencerDetailSheet({
     onSuccess: () => {
       invalidateQueries();
       toast({ title: "Account unblocked", description: "This user can now access the platform again." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/admin/influencers/${id}`);
+    },
+    onSuccess: () => {
+      invalidateQueries();
+      handleClose();
+      toast({ title: "Account deleted", description: "This user has been permanently removed and cannot sign up again." });
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -878,16 +894,29 @@ export function InfluencerDetailSheet({
                     This user is permanently blocked from the platform
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowUnblockConfirm(true)}
-                  disabled={unblockMutation.isPending}
-                  data-testid="button-unblock"
-                >
-                  <UserCheck className="h-4 w-4 mr-1" />
-                  Unblock
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowUnblockConfirm(true)}
+                    disabled={unblockMutation.isPending}
+                    data-testid="button-unblock"
+                  >
+                    <UserCheck className="h-4 w-4 mr-1" />
+                    Unblock
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={deleteMutation.isPending}
+                    data-testid="button-delete-user"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -900,16 +929,29 @@ export function InfluencerDetailSheet({
                     This user cannot apply to any campaigns
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowUnsuspendConfirm(true)}
-                  disabled={unsuspendMutation.isPending}
-                  data-testid="button-unsuspend"
-                >
-                  <UserCheck className="h-4 w-4 mr-1" />
-                  Unsuspend
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowUnsuspendConfirm(true)}
+                    disabled={unsuspendMutation.isPending}
+                    data-testid="button-unsuspend"
+                  >
+                    <UserCheck className="h-4 w-4 mr-1" />
+                    Unsuspend
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    onClick={() => setShowBlockConfirm(true)}
+                    disabled={blockMutation.isPending}
+                    data-testid="button-block-from-suspended"
+                  >
+                    <ShieldX className="h-4 w-4 mr-1" />
+                    Block
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -1640,6 +1682,44 @@ export function InfluencerDetailSheet({
             >
               <UserCheck className="h-4 w-4 mr-2" />
               Unblock
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Permanently Delete Account?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You are about to permanently delete <strong>{selectedInfluencer?.name || "this user"}</strong>'s account.
+              </p>
+              <p className="font-medium text-red-600">
+                This action cannot be undone. All data will be permanently removed.
+              </p>
+              <p>
+                This user will NOT be able to sign up again with the same email address.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (selectedInfluencer) {
+                  deleteMutation.mutate(selectedInfluencer.id);
+                }
+                setShowDeleteConfirm(false);
+              }}
+              data-testid="button-confirm-delete"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

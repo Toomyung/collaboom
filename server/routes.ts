@@ -160,6 +160,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[Auth Timing] getInfluencerByEmail: ${Date.now() - t2}ms`);
         
         if (!influencer) {
+          // Check if this email is banned (deleted users cannot sign up again)
+          const isBanned = await storage.isBannedEmail(user.email);
+          if (isBanned) {
+            return res.status(403).json({ 
+              message: "This email address has been permanently banned from Collaboom. Please contact support@collaboom.io if you believe this is an error.",
+              banned: true
+            });
+          }
+
           // Create new influencer from Google auth
           const t3 = Date.now();
           influencer = await storage.createInfluencerFromSupabase({
@@ -2092,6 +2101,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Delete blocked influencer account (permanent deletion - user cannot sign up again)
+  app.delete("/api/admin/influencers/:id", requireAuth("admin"), async (req, res) => {
+    try {
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      if (!influencer.blocked) {
+        return res.status(400).json({ message: "Can only delete blocked accounts. Block the user first." });
+      }
+
+      // Delete influencer (this also adds their email to banned list)
+      await storage.deleteInfluencer(req.params.id);
+
+      return res.json({ success: true, message: "Account permanently deleted" });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

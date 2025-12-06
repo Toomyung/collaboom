@@ -3,6 +3,17 @@ import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Banned emails (for deleted users who cannot sign up again)
+export const bannedEmails = pgTable("banned_emails", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  supabaseId: text("supabase_id"),
+  reason: text("reason"),
+  bannedAt: timestamp("banned_at").defaultNow(),
+});
+
+export type BannedEmail = typeof bannedEmails.$inferSelect;
+
 // Admin users
 export const admins = pgTable("admins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

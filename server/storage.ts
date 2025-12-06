@@ -148,6 +148,11 @@ export interface IStorage {
   // Auth
   verifyAdminPassword(id: string, password: string): Promise<boolean>;
   verifyInfluencerPassword(id: string, password: string): Promise<boolean>;
+  
+  // Banned Emails
+  addBannedEmail(email: string, supabaseId?: string | null, reason?: string): Promise<void>;
+  isBannedEmail(email: string): Promise<boolean>;
+  deleteInfluencer(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1106,6 +1111,25 @@ export class MemStorage implements IStorage {
     const hash = this.adminPasswords.get(id);
     if (!hash) return false;
     return bcrypt.compare(password, hash);
+  }
+
+  // Banned Emails (stub implementation for MemStorage)
+  private bannedEmails: Set<string> = new Set();
+
+  async addBannedEmail(email: string, supabaseId?: string | null, reason?: string): Promise<void> {
+    this.bannedEmails.add(email.toLowerCase());
+  }
+
+  async isBannedEmail(email: string): Promise<boolean> {
+    return this.bannedEmails.has(email.toLowerCase());
+  }
+
+  async deleteInfluencer(id: string): Promise<void> {
+    const influencer = this.influencers.get(id);
+    if (influencer) {
+      this.bannedEmails.add(influencer.email.toLowerCase());
+      this.influencers.delete(id);
+    }
   }
 }
 

@@ -5,6 +5,7 @@ import { deleteImagesFromStorage } from "./supabaseStorage";
 import {
   admins, influencers, campaigns, applications, shipping, uploads,
   scoreEvents, penaltyEvents, adminNotes, notifications, shippingIssues, supportTickets,
+  bannedEmails,
   type Admin, type InsertAdmin,
   type Influencer, type InsertInfluencer,
   type Campaign, type InsertCampaign,
@@ -907,5 +908,48 @@ export class DatabaseStorage implements IStorage {
 
   async verifyInfluencerPassword(id: string, password: string): Promise<boolean> {
     return false;
+  }
+
+  // Banned Emails
+  async addBannedEmail(email: string, supabaseId?: string | null, reason?: string): Promise<void> {
+    await db.insert(bannedEmails).values({
+      email: email.toLowerCase(),
+      supabaseId: supabaseId || null,
+      reason: reason || "Account deleted after block",
+    }).onConflictDoNothing();
+  }
+
+  async isBannedEmail(email: string): Promise<boolean> {
+    const [result] = await db.select().from(bannedEmails).where(eq(bannedEmails.email, email.toLowerCase()));
+    return !!result;
+  }
+
+  async deleteInfluencer(id: string): Promise<void> {
+    // Get influencer first to save their email
+    const influencer = await this.getInfluencer(id);
+    if (!influencer) return;
+
+    // Add email to banned list before deleting
+    await this.addBannedEmail(influencer.email, influencer.supabaseId, "Account deleted after block");
+
+    // Delete related data first (in order to avoid foreign key constraints)
+    // Delete applications and their related data
+    const influencerApps = await db.select().from(applications).where(eq(applications.influencerId, id));
+    for (const app of influencerApps) {
+      await db.delete(shipping).where(eq(shipping.applicationId, app.id));
+      await db.delete(uploads).where(eq(uploads.applicationId, app.id));
+      await db.delete(shippingIssues).where(eq(shippingIssues.applicationId, app.id));
+    }
+    await db.delete(applications).where(eq(applications.influencerId, id));
+
+    // Delete other related data
+    await db.delete(scoreEvents).where(eq(scoreEvents.influencerId, id));
+    await db.delete(penaltyEvents).where(eq(penaltyEvents.influencerId, id));
+    await db.delete(adminNotes).where(eq(adminNotes.influencerId, id));
+    await db.delete(notifications).where(eq(notifications.influencerId, id));
+    await db.delete(supportTickets).where(eq(supportTickets.influencerId, id));
+
+    // Finally delete the influencer
+    await db.delete(influencers).where(eq(influencers.id, id));
   }
 }
