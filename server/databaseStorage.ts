@@ -699,11 +699,8 @@ export class DatabaseStorage implements IStorage {
 
     const influencer = await this.getInfluencer(event.influencerId);
     if (influencer) {
-      const newPenalty = Math.max(0, (influencer.penalty ?? 0) + event.delta);
-      await this.updateInfluencer(event.influencerId, {
-        penalty: newPenalty,
-        restricted: newPenalty >= 5,
-      });
+      const newScore = Math.max(0, Math.min(100, (influencer.score ?? 0) - event.delta));
+      await this.updateInfluencer(event.influencerId, { score: newScore });
     }
 
     return newEvent;
