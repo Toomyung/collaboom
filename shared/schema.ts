@@ -53,6 +53,7 @@ export const influencers = pgTable("influencers", {
   profileCompleted: boolean("profile_completed").default(false),
   score: integer("score").default(0),
   penalty: integer("penalty").default(0),
+  completedCampaigns: integer("completed_campaigns").default(0), // Track completed campaigns for tier system
   restricted: boolean("restricted").default(false),
   suspended: boolean("suspended").default(false),
   suspendedAt: timestamp("suspended_at"),

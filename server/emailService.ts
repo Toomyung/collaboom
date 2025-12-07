@@ -498,3 +498,89 @@ Visit your dashboard: https://collaboom.io/dashboard
     return { success: false, error: (err as Error).message };
   }
 }
+
+export async function sendTierUpgradeEmail(
+  to: string,
+  influencerName: string,
+  newTier: "standard" | "vip"
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+    
+    let subject: string;
+    let body: string;
+    
+    if (newTier === "standard") {
+      subject = "Congratulations! You're Now a Standard Influencer";
+      body = `Hi ${influencerName},
+
+Congratulations on completing your first campaign! You've officially leveled up to Standard Influencer status.
+
+What This Means For You:
+
+- Apply to up to 3 campaigns per day
+- Access all Paid & Gifting campaigns on Collaboom
+- Full access to your personal dashboard
+- Forum support through your dashboard
+- Email notifications for all updates
+
+Your Next Goal: VIP Status
+
+Keep completing campaigns successfully to reach 85 points and unlock VIP benefits:
+- Paid collaboration 24-hour early access
+- One-click auto-approval (no waiting!)
+- Unlimited campaign applications
+- Priority team support
+
+Keep up the great work!
+
+Visit your dashboard: https://collaboom.io/dashboard
+
+Learn more about the tier system: https://collaboom.io/score-tier
+
+- The Collaboom Team`;
+    } else {
+      subject = "Welcome to VIP Status! You're Now a VIP Influencer";
+      body = `Hi ${influencerName},
+
+WOW! You've reached the highest tier on Collaboom - VIP Influencer!
+
+This is a huge achievement that less than 5% of our creators have accomplished. Your dedication and consistent quality work have earned you elite status.
+
+Your Exclusive VIP Benefits:
+
+- Paid Collaboration Early Access: Get 24 hours head start on paid campaigns through an exclusive page
+- One-Click Auto-Approval: No more waiting for brand approval - you're automatically approved!
+- Unlimited Applications: Apply to as many campaigns as you want with no daily limits
+- Priority Team Support: Get faster responses and dedicated assistance from our team
+
+You've proven yourself as a trusted creator, and brands love working with you.
+
+Keep creating amazing content!
+
+Visit your dashboard: https://collaboom.io/dashboard
+
+Learn more about VIP benefits: https://collaboom.io/score-tier
+
+- The Collaboom Team`;
+    }
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject: `[Collaboom] ${subject}`,
+      text: body,
+    });
+
+    if (error) {
+      console.error("Failed to send tier upgrade email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Tier upgrade email (${newTier}) sent to ${to}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending tier upgrade email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}
