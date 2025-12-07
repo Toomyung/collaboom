@@ -121,7 +121,8 @@ export default function ProfilePage() {
   const form = useForm<UpdateProfile>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
-      name: influencer?.name || "",
+      firstName: influencer?.firstName || "",
+      lastName: influencer?.lastName || "",
       tiktokHandle: influencer?.tiktokHandle || "",
       instagramHandle: influencer?.instagramHandle || "",
       phone: influencer?.phone || "",
@@ -133,7 +134,8 @@ export default function ProfilePage() {
       paypalEmail: influencer?.paypalEmail || "",
     },
     values: {
-      name: influencer?.name || "",
+      firstName: influencer?.firstName || "",
+      lastName: influencer?.lastName || "",
       tiktokHandle: influencer?.tiktokHandle || "",
       instagramHandle: influencer?.instagramHandle || "",
       phone: influencer?.phone || "",
@@ -228,7 +230,8 @@ export default function ProfilePage() {
 
   // Calculate profile completion percentage
   const requiredFields = [
-    "name",
+    "firstName",
+    "lastName",
     "tiktokHandle",
     "phone",
     "addressLine1",
@@ -300,25 +303,46 @@ export default function ProfilePage() {
                 <CardDescription>Your basic account details</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Your full name" 
-                          {...field} 
-                          disabled={isProfileLocked}
-                          className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
-                          data-testid="input-name" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="First name" 
+                            {...field} 
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            data-testid="input-first-name" 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Last name" 
+                            {...field} 
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            data-testid="input-last-name" 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField

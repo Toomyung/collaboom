@@ -409,7 +409,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const wasAddressIncomplete = !currentInfluencer.addressLine1 || !currentInfluencer.city || 
                                    !currentInfluencer.state || !currentInfluencer.zipCode;
       
-      const influencer = await storage.updateInfluencer(req.session.userId!, data);
+      // Maintain backward compatibility: populate legacy 'name' field from firstName + lastName
+      const updateData = {
+        ...data,
+        name: data.firstName && data.lastName 
+          ? `${data.firstName} ${data.lastName}` 
+          : data.firstName || data.lastName || currentInfluencer.name,
+      };
+      
+      const influencer = await storage.updateInfluencer(req.session.userId!, updateData);
       if (!influencer) {
         return res.status(404).json({ message: "Influencer not found" });
       }

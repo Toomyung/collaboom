@@ -76,6 +76,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ConversationSheet } from "@/components/ConversationSheet";
 import { InfluencerDetailSheet } from "@/components/admin/InfluencerDetailSheet";
+import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 interface ShippingFormData {
   courier: string;
@@ -992,7 +993,7 @@ export default function AdminCampaignDetailPage() {
                                     }}
                                     data-testid={`influencer-name-${app.id}`}
                                   >
-                                    {inf?.name || "Unknown"}
+                                    {getInfluencerDisplayName(inf, "Unknown")}
                                   </button>
                                   <p className="text-xs text-muted-foreground">
                                     {inf?.email}
@@ -1154,14 +1155,14 @@ export default function AdminCampaignDetailPage() {
                                       onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                                       data-testid={`influencer-name-${app.id}`}
                                     >
-                                      {app.influencer?.name}
+                                      {getInfluencerDisplayName(app.influencer)}
                                     </button>
                                     {(() => {
                                       const counts = getIssueCount(app.id);
                                       if (counts.total === 0) return null;
                                       return (
                                         <button
-                                          onClick={() => setConversationApp({ id: app.id, influencerName: app.influencer?.name || "Influencer" })}
+                                          onClick={() => setConversationApp({ id: app.id, influencerName: getInfluencerDisplayName(app.influencer) })}
                                           className={cn(
                                             "relative p-0.5 rounded hover:bg-muted transition-colors flex-shrink-0",
                                             counts.open > 0 && "text-amber-600"
@@ -1403,14 +1404,14 @@ export default function AdminCampaignDetailPage() {
                                       onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                                       data-testid={`link-influencer-shipping-${app.id}`}
                                     >
-                                      {app.influencer?.name}
+                                      {getInfluencerDisplayName(app.influencer)}
                                     </button>
                                     {(() => {
                                       const counts = getIssueCount(app.id);
                                       if (counts.total === 0) return null;
                                       return (
                                         <button
-                                          onClick={() => setConversationApp({ id: app.id, influencerName: app.influencer?.name || "Influencer" })}
+                                          onClick={() => setConversationApp({ id: app.id, influencerName: getInfluencerDisplayName(app.influencer) })}
                                           className={cn(
                                             "relative p-0.5 rounded hover:bg-muted transition-colors flex-shrink-0",
                                             counts.open > 0 && "text-amber-600"
@@ -1567,14 +1568,14 @@ export default function AdminCampaignDetailPage() {
                                   }}
                                   data-testid={`link-influencer-${app.id}`}
                                 >
-                                  {app.influencer?.name}
+                                  {getInfluencerDisplayName(app.influencer)}
                                 </button>
                                 {(() => {
                                   const counts = getIssueCount(app.id);
                                   if (counts.total === 0) return null;
                                   return (
                                     <button
-                                      onClick={() => setConversationApp({ id: app.id, influencerName: app.influencer?.name || "Influencer" })}
+                                      onClick={() => setConversationApp({ id: app.id, influencerName: getInfluencerDisplayName(app.influencer) })}
                                       className={cn(
                                         "relative p-1 rounded hover:bg-muted transition-colors",
                                         counts.open > 0 && "text-amber-600"
@@ -1793,14 +1794,14 @@ export default function AdminCampaignDetailPage() {
                                 onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                                 data-testid={`link-influencer-result-${app.id}`}
                               >
-                                {app.influencer?.name}
+                                {getInfluencerDisplayName(app.influencer)}
                               </button>
                               {(() => {
                                 const counts = getIssueCount(app.id);
                                 if (counts.total === 0) return null;
                                 return (
                                   <button
-                                    onClick={() => setConversationApp({ id: app.id, influencerName: app.influencer?.name || "Influencer" })}
+                                    onClick={() => setConversationApp({ id: app.id, influencerName: getInfluencerDisplayName(app.influencer) })}
                                     className={cn(
                                       "relative p-1 rounded hover:bg-muted transition-colors",
                                       counts.open > 0 && "text-amber-600"
@@ -1885,7 +1886,7 @@ export default function AdminCampaignDetailPage() {
                               className="text-left hover:underline"
                               onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                             >
-                              {app.influencer?.name}
+                              {getInfluencerDisplayName(app.influencer)}
                             </button>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
@@ -1959,7 +1960,7 @@ export default function AdminCampaignDetailPage() {
                               className="text-left hover:underline"
                               onClick={() => setSelectedInfluencerId(app.influencer?.id || null)}
                             >
-                              {app.influencer?.name}
+                              {getInfluencerDisplayName(app.influencer)}
                             </button>
                           </TableCell>
                           <TableCell className="text-muted-foreground">

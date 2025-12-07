@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { ShippingIssueWithDetails } from "@shared/schema";
 import { InfluencerDetailSheet } from "@/components/admin/InfluencerDetailSheet";
+import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 type IssueStatus = "open" | "resolved" | "dismissed" | "all";
 
@@ -153,8 +154,9 @@ export default function AdminIssuesPage() {
     if (!searchTerm) return matchesStatus;
     
     const searchLower = searchTerm.toLowerCase();
+    const influencerName = getInfluencerDisplayName(issue.influencer, "").toLowerCase();
     const matchesSearch = 
-      issue.influencer?.name?.toLowerCase().includes(searchLower) ||
+      influencerName.includes(searchLower) ||
       issue.influencer?.email?.toLowerCase().includes(searchLower) ||
       issue.influencer?.tiktokHandle?.toLowerCase().includes(searchLower) ||
       issue.campaign?.name?.toLowerCase().includes(searchLower) ||
@@ -314,7 +316,7 @@ export default function AdminIssuesPage() {
                             }}
                             data-testid={`issue-influencer-name-${issue.id}`}
                           >
-                            {issue.influencer?.name || "Unknown"}
+                            {getInfluencerDisplayName(issue.influencer)}
                           </button>
                           {getIssueStatusBadge(issue.status)}
                           <Badge 

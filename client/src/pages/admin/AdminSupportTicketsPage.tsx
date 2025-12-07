@@ -33,6 +33,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { SupportTicketWithDetails } from "@shared/schema";
+import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 type TicketStatus = "open" | "resolved" | "closed" | "all";
 
@@ -102,8 +103,9 @@ export default function AdminSupportTicketsPage() {
     if (!searchTerm) return matchesStatus;
     
     const searchLower = searchTerm.toLowerCase();
+    const influencerName = getInfluencerDisplayName(ticket.influencer, "").toLowerCase();
     const matchesSearch = 
-      ticket.influencer?.name?.toLowerCase().includes(searchLower) ||
+      influencerName.includes(searchLower) ||
       ticket.influencer?.email?.toLowerCase().includes(searchLower) ||
       ticket.influencer?.tiktokHandle?.toLowerCase().includes(searchLower) ||
       ticket.subject?.toLowerCase().includes(searchLower) ||
@@ -262,7 +264,7 @@ export default function AdminSupportTicketsPage() {
                               }}
                               data-testid={`button-influencer-name-${ticket.id}`}
                             >
-                              {ticket.influencer?.name || "Unknown Influencer"}
+                              {getInfluencerDisplayName(ticket.influencer)}
                             </button>
                             {ticket.influencer?.suspended && (
                               <Badge variant="destructive" className="gap-1" data-testid={`badge-suspended-${ticket.id}`}>

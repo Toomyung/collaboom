@@ -37,6 +37,7 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { InfluencerDetailSheet } from "@/components/admin/InfluencerDetailSheet";
+import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 type InfluencerWithStats = Influencer & {
   appliedCount: number;
@@ -240,7 +241,7 @@ export default function AdminInfluencersPage() {
                     >
                       <TableCell>
                         <div>
-                          <p className="font-medium text-primary hover:underline">{inf.name || "Unnamed"}</p>
+                          <p className="font-medium text-primary hover:underline">{getInfluencerDisplayName(inf, "Unnamed")}</p>
                           <p className="text-xs text-muted-foreground">{inf.email}</p>
                         </div>
                       </TableCell>

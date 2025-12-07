@@ -73,6 +73,7 @@ import {
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -924,7 +925,7 @@ export function InfluencerDetailSheet({
         {selectedInfluencer && (
           <>
             <SheetHeader>
-              <SheetTitle>{selectedInfluencer.name || "Influencer Details"}</SheetTitle>
+              <SheetTitle>{getInfluencerDisplayName(selectedInfluencer, "Influencer Details")}</SheetTitle>
               <SheetDescription>{selectedInfluencer.email}</SheetDescription>
               <Button
                 size="sm"
@@ -1642,7 +1643,7 @@ export function InfluencerDetailSheet({
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                You are about to suspend <strong>{selectedInfluencer?.name || "this user"}</strong>'s account.
+                You are about to suspend <strong>{getInfluencerDisplayName(selectedInfluencer, "this user")}</strong>'s account.
               </p>
               <p>
                 This will prevent them from applying to any campaigns. An email notification will be sent to inform them.
@@ -1676,7 +1677,7 @@ export function InfluencerDetailSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Unsuspend this account?</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to unsuspend <strong>{selectedInfluencer?.name || "this user"}</strong>'s account. 
+              You are about to unsuspend <strong>{getInfluencerDisplayName(selectedInfluencer, "this user")}</strong>'s account. 
               They will regain the ability to apply to campaigns and participate in collaborations.
               An email notification will be sent to inform them of this change.
             </AlertDialogDescription>
@@ -1708,7 +1709,7 @@ export function InfluencerDetailSheet({
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                You are about to permanently block <strong>{selectedInfluencer?.name || "this user"}</strong>'s account.
+                You are about to permanently block <strong>{getInfluencerDisplayName(selectedInfluencer, "this user")}</strong>'s account.
               </p>
               <p>
                 This is a severe action. The user will be completely locked out of the platform with no appeal option.
@@ -1742,7 +1743,7 @@ export function InfluencerDetailSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Unblock this account?</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to unblock <strong>{selectedInfluencer?.name || "this user"}</strong>'s account. 
+              You are about to unblock <strong>{getInfluencerDisplayName(selectedInfluencer, "this user")}</strong>'s account. 
               They will regain access to the platform and can participate in campaigns again.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1773,7 +1774,7 @@ export function InfluencerDetailSheet({
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                You are about to permanently delete <strong>{selectedInfluencer?.name || "this user"}</strong>'s account.
+                You are about to permanently delete <strong>{getInfluencerDisplayName(selectedInfluencer, "this user")}</strong>'s account.
               </p>
               <p className="font-medium text-red-600">
                 This action cannot be undone. All data will be permanently removed.
@@ -1810,7 +1811,7 @@ export function InfluencerDetailSheet({
               Email Influencer
             </DialogTitle>
             <DialogDescription>
-              Send a direct email to {selectedInfluencer?.name || "this influencer"}.
+              Send a direct email to {getInfluencerDisplayName(selectedInfluencer, "this influencer")}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
