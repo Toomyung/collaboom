@@ -179,6 +179,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           console.log(`[Auth Timing] createInfluencerFromSupabase: ${Date.now() - t3}ms`);
           
+          // Award signup bonus points (+50)
+          await storage.addScoreEvent({
+            influencerId: influencer.id,
+            delta: 50,
+            reason: "signup_bonus",
+          });
+          // Refresh influencer to get updated score
+          influencer = await storage.getInfluencer(influencer.id) || influencer;
+          console.log(`[Auth] Signup bonus +50 points awarded to ${user.email}`);
+          
           // Send welcome email for new signups (non-blocking)
           const influencerName = influencer.name || user.user_metadata?.full_name || "Creator";
           sendWelcomeEmail(user.email, influencerName).catch(err => {
@@ -309,6 +319,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const passwordHash = await bcrypt.hash(password, 12);
       const influencer = await storage.createInfluencer(email, passwordHash);
+
+      // Award signup bonus points (+50)
+      await storage.addScoreEvent({
+        influencerId: influencer.id,
+        delta: 50,
+        reason: "signup_bonus",
+      });
+      console.log(`[Auth] Signup bonus +50 points awarded to ${email}`);
 
       req.session.userId = influencer.id;
       req.session.userType = "influencer";
