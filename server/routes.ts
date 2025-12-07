@@ -52,17 +52,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Replit uses proxies in both development and production
   app.set("trust proxy", 1);
 
-  // Session middleware
+  // Validate required secrets in production
+  const isProduction = process.env.NODE_ENV === "production";
+  const sessionSecret = process.env.SESSION_SECRET;
+  
+  if (isProduction && !sessionSecret) {
+    throw new Error("SESSION_SECRET environment variable is required in production");
+  }
+
+  // Session middleware with secure configuration
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "collaboom-secret-key-change-in-production",
+      secret: sessionSecret || "dev-only-secret-key-not-for-production",
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true,
+        secure: isProduction, // HTTPS only in production
+        httpOnly: true, // Prevent XSS access to cookie
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
+        sameSite: "lax", // CSRF protection - blocks cross-site POST requests
       },
     })
   );
