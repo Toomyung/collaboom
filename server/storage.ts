@@ -436,11 +436,6 @@ export class MemStorage implements IStorage {
     const isComplete = requiredFields.every(field => updated[field as keyof Influencer]);
     updated.profileCompleted = isComplete;
     
-    // Check if should be restricted
-    if ((updated.penalty ?? 0) >= 5) {
-      updated.restricted = true;
-    }
-    
     this.influencers.set(id, updated);
     return updated;
   }

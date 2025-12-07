@@ -1834,18 +1834,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "missed",
       });
 
-      // Check if this is first-time ghosting (influencer has no completed campaigns)
+      // Apply penalty for missed deadline (subtracts from score, no auto-restriction)
       const influencer = await storage.getInfluencer(application.influencerId);
       if (influencer) {
-        // Check for previous completed applications to detect first-time ghosting
+        // Check for previous completed applications to determine penalty amount
         const allApplications = await storage.getApplicationsByInfluencer(influencer.id);
         const hasCompletedBefore = allApplications.some(app => 
           app.id !== application.id && app.status === "completed"
         );
         
-        // First-time ghosting: penalty +5 and immediate restriction
-        // Subsequent misses: penalty +1
-        const isFirstTimeGhosting = !hasCompletedBefore && (influencer.penalty ?? 0) === 0;
+        // First-time ghosting: -5 points, subsequent misses: -1 point
+        const isFirstTimeGhosting = !hasCompletedBefore;
         const penaltyAmount = isFirstTimeGhosting ? 5 : 1;
         
         await storage.addPenaltyEvent({
@@ -1861,7 +1860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           influencerId: influencer.id,
           campaignId: application.campaignId,
           applicationId: application.id,
-          type: isFirstTimeGhosting ? "account_restricted" : "deadline_missed",
+          type: "deadline_missed",
         });
       }
 
