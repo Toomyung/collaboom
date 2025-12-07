@@ -23,11 +23,17 @@ Preferred communication style: Simple, everyday language.
     - **Admin Tools:** Notes system, score/penalty event history, shipping issue management, support ticket system, enhanced influencer management.
     - **Campaign Management:** Dual deadlines, extended content sections (Product Info, Step-by-Step, Eligibility), video guidelines (essential cuts, details, key points, reference videos with embeds), campaign workflow (applicants, approved, shipping, uploads), archive/delete functionality, address override system.
     - **Influencer Features:** Two-step application confirmation (address, TikTok verification), comment system (visible until video upload), campaign dismiss feature.
-    - **Email Notifications:** Resend API integration for automated emails (signup, approval, shipping, replies, upload verification) with HTML templates.
+    - **Email Notifications:** Resend API integration for automated emails (signup, approval, shipping, replies, upload verification, tier upgrades) with HTML templates.
     - **Email Threading:** All campaign-related emails are threaded using `Message-ID`, `In-Reply-To`, and `References` headers for persistent conversation context.
     - **Ghosting Detection:** Automated penalties for missed deadlines.
     - **Data Export:** CSV export of approved influencer data for admins.
     - **Input Validation:** Custom `PhoneInput` component with US-specific formatting and validation.
+    - **Score & Tier System:** Three-tier progression system with automated tier upgrade detection:
+        - **Starting Influencer:** completedCampaigns === 0 OR score < 50. Limited to 1 active campaign.
+        - **Standard Influencer:** completedCampaigns >= 1 AND score >= 50 AND < 85.
+        - **VIP Influencer:** completedCampaigns >= 1 AND score >= 85. Automatic application approval.
+        - Tier upgrades trigger congratulatory emails on first completion or reaching 85 points.
+        - Points: +50 signup (auto), +10 address (auto), +0-100 configurable on upload verification.
 
 ## External Dependencies
 
