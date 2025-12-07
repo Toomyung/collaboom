@@ -25,6 +25,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { updateProfileSchema, UpdateProfile } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +48,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
+  Lock,
+  Pencil,
 } from "lucide-react";
 import { SiTiktok, SiInstagram, SiPaypal } from "react-icons/si";
 import { PointsAwardPopup } from "@/components/PointsAwardPopup";
@@ -101,6 +113,10 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [pointsPopup, setPointsPopup] = useState<{ points: number; reason: string } | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showEditConfirmDialog, setShowEditConfirmDialog] = useState(false);
+  
+  const isProfileLocked = Boolean(influencer?.profileCompleted) && !isEditing;
 
   const form = useForm<UpdateProfile>({
     resolver: zodResolver(updateProfileSchema),
@@ -141,6 +157,7 @@ export default function ProfilePage() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setIsEditing(false);
       
       if (data.pointsAwarded && data.pointsAwarded > 0) {
         setPointsPopup({ points: data.pointsAwarded, reason: "address_completion" });
@@ -162,6 +179,20 @@ export default function ProfilePage() {
       });
     },
   });
+
+  const handleEditClick = () => {
+    setShowEditConfirmDialog(true);
+  };
+
+  const handleConfirmEdit = () => {
+    setShowEditConfirmDialog(false);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    form.reset();
+  };
 
   const handlePointsPopupClose = () => {
     setPointsPopup(null);
@@ -241,7 +272,15 @@ export default function ProfilePage() {
           <Card className="mb-6 border-green-500/20 bg-green-500/5">
             <CardContent className="p-4 flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-600">Profile complete!</span>
+              <div className="flex flex-col">
+                <span className="font-medium text-green-600">Profile complete!</span>
+                {isProfileLocked && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    Your information is locked. Click "Edit Information" below to make changes.
+                  </span>
+                )}
+              </div>
               <Badge className="ml-auto bg-green-500/10 text-green-600 border-green-500/20">
                 Ready to apply
               </Badge>
@@ -268,7 +307,13 @@ export default function ProfilePage() {
                     <FormItem>
                       <FormLabel>Full Name *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your full name" {...field} data-testid="input-name" />
+                        <Input 
+                          placeholder="Your full name" 
+                          {...field} 
+                          disabled={isProfileLocked}
+                          className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                          data-testid="input-name" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -286,7 +331,13 @@ export default function ProfilePage() {
                           TikTok Handle *
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="@yourtiktok" {...field} data-testid="input-tiktok" />
+                          <Input 
+                            placeholder="@yourtiktok" 
+                            {...field} 
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            data-testid="input-tiktok" 
+                          />
                         </FormControl>
                         <FormDescription className="text-xs">
                           This must match your TikTok account
@@ -310,6 +361,8 @@ export default function ProfilePage() {
                             placeholder="@yourinstagram"
                             {...field}
                             value={field.value || ""}
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
                             data-testid="input-instagram"
                           />
                         </FormControl>
@@ -336,6 +389,8 @@ export default function ProfilePage() {
                           value={field.value}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
+                          disabled={isProfileLocked}
+                          className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
                           data-testid="input-phone"
                         />
                       </FormControl>
@@ -366,6 +421,8 @@ export default function ProfilePage() {
                         <Input
                           placeholder="Street address"
                           {...field}
+                          disabled={isProfileLocked}
+                          className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
                           data-testid="input-address1"
                         />
                       </FormControl>
@@ -385,6 +442,8 @@ export default function ProfilePage() {
                           placeholder="Apt, suite, unit (optional)"
                           {...field}
                           value={field.value || ""}
+                          disabled={isProfileLocked}
+                          className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
                           data-testid="input-address2"
                         />
                       </FormControl>
@@ -401,7 +460,13 @@ export default function ProfilePage() {
                       <FormItem>
                         <FormLabel>City *</FormLabel>
                         <FormControl>
-                          <Input placeholder="City" {...field} data-testid="input-city" />
+                          <Input 
+                            placeholder="City" 
+                            {...field} 
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            data-testid="input-city" 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -414,9 +479,16 @@ export default function ProfilePage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>State *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value || ""}
+                          disabled={isProfileLocked}
+                        >
                           <FormControl>
-                            <SelectTrigger data-testid="select-state">
+                            <SelectTrigger 
+                              data-testid="select-state"
+                              className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            >
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                           </FormControl>
@@ -440,7 +512,13 @@ export default function ProfilePage() {
                       <FormItem>
                         <FormLabel>ZIP Code *</FormLabel>
                         <FormControl>
-                          <Input placeholder="ZIP" {...field} data-testid="input-zip" />
+                          <Input 
+                            placeholder="ZIP" 
+                            {...field} 
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            data-testid="input-zip" 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -493,6 +571,8 @@ export default function ProfilePage() {
                           type="email"
                           placeholder="your@paypal.email"
                           {...field}
+                          disabled={isProfileLocked}
+                          className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
                           data-testid="input-paypal"
                         />
                       </FormControl>
@@ -506,27 +586,103 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                size="lg"
-                disabled={updateMutation.isPending}
-                data-testid="button-save-profile"
-              >
-                {updateMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Profile"
-                )}
-              </Button>
+            {/* Submit/Edit Buttons */}
+            <div className="flex justify-end gap-3">
+              {isProfileLocked ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  onClick={handleEditClick}
+                  data-testid="button-edit-profile"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit Information
+                </Button>
+              ) : influencer?.profileCompleted && isEditing ? (
+                <>
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    data-testid="button-cancel-edit"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={updateMutation.isPending}
+                    data-testid="button-save-profile"
+                  >
+                    {updateMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={updateMutation.isPending}
+                  data-testid="button-save-profile"
+                >
+                  {updateMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Profile"
+                  )}
+                </Button>
+              )}
             </div>
           </form>
         </Form>
       </div>
+
+      {/* Edit Confirmation Dialog */}
+      <AlertDialog open={showEditConfirmDialog} onOpenChange={setShowEditConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Important: Shipping Address Notice
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left space-y-3">
+              <p>
+                Collaboom is a product seeding platform where <strong>real products are shipped to your address</strong>.
+              </p>
+              <p>
+                Your shipping address is critical for receiving campaign products. Please only update your information if:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>You have moved to a new address</li>
+                <li>There was an error in your original entry</li>
+                <li>You must change your address for another important reason</li>
+              </ul>
+              <p className="font-medium">
+                Do you need to update your information?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-edit-dialog">
+              No, Keep Current Info
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmEdit} data-testid="button-confirm-edit">
+              Yes, I Need to Update
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <PointsAwardPopup
         points={pointsPopup?.points || 0}
