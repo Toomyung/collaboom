@@ -1787,7 +1787,7 @@ export function InfluencerDetailSheet({
             </div>
             <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
               <p className="font-medium mb-1">Note:</p>
-              <p>The email will include a footer: "Please DO NOT reply to this email, it will bounce back. If you have any questions, please log in to your Collaboom dashboard and contact support."</p>
+              <p>The email will include a footer with: "Please DO NOT reply to this email" notice, dashboard link (collaboom.io/dashboard), and Collaboom team signature.</p>
             </div>
           </div>
           <DialogFooter>

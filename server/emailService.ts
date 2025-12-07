@@ -475,6 +475,8 @@ ${body}
 Please DO NOT reply to this email, it will bounce back.
 If you have any questions, please log in to your Collaboom dashboard and contact support.
 
+Visit your dashboard: https://collaboom.io/dashboard
+
 - The Collaboom Team`;
     
     const { data, error } = await resend.emails.send({
