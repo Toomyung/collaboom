@@ -111,9 +111,6 @@ export class DatabaseStorage implements IStorage {
     const updateData: Partial<Influencer> = { ...data };
     updateData.profileCompleted = isComplete;
     
-    if ((merged.penalty ?? 0) >= 5 && !merged.restricted) {
-      updateData.restricted = true;
-    }
 
     const [updated] = await db.update(influencers)
       .set(updateData)
