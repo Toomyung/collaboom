@@ -38,7 +38,9 @@ export const influencers = pgTable("influencers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   supabaseId: text("supabase_id").unique(),
   email: text("email").notNull().unique(),
-  name: text("name"),
+  name: text("name"), // Deprecated - kept for backward compatibility
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
   tiktokHandle: text("tiktok_handle").unique(),
   instagramHandle: text("instagram_handle"),
@@ -67,6 +69,8 @@ export const influencers = pgTable("influencers", {
 export const insertInfluencerSchema = createInsertSchema(influencers).pick({
   email: true,
   name: true,
+  firstName: true,
+  lastName: true,
   tiktokHandle: true,
   instagramHandle: true,
   phone: true,
@@ -79,7 +83,12 @@ export const insertInfluencerSchema = createInsertSchema(influencers).pick({
 });
 
 export const updateProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  firstName: z.string()
+    .min(1, "First name is required")
+    .regex(/^[a-zA-Z\s\-\.]+$/, "First name must contain only English letters"),
+  lastName: z.string()
+    .min(1, "Last name is required")
+    .regex(/^[a-zA-Z\s\-\.]+$/, "Last name must contain only English letters"),
   tiktokHandle: z.string()
     .min(1, "TikTok handle is required")
     .regex(/^[a-zA-Z0-9_.]+$/, "TikTok handle can only contain English letters, numbers, underscores, and periods"),
