@@ -28,6 +28,9 @@ import {
   ChevronRight,
   Headphones,
   Send,
+  Crown,
+  User,
+  UserPlus,
 } from "lucide-react";
 import {
   Sheet,
@@ -150,6 +153,38 @@ interface ScoreEventWithCampaign extends ScoreEvent {
     id: string;
     name: string;
     brandName: string;
+  };
+}
+
+function getTierInfo(score: number, completedCampaigns: number) {
+  // Tier definitions:
+  // - Starting: completedCampaigns === 0 OR score < 50
+  // - Standard: completedCampaigns >= 1 AND score >= 50 AND score < 85
+  // - VIP: completedCampaigns >= 1 AND score >= 85
+  if (completedCampaigns === 0 || score < 50) {
+    return {
+      name: "Starting",
+      fullName: "Starting Influencer",
+      color: "text-slate-600",
+      bgColor: "bg-slate-500/10",
+      icon: UserPlus,
+    };
+  }
+  if (score >= 85) {
+    return {
+      name: "VIP",
+      fullName: "VIP Influencer",
+      color: "text-amber-600",
+      bgColor: "bg-amber-500/10",
+      icon: Crown,
+    };
+  }
+  return {
+    name: "Standard",
+    fullName: "Standard Influencer",
+    color: "text-blue-600",
+    bgColor: "bg-blue-500/10",
+    icon: User,
   };
 }
 
@@ -741,7 +776,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <Card 
             className="cursor-pointer hover-elevate transition-all"
             onClick={() => setShowScoreSheet(true)}
@@ -758,6 +793,29 @@ export default function DashboardPage() {
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
+          {(() => {
+            const tierInfo = getTierInfo(influencer?.score ?? 0, influencer?.completedCampaigns ?? 0);
+            const TierIcon = tierInfo.icon;
+            return (
+              <Link href="/score-tier">
+                <Card 
+                  className="cursor-pointer hover-elevate transition-all h-full"
+                  data-testid="card-tier"
+                >
+                  <CardContent className="p-4 flex items-center gap-3 h-full">
+                    <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", tierInfo.bgColor)}>
+                      <TierIcon className={cn("h-5 w-5", tierInfo.color)} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={cn("text-lg font-bold", tierInfo.color)}>{tierInfo.name}</p>
+                      <p className="text-xs text-muted-foreground">Your Tier</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })()}
           <Card 
             className="cursor-pointer hover-elevate transition-all"
             onClick={() => setShowCompletedSheet(true)}

@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail, sendAccountSuspendedEmail, sendAccountUnsuspendedEmail, sendAccountBlockedEmail, sendDirectAdminEmail } from "./emailService";
+import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail, sendAccountSuspendedEmail, sendAccountUnsuspendedEmail, sendAccountBlockedEmail, sendDirectAdminEmail, sendTierUpgradeEmail } from "./emailService";
 import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
 import {
   authLimiter,
@@ -696,11 +696,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "You have already applied to this campaign" });
       }
 
+      // Tier-based restrictions
+      // Tier definitions:
+      // - Starting: completedCampaigns === 0 OR score < 50
+      // - Standard: completedCampaigns >= 1 AND score >= 50 AND score < 85
+      // - VIP: completedCampaigns >= 1 AND score >= 85
+      const completedCampaigns = influencer.completedCampaigns ?? 0;
+      const score = influencer.score ?? 0;
+      const isStartingInfluencer = completedCampaigns === 0 || score < 50;
+      const isVIP = completedCampaigns >= 1 && score >= 85;
+
+      // Starting influencer: can only have 1 active campaign at a time
+      if (isStartingInfluencer) {
+        const existingApplications = await storage.getApplicationsByInfluencer(influencerId);
+        const activeApplications = existingApplications.filter(app => 
+          !["rejected", "uploaded", "completed", "deadline_missed"].includes(app.status)
+        );
+        if (activeApplications.length > 0) {
+          return res.status(400).json({ 
+            message: "As a Starting Influencer, you can only work on one campaign at a time. Complete your current campaign to apply to more!" 
+          });
+        }
+      }
+
       // Create application
       const application = await storage.createApplication({
         campaignId,
         influencerId,
       });
+
+      // VIP auto-approval: automatically approve without admin review
+      if (isVIP) {
+        await storage.updateApplication(application.id, {
+          status: "approved",
+          approvedAt: new Date(),
+        });
+        
+        // Increment campaign approved count
+        await storage.updateCampaign(campaignId, {
+          approvedCount: (campaign.approvedCount ?? 0) + 1,
+        });
+
+        // Send approval email (non-blocking)
+        sendApplicationApprovedEmail(
+          influencer.email,
+          influencer.name || influencer.email.split("@")[0],
+          campaign.name,
+          campaign.brandName
+        ).then(async (result) => {
+          if (result.success && result.messageId) {
+            // Store the Message-ID for email threading
+            await storage.updateApplication(application.id, {
+              emailThreadId: result.messageId,
+            });
+            // Create notification
+            storage.createNotification({
+              influencerId: influencer.id,
+              campaignId: campaign.id,
+              applicationId: application.id,
+              type: "approved",
+            }).catch(console.error);
+          }
+        }).catch(console.error);
+
+        // Return with auto-approved status
+        const updatedApplication = await storage.getApplication(application.id);
+        return res.json({ ...updatedApplication, autoApproved: true });
+      }
 
       return res.json(application);
     } catch (error: any) {
@@ -1657,6 +1719,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const campaign = await storage.getCampaign(application.campaignId);
       
       if (influencer) {
+        // Track previous tier for upgrade detection
+        // Tier definitions:
+        // - Starting: completedCampaigns === 0 OR score < 50
+        // - Standard: completedCampaigns >= 1 AND score >= 50 AND score < 85
+        // - VIP: completedCampaigns >= 1 AND score >= 85
+        const previousCompletedCampaigns = influencer.completedCampaigns ?? 0;
+        const previousScore = influencer.score ?? 0;
+        
+        // Determine previous tier using consistent logic
+        const calculateTier = (completed: number, score: number) => {
+          if (completed === 0 || score < 50) return "starting";
+          if (score >= 85) return "vip";
+          return "standard";
+        };
+        const previousTier = calculateTier(previousCompletedCampaigns, previousScore);
+
         // Award the specified points
         await storage.addScoreEvent({
           influencerId: influencer.id,
@@ -1675,6 +1753,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             delta: 5,
             reason: "first_upload",
           });
+        }
+
+        // Increment completed campaigns count
+        await storage.updateInfluencer(influencer.id, {
+          completedCampaigns: previousCompletedCampaigns + 1,
+        });
+
+        // Get updated influencer to check new tier
+        const updatedInfluencer = await storage.getInfluencer(influencer.id);
+        if (updatedInfluencer) {
+          const newCompletedCampaigns = updatedInfluencer.completedCampaigns ?? 0;
+          const newScore = updatedInfluencer.score ?? 0;
+          
+          // Determine new tier using same consistent logic
+          const newTier = calculateTier(newCompletedCampaigns, newScore);
+
+          // Only send tier upgrade email when tier actually changes
+          if (previousTier !== newTier) {
+            if (previousTier === "starting" && newTier === "standard") {
+              // Starting → Standard upgrade (first campaign completed AND score >= 50)
+              sendTierUpgradeEmail(
+                updatedInfluencer.email,
+                updatedInfluencer.name || updatedInfluencer.email.split("@")[0],
+                "standard"
+              ).then(() => {
+                console.log(`Tier upgrade email (standard) sent to ${updatedInfluencer.email}`);
+              }).catch(console.error);
+            } else if (newTier === "vip" && previousTier !== "vip") {
+              // → VIP upgrade (score reached 85+)
+              sendTierUpgradeEmail(
+                updatedInfluencer.email,
+                updatedInfluencer.name || updatedInfluencer.email.split("@")[0],
+                "vip"
+              ).then(() => {
+                console.log(`Tier upgrade email (vip) sent to ${updatedInfluencer.email}`);
+              }).catch(console.error);
+            }
+          }
         }
 
         // Send upload verified email (non-blocking)

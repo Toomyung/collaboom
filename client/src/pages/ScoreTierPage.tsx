@@ -32,10 +32,25 @@ export default function ScoreTierPage() {
   const isInfluencer = isAuthenticated && !isAdmin;
 
   const currentScore = influencer?.score ?? 0;
-  const tierInfo = getTierInfo(currentScore);
+  const completedCampaigns = influencer?.completedCampaigns ?? 0;
 
-  function getTierInfo(score: number) {
-    if (score >= 85) {
+  function getTierInfo(score: number, completed: number) {
+    // Tier definitions:
+    // - Starting: completedCampaigns === 0 OR score < 50
+    // - Standard: completedCampaigns >= 1 AND score >= 50 AND score < 85
+    // - VIP: completedCampaigns >= 1 AND score >= 85
+    if (completed === 0 || score < 50) {
+      return {
+        name: "Starting Influencer",
+        color: "from-slate-400 to-gray-500",
+        bgColor: "bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30",
+        borderColor: "border-slate-300 dark:border-slate-700",
+        textColor: "text-slate-700 dark:text-slate-300",
+        icon: UserPlus,
+        nextTier: completed === 0 ? "Standard (complete 1 campaign)" : "Standard",
+        pointsToNext: completed === 0 ? null : 50 - score,
+      };
+    } else if (score >= 85) {
       return {
         name: "VIP Influencer",
         color: "from-amber-400 to-yellow-500",
@@ -46,7 +61,7 @@ export default function ScoreTierPage() {
         nextTier: null,
         pointsToNext: null,
       };
-    } else if (score >= 50) {
+    } else {
       return {
         name: "Standard Influencer",
         color: "from-blue-400 to-indigo-500",
@@ -57,20 +72,10 @@ export default function ScoreTierPage() {
         nextTier: "VIP",
         pointsToNext: 85 - score,
       };
-    } else {
-      return {
-        name: "Starting Influencer",
-        color: "from-slate-400 to-gray-500",
-        bgColor: "bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/30",
-        borderColor: "border-slate-300 dark:border-slate-700",
-        textColor: "text-slate-700 dark:text-slate-300",
-        icon: UserPlus,
-        nextTier: "Standard",
-        pointsToNext: 50 - score,
-      };
     }
   }
 
+  const tierInfo = getTierInfo(currentScore, completedCampaigns);
   const TierIcon = tierInfo.icon;
 
   return (
