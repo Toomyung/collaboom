@@ -133,6 +133,8 @@ export default function AdminCampaignDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      // Also invalidate the campaigns list to update slot counts
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
       toast({ title: "Application approved" });
     },
     onError: (error: Error) => {
