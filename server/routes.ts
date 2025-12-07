@@ -464,23 +464,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get influencer's own score events (transparency feature)
+  // Combines both score events (additions) and penalty events (deductions shown as negative)
   app.get("/api/me/score-events", requireAuth("influencer"), async (req, res) => {
     try {
-      const events = await storage.getScoreEventsByInfluencer(req.session.userId!);
+      const scoreEvents = await storage.getScoreEventsByInfluencer(req.session.userId!);
+      const penaltyEvents = await storage.getPenaltyEventsByInfluencer(req.session.userId!);
       
-      // Enrich with campaign information
-      const enrichedEvents = await Promise.all(events.map(async (event) => {
+      // Enrich score events with campaign information
+      const enrichedScoreEvents = await Promise.all(scoreEvents.map(async (event) => {
         let campaign = null;
         if (event.campaignId) {
           campaign = await storage.getCampaign(event.campaignId);
         }
         return {
           ...event,
+          type: 'score' as const,
           campaign: campaign ? { id: campaign.id, name: campaign.name, brandName: campaign.brandName } : null
         };
       }));
       
-      return res.json(enrichedEvents);
+      // Convert penalty events to negative score events for display
+      const enrichedPenaltyEvents = await Promise.all(penaltyEvents.map(async (event) => {
+        let campaign = null;
+        if (event.campaignId) {
+          campaign = await storage.getCampaign(event.campaignId);
+        }
+        return {
+          ...event,
+          delta: -event.delta, // Make delta negative for display
+          type: 'penalty' as const,
+          seenAt: null, // Penalty events don't have seenAt
+          campaign: campaign ? { id: campaign.id, name: campaign.name, brandName: campaign.brandName } : null
+        };
+      }));
+      
+      // Combine and sort by createdAt (newest first)
+      const allEvents = [...enrichedScoreEvents, ...enrichedPenaltyEvents].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      return res.json(allEvents);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
