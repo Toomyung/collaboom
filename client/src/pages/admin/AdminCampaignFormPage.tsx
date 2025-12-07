@@ -43,6 +43,35 @@ import { z } from "zod";
 import { useState, useEffect } from "react";
 import { PlacementImageUpload } from "@/components/PlacementImageUpload";
 
+// URL validation helpers
+const isValidAmazonUrl = (url: string) => {
+  if (!url || url.trim() === "") return true; // Optional field
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.includes("amazon.com") || lowerUrl.includes("amzn.to") || lowerUrl.includes("a.co");
+};
+
+const isValidInstagramUrl = (url: string) => {
+  if (!url || url.trim() === "") return true; // Optional field
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.includes("instagram.com") || lowerUrl.includes("instagr.am");
+};
+
+const isValidTikTokUrl = (url: string) => {
+  if (!url || url.trim() === "") return true; // Optional field
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.includes("tiktok.com") || lowerUrl.includes("vm.tiktok.com");
+};
+
+const isValidWebsiteUrl = (url: string) => {
+  if (!url || url.trim() === "") return true; // Optional field
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 const formSchema = insertCampaignSchema.extend({
   productName: z.string().optional(),
   requiredHashtags: z.array(z.string()).optional(),
@@ -51,11 +80,19 @@ const formSchema = insertCampaignSchema.extend({
   productDetail: z.string().optional(),
   stepByStepProcess: z.string().optional(),
   eligibilityRequirements: z.string().optional(),
-  // Social/External Links
-  amazonUrl: z.string().optional(),
-  instagramUrl: z.string().optional(),
-  tiktokUrl: z.string().optional(),
-  officialWebsiteUrl: z.string().optional(),
+  // Social/External Links with validation
+  amazonUrl: z.string().optional().refine(isValidAmazonUrl, {
+    message: "Please enter a valid Amazon URL (amazon.com, amzn.to, or a.co)",
+  }),
+  instagramUrl: z.string().optional().refine(isValidInstagramUrl, {
+    message: "Please enter a valid Instagram URL (instagram.com)",
+  }),
+  tiktokUrl: z.string().optional().refine(isValidTikTokUrl, {
+    message: "Please enter a valid TikTok URL (tiktok.com)",
+  }),
+  officialWebsiteUrl: z.string().optional().refine(isValidWebsiteUrl, {
+    message: "Please enter a valid website URL (must start with http:// or https://)",
+  }),
   // Timeline
   campaignTimeline: z.string().optional(),
   // Video Guidelines
@@ -453,11 +490,23 @@ export default function AdminCampaignFormPage() {
       return;
     }
     
-    // Check if TikTok URL is an actual video link
-    const isTikTokUrl = url.includes("tiktok.com");
+    // Check if it's a TikTok URL first
+    const lowerUrl = url.toLowerCase();
+    const isTikTokUrl = lowerUrl.includes("tiktok.com") || lowerUrl.includes("vm.tiktok.com");
+    
+    if (!isTikTokUrl) {
+      toast({
+        title: "Invalid URL",
+        description: "Reference videos must be TikTok URLs (tiktok.com). Please enter a valid TikTok video link.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if TikTok URL is an actual video link (not just a profile)
     const hasVideoId = url.includes("/video/");
     
-    if (isTikTokUrl && !hasVideoId) {
+    if (!hasVideoId) {
       toast({
         title: "Not a Video Link",
         description: "This looks like a TikTok profile link, not a video link. Please use a video URL (e.g., tiktok.com/@user/video/123456)",
