@@ -1,11 +1,12 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Sparkles, LayoutDashboard, User, LogOut, Menu, X } from "lucide-react";
-import { useState } from "react";
 import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
 import { BlockedUserDialog } from "@/components/BlockedUserDialog";
+import { PointsAwardPopup } from "@/components/PointsAwardPopup";
+import { useUnseenPoints } from "@/hooks/useUnseenPoints";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -20,6 +21,8 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const isLanding = location === "/";
   const isInfluencer = isAuthenticated && !isAdmin;
+  
+  const { currentEvent, markCurrentAsSeen } = useUnseenPoints(isInfluencer);
 
   useEffect(() => {
     // Blocked takes priority over suspended
@@ -266,6 +269,15 @@ export function MainLayout({ children }: MainLayoutProps) {
         <BlockedUserDialog
           open={showBlockedDialog}
           influencerName={influencer.name || user?.name || ""}
+        />
+      )}
+
+      {isInfluencer && currentEvent && (
+        <PointsAwardPopup
+          points={currentEvent.delta}
+          reason={currentEvent.reason}
+          open={true}
+          onClose={markCurrentAsSeen}
         />
       )}
     </div>

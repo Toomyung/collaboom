@@ -1,4 +1,4 @@
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, isNull, inArray } from "drizzle-orm";
 import { db } from "./db";
 import * as bcrypt from 'bcryptjs';
 import { deleteImagesFromStorage } from "./supabaseStorage";
@@ -672,6 +672,22 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(scoreEvents)
       .where(eq(scoreEvents.influencerId, influencerId))
       .orderBy(desc(scoreEvents.createdAt));
+  }
+
+  async getUnseenScoreEvents(influencerId: string): Promise<ScoreEvent[]> {
+    return await db.select().from(scoreEvents)
+      .where(and(
+        eq(scoreEvents.influencerId, influencerId),
+        isNull(scoreEvents.seenAt)
+      ))
+      .orderBy(scoreEvents.createdAt);
+  }
+
+  async markScoreEventsAsSeen(eventIds: string[]): Promise<void> {
+    if (eventIds.length === 0) return;
+    await db.update(scoreEvents)
+      .set({ seenAt: new Date() })
+      .where(inArray(scoreEvents.id, eventIds));
   }
 
   async addPenaltyEvent(event: InsertPenaltyEvent): Promise<PenaltyEvent> {

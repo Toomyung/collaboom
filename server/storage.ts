@@ -108,6 +108,8 @@ export interface IStorage {
   // Score Events
   addScoreEvent(event: InsertScoreEvent): Promise<ScoreEvent>;
   getScoreEventsByInfluencer(influencerId: string): Promise<ScoreEvent[]>;
+  getUnseenScoreEvents(influencerId: string): Promise<ScoreEvent[]>;
+  markScoreEventsAsSeen(eventIds: string[]): Promise<void>;
   
   // Penalty Events
   addPenaltyEvent(event: InsertPenaltyEvent): Promise<PenaltyEvent>;
@@ -868,6 +870,7 @@ export class MemStorage implements IStorage {
       delta: event.delta,
       reason: event.reason,
       createdByAdminId: event.createdByAdminId || null,
+      seenAt: null,
       createdAt: new Date(),
     };
     this.scoreEvents.set(id, newEvent);
@@ -884,6 +887,22 @@ export class MemStorage implements IStorage {
 
   async getScoreEventsByInfluencer(influencerId: string): Promise<ScoreEvent[]> {
     return Array.from(this.scoreEvents.values()).filter(e => e.influencerId === influencerId);
+  }
+
+  async getUnseenScoreEvents(influencerId: string): Promise<ScoreEvent[]> {
+    return Array.from(this.scoreEvents.values()).filter(
+      e => e.influencerId === influencerId && !e.seenAt
+    );
+  }
+
+  async markScoreEventsAsSeen(eventIds: string[]): Promise<void> {
+    const now = new Date();
+    for (const id of eventIds) {
+      const event = this.scoreEvents.get(id);
+      if (event) {
+        event.seenAt = now;
+      }
+    }
   }
 
   // Penalty Events

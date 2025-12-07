@@ -265,8 +265,9 @@ export const scoreEvents = pgTable("score_events", {
   campaignId: varchar("campaign_id"),
   applicationId: varchar("application_id"),
   delta: integer("delta").notNull(),
-  reason: text("reason").notNull(), // 'first_upload', 'upload_success', 'streak_3', 'brand_feedback', 'admin_manual'
+  reason: text("reason").notNull(), // 'signup_bonus', 'address_completion', 'upload_verified', 'admin_adjustment', etc.
   createdByAdminId: varchar("created_by_admin_id"),
+  seenAt: timestamp("seen_at"), // When the user saw the points popup (null = not yet seen)
   createdAt: timestamp("created_at").defaultNow(),
 });
 

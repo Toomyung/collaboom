@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -39,6 +40,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { SiTiktok, SiInstagram, SiPaypal } from "react-icons/si";
+import { PointsAwardPopup } from "@/components/PointsAwardPopup";
 
 const US_STATES = [
   { value: "AL", label: "AL - Alabama" },
@@ -98,6 +100,7 @@ export default function ProfilePage() {
   const { isAuthenticated, influencer, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [pointsPopup, setPointsPopup] = useState<{ points: number; reason: string } | null>(null);
 
   const form = useForm<UpdateProfile>({
     resolver: zodResolver(updateProfileSchema),
@@ -136,15 +139,20 @@ export default function ProfilePage() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been saved successfully. Redirecting...",
-      });
-      setTimeout(() => {
-        setLocation("/dashboard");
-      }, 1500);
+      
+      if (data.pointsAwarded && data.pointsAwarded > 0) {
+        setPointsPopup({ points: data.pointsAwarded, reason: "address_completion" });
+      } else {
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been saved successfully. Redirecting...",
+        });
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 1500);
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -154,6 +162,17 @@ export default function ProfilePage() {
       });
     },
   });
+
+  const handlePointsPopupClose = () => {
+    setPointsPopup(null);
+    toast({
+      title: "Profile updated",
+      description: "Your profile has been saved successfully. Redirecting...",
+    });
+    setTimeout(() => {
+      setLocation("/dashboard");
+    }, 1500);
+  };
 
   if (authLoading) {
     return (
@@ -508,6 +527,13 @@ export default function ProfilePage() {
           </form>
         </Form>
       </div>
+
+      <PointsAwardPopup
+        points={pointsPopup?.points || 0}
+        reason={pointsPopup?.reason || ""}
+        open={pointsPopup !== null}
+        onClose={handlePointsPopupClose}
+      />
     </MainLayout>
   );
 }

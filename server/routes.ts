@@ -390,11 +390,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Get current influencer data to check if address is being completed for the first time
+      const currentInfluencer = await storage.getInfluencer(req.session.userId!);
+      if (!currentInfluencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+      
+      // Check if address is being completed (all required address fields present in update)
+      const isAddressComplete = data.addressLine1 && data.city && data.state && data.zipCode;
+      const wasAddressIncomplete = !currentInfluencer.addressLine1 || !currentInfluencer.city || 
+                                   !currentInfluencer.state || !currentInfluencer.zipCode;
+      
       const influencer = await storage.updateInfluencer(req.session.userId!, data);
       if (!influencer) {
         return res.status(404).json({ message: "Influencer not found" });
       }
-      return res.json(influencer);
+      
+      // Award address completion bonus (+10) only once - first time address is completed
+      let pointsAwarded = 0;
+      if (isAddressComplete && wasAddressIncomplete) {
+        // Check if address bonus was already awarded
+        const existingEvents = await storage.getScoreEventsByInfluencer(req.session.userId!);
+        const hasAddressBonus = existingEvents.some(e => e.reason === "address_completion");
+        
+        if (!hasAddressBonus) {
+          await storage.addScoreEvent({
+            influencerId: req.session.userId!,
+            delta: 10,
+            reason: "address_completion",
+          });
+          pointsAwarded = 10;
+          console.log(`[Profile] Address completion bonus +10 points awarded to ${influencer.email}`);
+        }
+      }
+      
+      return res.json({ ...influencer, pointsAwarded });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
@@ -461,6 +491,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const events = await storage.getPenaltyEventsByInfluencer(req.session.userId!);
       return res.json(events);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get unseen score events for popup notifications
+  app.get("/api/me/score-events/unseen", requireAuth("influencer"), async (req, res) => {
+    try {
+      const events = await storage.getUnseenScoreEvents(req.session.userId!);
+      return res.json(events);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mark score events as seen
+  app.post("/api/me/score-events/mark-seen", requireAuth("influencer"), async (req, res) => {
+    try {
+      const { eventIds } = req.body;
+      if (!Array.isArray(eventIds)) {
+        return res.status(400).json({ message: "eventIds must be an array" });
+      }
+      await storage.markScoreEventsAsSeen(eventIds);
+      return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
