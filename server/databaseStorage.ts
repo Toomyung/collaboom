@@ -206,29 +206,38 @@ export class DatabaseStorage implements IStorage {
       totalCount = Number(countResult[0]?.count || 0);
     }
 
-    const itemsWithStats = await Promise.all(
-      influencerResults.map(async (inf) => {
-        const apps = await db
-          .select()
-          .from(applications)
-          .where(eq(applications.influencerId, inf.id));
-        
-        const appliedCount = apps.length;
-        const acceptedCount = apps.filter(a => 
-          ['approved', 'shipped', 'delivered', 'uploaded', 'verified'].includes(a.status)
-        ).length;
-        const completedCount = apps.filter(a => 
-          a.status === 'verified'
-        ).length;
+    // Fetch application stats in a single aggregated query instead of N+1 queries
+    const influencerIds = influencerResults.map(inf => inf.id);
+    
+    let statsMap: Map<string, { appliedCount: number; acceptedCount: number; completedCount: number }> = new Map();
+    
+    if (influencerIds.length > 0) {
+      const statsResult = await db
+        .select({
+          influencerId: applications.influencerId,
+          appliedCount: sql<number>`count(*)`,
+          acceptedCount: sql<number>`count(*) FILTER (WHERE ${applications.status} IN ('approved', 'shipped', 'delivered', 'uploaded', 'verified'))`,
+          completedCount: sql<number>`count(*) FILTER (WHERE ${applications.status} = 'verified')`,
+        })
+        .from(applications)
+        .where(sql`${applications.influencerId} IN (${sql.join(influencerIds.map(id => sql`${id}`), sql`, `)})`)
+        .groupBy(applications.influencerId);
+      
+      statsResult.forEach(stat => {
+        statsMap.set(stat.influencerId, {
+          appliedCount: Number(stat.appliedCount) || 0,
+          acceptedCount: Number(stat.acceptedCount) || 0,
+          completedCount: Number(stat.completedCount) || 0,
+        });
+      });
+    }
 
-        return {
-          ...inf,
-          appliedCount,
-          acceptedCount,
-          completedCount,
-        };
-      })
-    );
+    const itemsWithStats = influencerResults.map(inf => ({
+      ...inf,
+      appliedCount: statsMap.get(inf.id)?.appliedCount || 0,
+      acceptedCount: statsMap.get(inf.id)?.acceptedCount || 0,
+      completedCount: statsMap.get(inf.id)?.completedCount || 0,
+    }));
 
     return {
       items: itemsWithStats,
