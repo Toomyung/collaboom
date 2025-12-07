@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail, sendAccountSuspendedEmail, sendAccountUnsuspendedEmail, sendAccountBlockedEmail } from "./emailService";
+import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail, sendAccountSuspendedEmail, sendAccountUnsuspendedEmail, sendAccountBlockedEmail, sendDirectAdminEmail } from "./emailService";
 import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
 import {
   authLimiter,
@@ -2132,6 +2132,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteInfluencer(req.params.id);
 
       return res.json({ success: true, message: "Account permanently deleted" });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Send direct email to influencer
+  app.post("/api/admin/influencers/:id/email", requireAuth("admin"), async (req, res) => {
+    try {
+      const influencer = await storage.getInfluencer(req.params.id);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      if (!influencer.email) {
+        return res.status(400).json({ message: "Influencer has no email address" });
+      }
+
+      const { subject, body } = req.body;
+      if (!subject || !body) {
+        return res.status(400).json({ message: "Subject and body are required" });
+      }
+
+      if (typeof subject !== "string" || subject.trim().length === 0) {
+        return res.status(400).json({ message: "Subject cannot be empty" });
+      }
+
+      if (typeof body !== "string" || body.trim().length === 0) {
+        return res.status(400).json({ message: "Email body cannot be empty" });
+      }
+
+      const result = await sendDirectAdminEmail(
+        influencer.email,
+        influencer.name || "Creator",
+        subject.trim(),
+        body.trim()
+      );
+
+      if (!result.success) {
+        return res.status(500).json({ message: result.error || "Failed to send email" });
+      }
+
+      return res.json({ success: true, message: "Email sent successfully" });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

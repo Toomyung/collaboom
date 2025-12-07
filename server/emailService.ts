@@ -457,3 +457,42 @@ Thank you for your understanding.
     return { success: false, error: (err as Error).message };
   }
 }
+
+export async function sendDirectAdminEmail(
+  to: string,
+  influencerName: string,
+  subject: string,
+  body: string
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+    
+    const fullBody = `Hi ${influencerName},
+
+${body}
+
+---
+Please DO NOT reply to this email, it will bounce back.
+If you have any questions, please log in to your Collaboom dashboard and contact support.
+
+- The Collaboom Team`;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject: `[Collaboom] ${subject}`,
+      text: fullBody,
+    });
+
+    if (error) {
+      console.error("Failed to send direct admin email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Direct admin email sent to ${to}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending direct admin email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}

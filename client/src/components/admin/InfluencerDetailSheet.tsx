@@ -69,6 +69,7 @@ import {
   UserCheck,
   ShieldX,
   Trash2,
+  Mail,
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -232,6 +233,9 @@ export function InfluencerDetailSheet({
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [showUnblockConfirm, setShowUnblockConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -377,6 +381,21 @@ export function InfluencerDetailSheet({
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const sendEmailMutation = useMutation({
+    mutationFn: async ({ id, subject, body }: { id: string; subject: string; body: string }) => {
+      await apiRequest("POST", `/api/admin/influencers/${id}/email`, { subject, body });
+    },
+    onSuccess: () => {
+      toast({ title: "Email sent", description: "The email has been sent successfully." });
+      setShowEmailDialog(false);
+      setEmailSubject("");
+      setEmailBody("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to send email", description: error.message, variant: "destructive" });
     },
   });
 
@@ -883,6 +902,16 @@ export function InfluencerDetailSheet({
             <SheetHeader>
               <SheetTitle>{selectedInfluencer.name || "Influencer Details"}</SheetTitle>
               <SheetDescription>{selectedInfluencer.email}</SheetDescription>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 w-fit"
+                onClick={() => setShowEmailDialog(true)}
+                data-testid="button-email-influencer"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Email Influencer
+              </Button>
             </SheetHeader>
 
             {selectedInfluencer.blocked && (
@@ -1724,6 +1753,80 @@ export function InfluencerDetailSheet({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Influencer
+            </DialogTitle>
+            <DialogDescription>
+              Send a direct email to {selectedInfluencer?.name || "this influencer"}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subject</label>
+              <Input
+                placeholder="Enter email subject..."
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                data-testid="input-email-subject"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message</label>
+              <Textarea
+                placeholder="Enter your message..."
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={6}
+                data-testid="input-email-body"
+              />
+            </div>
+            <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+              <p className="font-medium mb-1">Note:</p>
+              <p>The email will include a footer: "Please DO NOT reply to this email, it will bounce back. If you have any questions, please log in to your Collaboom dashboard and contact support."</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEmailDialog(false);
+                setEmailSubject("");
+                setEmailBody("");
+              }}
+              data-testid="button-cancel-email"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedInfluencer && emailSubject.trim() && emailBody.trim()) {
+                  sendEmailMutation.mutate({
+                    id: selectedInfluencer.id,
+                    subject: emailSubject,
+                    body: emailBody,
+                  });
+                }
+              }}
+              disabled={sendEmailMutation.isPending || !emailSubject.trim() || !emailBody.trim()}
+              data-testid="button-send-email"
+            >
+              {sendEmailMutation.isPending ? (
+                <>Sending...</>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
