@@ -444,7 +444,7 @@ export function InfluencerDetailSheet({
     if (!isNaN(delta) && delta !== 0 && selectedInfluencer) {
       setConfirmDialog({
         type: "penalty",
-        currentValue: selectedInfluencer.penalty ?? 0,
+        currentValue: selectedInfluencer.score ?? 0,
         delta: delta,
       });
     }
@@ -1134,65 +1134,69 @@ export function InfluencerDetailSheet({
                     </Card>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Card>
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs text-muted-foreground">Score</p>
-                          <Star className="h-3 w-3 text-yellow-500" />
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Star className="h-4 w-4 text-yellow-500" />
+                          <p className="text-sm font-medium">Score Adjustment</p>
                         </div>
-                        <p className="text-xl font-bold mb-2">{selectedInfluencer.score ?? 0}</p>
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            value={scoreDelta}
-                            onChange={(e) => setScoreDelta(e.target.value)}
-                            className="h-7 w-16 text-center text-sm"
-                            data-testid="input-score-delta"
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs px-2"
-                            onClick={handleScoreConfirm}
-                            disabled={!scoreDelta || parseInt(scoreDelta) === 0 || adjustScoreMutation.isPending}
-                            data-testid="button-score-confirm"
-                          >
-                            <CheckCircle className="h-3 w-3" />
-                          </Button>
+                        <p className="text-xl font-bold">{selectedInfluencer.score ?? 0} pts</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <p className="text-xs text-green-600 font-medium">Add Points</p>
+                          <div className="flex items-center gap-1">
+                            <span className="text-green-600 font-medium">+</span>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={scoreDelta}
+                              onChange={(e) => setScoreDelta(e.target.value)}
+                              placeholder="0"
+                              className="h-7 w-14 text-center text-sm"
+                              data-testid="input-score-delta"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2 border-green-300 hover:bg-green-50"
+                              onClick={handleScoreConfirm}
+                              disabled={!scoreDelta || parseInt(scoreDelta) === 0 || adjustScoreMutation.isPending}
+                              data-testid="button-score-confirm"
+                            >
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                            </Button>
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs text-muted-foreground">Penalty</p>
-                          <AlertTriangle className="h-3 w-3 text-red-500" />
+                        <div className="space-y-1">
+                          <p className="text-xs text-red-600 font-medium">Deduct Points</p>
+                          <div className="flex items-center gap-1">
+                            <span className="text-red-600 font-medium">-</span>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={penaltyDelta}
+                              onChange={(e) => setPenaltyDelta(e.target.value)}
+                              placeholder="0"
+                              className="h-7 w-14 text-center text-sm"
+                              data-testid="input-penalty-delta"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2 border-red-300 hover:bg-red-50"
+                              onClick={handlePenaltyConfirm}
+                              disabled={!penaltyDelta || parseInt(penaltyDelta) === 0 || adjustPenaltyMutation.isPending}
+                              data-testid="button-penalty-confirm"
+                            >
+                              <CheckCircle className="h-3 w-3 text-red-600" />
+                            </Button>
+                          </div>
                         </div>
-                        <p className="text-xl font-bold mb-2">{selectedInfluencer.penalty ?? 0}</p>
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            value={penaltyDelta}
-                            onChange={(e) => setPenaltyDelta(e.target.value)}
-                            className="h-7 w-16 text-center text-sm"
-                            data-testid="input-penalty-delta"
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs px-2"
-                            onClick={handlePenaltyConfirm}
-                            disabled={!penaltyDelta || parseInt(penaltyDelta) === 0 || adjustPenaltyMutation.isPending}
-                            data-testid="button-penalty-confirm"
-                          >
-                            <CheckCircle className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   {dashboardStats?.recentApplications && dashboardStats.recentApplications.length > 0 && (
                     <div className="space-y-2">
@@ -1354,7 +1358,7 @@ export function InfluencerDetailSheet({
 
                 <TabsContent value="history" className="mt-4">
                   <div className="space-y-3">
-                    <h3 className="font-medium">Score & Penalty History</h3>
+                    <h3 className="font-medium">Score History</h3>
                     {combinedHistory.length > 0 ? (
                       <div className="space-y-2 max-h-96 overflow-y-auto">
                         {combinedHistory.map((event) => (
@@ -1393,8 +1397,8 @@ export function InfluencerDetailSheet({
                                     ? event.delta > 0 ? "text-green-600" : "text-orange-600"
                                     : "text-red-600"
                                 )}>
-                                  {event.delta > 0 ? "+" : ""}{event.delta}
-                                  {event.type === 'score' ? " Score" : " Penalty"}
+                                  {event.type === 'penalty' ? "-" : (event.delta > 0 ? "+" : "")}{event.type === 'penalty' ? event.delta : event.delta}
+                                  {event.type === 'penalty' ? " (deducted)" : " pts"}
                                 </span>
                                 <Badge variant="secondary" className="text-xs">
                                   {event.reason}
@@ -1532,8 +1536,8 @@ export function InfluencerDetailSheet({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              포인트를 부여하려 합니다
+              <AlertTriangle className={cn("h-5 w-5", confirmDialog?.type === "penalty" ? "text-red-500" : "text-amber-500")} />
+              {confirmDialog?.type === "penalty" ? "포인트를 차감하려 합니다" : "포인트를 추가하려 합니다"}
             </DialogTitle>
             <DialogDescription className="pt-2 space-y-2">
               {confirmDialog?.type === "score" ? (
@@ -1541,8 +1545,8 @@ export function InfluencerDetailSheet({
                   <p>
                     현재 Score: <strong>{confirmDialog.currentValue}</strong>
                   </p>
-                  <p className={confirmDialog.delta > 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                    {confirmDialog.delta > 0 ? "+" : ""}{confirmDialog.delta} 포인트 부여
+                  <p className="text-green-600 font-medium">
+                    +{confirmDialog.delta} 포인트 추가
                   </p>
                   <p>
                     변경 후 Score: <strong>{confirmDialog.currentValue + confirmDialog.delta}</strong>
@@ -1551,13 +1555,13 @@ export function InfluencerDetailSheet({
               ) : (
                 <div className="space-y-2">
                   <p>
-                    현재 Penalty: <strong>{confirmDialog?.currentValue}</strong>
+                    현재 Score: <strong>{confirmDialog?.currentValue}</strong>
                   </p>
-                  <p className={(confirmDialog?.delta ?? 0) > 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
-                    {(confirmDialog?.delta ?? 0) > 0 ? "+" : ""}{confirmDialog?.delta} 페널티 부여
+                  <p className="text-red-600 font-medium">
+                    -{confirmDialog?.delta} 포인트 차감 (페널티)
                   </p>
                   <p>
-                    변경 후 Penalty: <strong>{(confirmDialog?.currentValue ?? 0) + (confirmDialog?.delta ?? 0)}</strong>
+                    변경 후 Score: <strong>{(confirmDialog?.currentValue ?? 0) - (confirmDialog?.delta ?? 0)}</strong>
                   </p>
                 </div>
               )}
