@@ -420,3 +420,40 @@ Welcome back!
     return { success: false, error: (err as Error).message };
   }
 }
+
+export async function sendAccountBlockedEmail(
+  to: string,
+  influencerName: string
+): Promise<EmailResult> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject: "[Collaboom] Your Account Has Been Blocked",
+      text: `Hi ${influencerName},
+
+We regret to inform you that your Collaboom account has been permanently blocked due to serious violations of our community guidelines.
+
+As a result, you will no longer be able to access the platform or participate in any campaigns.
+
+If you believe this decision was made in error or there has been a misunderstanding, please reach out to us at support@collaboom.io. We will review your case and respond as soon as possible.
+
+Thank you for your understanding.
+
+- The Collaboom Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send account blocked email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Account blocked email sent to ${to}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending account blocked email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}
