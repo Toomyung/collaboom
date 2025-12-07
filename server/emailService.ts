@@ -438,7 +438,7 @@ We regret to inform you that your Collaboom account has been permanently blocked
 
 As a result, you will no longer be able to access the platform or participate in any campaigns.
 
-If you believe this decision was made in error or there has been a misunderstanding, please reach out to us at support@collaboom.io. We will review your case and respond as soon as possible.
+If you believe this decision was made in error or there has been a misunderstanding, please reach out to us at hello@toomyungpeople.com. We will review your case and respond as soon as possible.
 
 Thank you for your understanding.
 

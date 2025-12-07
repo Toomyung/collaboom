@@ -50,10 +50,10 @@ export function BlockedUserDialog({
             <p className="font-medium text-foreground">
               If you believe this decision was made in error, please contact us at{" "}
               <a 
-                href="mailto:support@collaboom.io" 
+                href="mailto:hello@toomyungpeople.com" 
                 className="text-primary underline"
               >
-                support@collaboom.io
+                hello@toomyungpeople.com
               </a>
             </p>
           </DialogDescription>

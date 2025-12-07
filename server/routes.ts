@@ -164,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const isBanned = await storage.isBannedEmail(user.email);
           if (isBanned) {
             return res.status(403).json({ 
-              message: "This email address has been permanently banned from Collaboom. Please contact support@collaboom.io if you believe this is an error.",
+              message: "This email address has been permanently banned from Collaboom. Please contact hello@toomyungpeople.com if you believe this is an error.",
               banned: true
             });
           }
