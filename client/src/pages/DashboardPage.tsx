@@ -1005,28 +1005,48 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="tiers">
+                <AccordionTrigger>What are the influencer tiers?</AccordionTrigger>
+                <AccordionContent>
+                  <ul className="space-y-2 text-sm">
+                    <li><strong>Starting Influencer:</strong> New creators who are just getting started. Limited to 1 active campaign at a time.</li>
+                    <li><strong>Standard Influencer:</strong> Creators who have completed at least 1 campaign and maintain 50+ points. Access to more campaigns!</li>
+                    <li><strong>VIP Influencer:</strong> Trusted creators with 85+ points. Enjoy automatic campaign approvals and priority access to exclusive opportunities.</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
               <AccordionItem value="uploads">
                 <AccordionTrigger>How are uploads verified?</AccordionTrigger>
                 <AccordionContent>
                   Our team manually reviews each upload to ensure it meets the campaign 
                   requirements. Make sure to include all required hashtags and mentions, 
-                  and keep your content live for the specified duration.
+                  and keep your content live for at least 6 weeks.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="score">
+                <AccordionTrigger>How does my Score work?</AccordionTrigger>
+                <AccordionContent>
+                  Your Score reflects your reliability as a creator. You start with 50 points 
+                  when you sign up, and earn more points by completing campaigns successfully. 
+                  Points may be deducted if you miss deadlines. Higher scores unlock better 
+                  tier benefits and exclusive campaigns.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="deadlines">
                 <AccordionTrigger>Why do deadlines matter?</AccordionTrigger>
                 <AccordionContent>
                   Brands have specific timelines for their campaigns. Missing deadlines 
-                  affects your reliability score and may result in penalties. We send 
-                  reminders 48 hours before each deadline.
+                  affects your reliability score and may result in point deductions. 
+                  We send reminders before each deadline, so keep an eye on your email!
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="score">
-                <AccordionTrigger>How does my Score work?</AccordionTrigger>
+              <AccordionItem value="rejections">
+                <AccordionTrigger>What happens if my application is not selected?</AccordionTrigger>
                 <AccordionContent>
-                  Your Score (0-100) reflects your reliability as a creator. Complete 
-                  campaigns successfully to increase your score. Higher scores unlock 
-                  better opportunities and exclusive campaigns.
+                  Don't worry! Not being selected doesn't affect your score. Brands have 
+                  limited inventory and specific requirements for each campaign. Rejected 
+                  applications will automatically disappear from your dashboard after 24 hours, 
+                  but you're always welcome to apply to other campaigns.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="comments">
