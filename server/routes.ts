@@ -2027,12 +2027,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { delta, reason } = validationResult.data;
+      const { delta, reason, displayReason } = validationResult.data;
 
       await storage.addScoreEvent({
         influencerId: req.params.id,
         delta,
         reason: reason || "admin_manual",
+        displayReason: displayReason || undefined,
         createdByAdminId: req.session.userId,
       });
 
@@ -2057,12 +2058,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { delta, reason } = validationResult.data;
+      const { delta, reason, displayReason } = validationResult.data;
 
       await storage.addPenaltyEvent({
         influencerId: req.params.id,
         delta,
         reason: reason || "admin_manual",
+        displayReason: displayReason || undefined,
         createdByAdminId: req.session.userId,
       });
 

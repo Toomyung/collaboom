@@ -223,10 +223,12 @@ export function InfluencerDetailSheet({
   // Score/Penalty adjustment states (delta values to add/subtract)
   const [scoreDelta, setScoreDelta] = useState<string>("");
   const [penaltyDelta, setPenaltyDelta] = useState<string>("");
+  const [displayReason, setDisplayReason] = useState<string>("");
   const [confirmDialog, setConfirmDialog] = useState<{
     type: "score" | "penalty";
     currentValue: number;
     delta: number;
+    displayReason?: string;
   } | null>(null);
   const [showUnsuspendConfirm, setShowUnsuspendConfirm] = useState(false);
   const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
@@ -280,12 +282,17 @@ export function InfluencerDetailSheet({
   };
 
   const adjustScoreMutation = useMutation({
-    mutationFn: async ({ id, delta }: { id: string; delta: number }) => {
-      await apiRequest("POST", `/api/admin/influencers/${id}/score`, { delta, reason: "admin_manual" });
+    mutationFn: async ({ id, delta, displayReason }: { id: string; delta: number; displayReason?: string }) => {
+      await apiRequest("POST", `/api/admin/influencers/${id}/score`, { 
+        delta, 
+        reason: "admin_manual",
+        displayReason: displayReason || undefined
+      });
     },
     onSuccess: () => {
       invalidateQueries();
       toast({ title: "Score updated" });
+      setDisplayReason("");
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -293,12 +300,17 @@ export function InfluencerDetailSheet({
   });
 
   const adjustPenaltyMutation = useMutation({
-    mutationFn: async ({ id, delta }: { id: string; delta: number }) => {
-      await apiRequest("POST", `/api/admin/influencers/${id}/penalty`, { delta, reason: "admin_manual" });
+    mutationFn: async ({ id, delta, displayReason }: { id: string; delta: number; displayReason?: string }) => {
+      await apiRequest("POST", `/api/admin/influencers/${id}/penalty`, { 
+        delta, 
+        reason: "admin_manual",
+        displayReason: displayReason || undefined
+      });
     },
     onSuccess: () => {
       invalidateQueries();
-      toast({ title: "Penalty updated" });
+      toast({ title: "Points deducted" });
+      setDisplayReason("");
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -435,6 +447,7 @@ export function InfluencerDetailSheet({
         type: "score",
         currentValue: selectedInfluencer.score ?? 0,
         delta: delta,
+        displayReason: displayReason.trim() || undefined,
       });
     }
   };
@@ -446,6 +459,7 @@ export function InfluencerDetailSheet({
         type: "penalty",
         currentValue: selectedInfluencer.score ?? 0,
         delta: delta,
+        displayReason: displayReason.trim() || undefined,
       });
     }
   };
@@ -454,13 +468,22 @@ export function InfluencerDetailSheet({
     if (!confirmDialog || !selectedInfluencer) return;
     
     if (confirmDialog.type === "score") {
-      adjustScoreMutation.mutate({ id: selectedInfluencer.id, delta: confirmDialog.delta });
+      adjustScoreMutation.mutate({ 
+        id: selectedInfluencer.id, 
+        delta: confirmDialog.delta,
+        displayReason: confirmDialog.displayReason
+      });
       setScoreDelta("");
     } else {
-      adjustPenaltyMutation.mutate({ id: selectedInfluencer.id, delta: confirmDialog.delta });
+      adjustPenaltyMutation.mutate({ 
+        id: selectedInfluencer.id, 
+        delta: confirmDialog.delta,
+        displayReason: confirmDialog.displayReason
+      });
       setPenaltyDelta("");
     }
     setConfirmDialog(null);
+    setDisplayReason("");
   };
 
   const handleClose = () => {
@@ -470,6 +493,7 @@ export function InfluencerDetailSheet({
     setDetailView(null);
     setScoreDelta("");
     setPenaltyDelta("");
+    setDisplayReason("");
     setConfirmDialog(null);
     onClose();
   };
@@ -1143,6 +1167,20 @@ export function InfluencerDetailSheet({
                         </div>
                         <p className="text-xl font-bold">{selectedInfluencer.score ?? 0} pts</p>
                       </div>
+                      <div className="mb-2">
+                        <Input
+                          type="text"
+                          maxLength={50}
+                          value={displayReason}
+                          onChange={(e) => setDisplayReason(e.target.value)}
+                          placeholder="Reason (shown to influencer, optional)"
+                          className="h-8 text-sm"
+                          data-testid="input-display-reason"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {displayReason.length}/50 characters
+                        </p>
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <p className="text-xs text-green-600 font-medium">Add Points</p>
@@ -1536,37 +1574,43 @@ export function InfluencerDetailSheet({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className={cn("h-5 w-5", confirmDialog?.type === "penalty" ? "text-red-500" : "text-amber-500")} />
-              {confirmDialog?.type === "penalty" ? "포인트를 차감하려 합니다" : "포인트를 추가하려 합니다"}
+              <AlertTriangle className={cn("h-5 w-5", confirmDialog?.type === "penalty" ? "text-red-500" : "text-green-500")} />
+              {confirmDialog?.type === "penalty" ? "Deduct Points" : "Add Points"}
             </DialogTitle>
             <DialogDescription className="pt-2 space-y-2">
               {confirmDialog?.type === "score" ? (
                 <div className="space-y-2">
                   <p>
-                    현재 Score: <strong>{confirmDialog.currentValue}</strong>
+                    Current Score: <strong>{confirmDialog.currentValue}</strong>
                   </p>
                   <p className="text-green-600 font-medium">
-                    +{confirmDialog.delta} 포인트 추가
+                    +{confirmDialog.delta} points
                   </p>
                   <p>
-                    변경 후 Score: <strong>{confirmDialog.currentValue + confirmDialog.delta}</strong>
+                    New Score: <strong>{confirmDialog.currentValue + confirmDialog.delta}</strong>
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <p>
-                    현재 Score: <strong>{confirmDialog?.currentValue}</strong>
+                    Current Score: <strong>{confirmDialog?.currentValue}</strong>
                   </p>
                   <p className="text-red-600 font-medium">
-                    -{confirmDialog?.delta} 포인트 차감 (페널티)
+                    -{confirmDialog?.delta} points (penalty)
                   </p>
                   <p>
-                    변경 후 Score: <strong>{(confirmDialog?.currentValue ?? 0) - (confirmDialog?.delta ?? 0)}</strong>
+                    New Score: <strong>{(confirmDialog?.currentValue ?? 0) - (confirmDialog?.delta ?? 0)}</strong>
                   </p>
                 </div>
               )}
+              {confirmDialog?.displayReason && (
+                <div className="bg-muted p-2 rounded-md mt-2">
+                  <p className="text-xs text-muted-foreground">Reason (visible to influencer):</p>
+                  <p className="text-sm font-medium">{confirmDialog.displayReason}</p>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground pt-2">
-                확실하신가요?
+                Are you sure?
               </p>
             </DialogDescription>
           </DialogHeader>
@@ -1576,14 +1620,14 @@ export function InfluencerDetailSheet({
               onClick={() => setConfirmDialog(null)}
               data-testid="button-cancel-change"
             >
-              취소
+              Cancel
             </Button>
             <Button
               onClick={handleConfirmChange}
               disabled={adjustScoreMutation.isPending || adjustPenaltyMutation.isPending}
               data-testid="button-confirm-change"
             >
-              {(adjustScoreMutation.isPending || adjustPenaltyMutation.isPending) ? "저장 중..." : "확인"}
+              {(adjustScoreMutation.isPending || adjustPenaltyMutation.isPending) ? "Saving..." : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>

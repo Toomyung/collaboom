@@ -864,6 +864,7 @@ export class MemStorage implements IStorage {
       applicationId: event.applicationId || null,
       delta: event.delta,
       reason: event.reason,
+      displayReason: event.displayReason || null,
       createdByAdminId: event.createdByAdminId || null,
       seenAt: null,
       createdAt: new Date(),
@@ -910,6 +911,7 @@ export class MemStorage implements IStorage {
       applicationId: event.applicationId || null,
       delta: event.delta,
       reason: event.reason,
+      displayReason: event.displayReason || null,
       createdByAdminId: event.createdByAdminId || null,
       createdAt: new Date(),
     };

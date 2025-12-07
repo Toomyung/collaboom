@@ -653,6 +653,7 @@ export class DatabaseStorage implements IStorage {
       applicationId: event.applicationId || null,
       delta: event.delta,
       reason: event.reason,
+      displayReason: event.displayReason || null,
       createdByAdminId: event.createdByAdminId || null,
     }).returning();
 
@@ -694,6 +695,7 @@ export class DatabaseStorage implements IStorage {
       applicationId: event.applicationId || null,
       delta: event.delta,
       reason: event.reason,
+      displayReason: event.displayReason || null,
       createdByAdminId: event.createdByAdminId || null,
     }).returning();
 

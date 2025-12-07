@@ -266,6 +266,7 @@ export const scoreEvents = pgTable("score_events", {
   applicationId: varchar("application_id"),
   delta: integer("delta").notNull(),
   reason: text("reason").notNull(), // 'signup_bonus', 'address_completion', 'upload_verified', 'admin_adjustment', etc.
+  displayReason: text("display_reason"), // User-visible reason (max 50 chars) - shown to influencers
   createdByAdminId: varchar("created_by_admin_id"),
   seenAt: timestamp("seen_at"), // When the user saw the points popup (null = not yet seen)
   createdAt: timestamp("created_at").defaultNow(),
@@ -277,6 +278,7 @@ export const insertScoreEventSchema = createInsertSchema(scoreEvents).pick({
   applicationId: true,
   delta: true,
   reason: true,
+  displayReason: true,
   createdByAdminId: true,
 });
 
@@ -291,6 +293,7 @@ export const penaltyEvents = pgTable("penalty_events", {
   applicationId: varchar("application_id"),
   delta: integer("delta").notNull(),
   reason: text("reason").notNull(), // 'deadline_missed', 'first_ghosting', 'admin_manual', 'rollback'
+  displayReason: text("display_reason"), // User-visible reason (max 50 chars) - shown to influencers
   createdByAdminId: varchar("created_by_admin_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -301,6 +304,7 @@ export const insertPenaltyEventSchema = createInsertSchema(penaltyEvents).pick({
   applicationId: true,
   delta: true,
   reason: true,
+  displayReason: true,
   createdByAdminId: true,
 });
 

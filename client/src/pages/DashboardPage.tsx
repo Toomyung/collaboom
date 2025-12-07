@@ -1180,9 +1180,16 @@ export default function DashboardPage() {
                           {event.campaign.name}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {event.reason.replace(/_/g, " ")}
-                      </p>
+                      {/* Show displayReason if available, otherwise show human-readable reason (hide admin_manual) */}
+                      {event.displayReason ? (
+                        <p className="text-xs text-muted-foreground">
+                          {event.displayReason}
+                        </p>
+                      ) : event.reason !== "admin_manual" && event.reason !== "admin_adjustment" ? (
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {event.reason.replace(/_/g, " ")}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 ))}

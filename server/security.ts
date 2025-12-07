@@ -166,6 +166,10 @@ export const scoreAdjustmentSchema = z.object({
     .max(500, 'Reason too long')
     .optional()
     .transform(s => s ? sanitizeString(s) : undefined),
+  displayReason: z.string()
+    .max(50, 'Display reason must be 50 characters or less')
+    .optional()
+    .transform(s => s ? sanitizeString(s) : undefined),
 });
 
 export const shippingSchema = z.object({
