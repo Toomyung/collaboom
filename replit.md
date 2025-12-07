@@ -29,6 +29,7 @@ Preferred communication style: Simple, everyday language.
     - **Ghosting Detection:** Automated penalties for missed deadlines.
     - **Data Export:** CSV export of approved influencer data for admins.
     - **Input Validation:** Custom `PhoneInput` component with US-specific formatting and validation.
+    - **Influencer Name Structure:** Uses separate `firstName` and `lastName` fields. Legacy `name` field is auto-populated on save for backward compatibility. Centralized helper function `getInfluencerDisplayName` in `client/src/lib/influencer-utils.ts` handles display with proper fallbacks.
     - **Score & Tier System:** Three-tier progression system with automated tier upgrade detection:
         - **Starting Influencer:** completedCampaigns === 0 OR score < 50. Limited to 1 active campaign.
         - **Standard Influencer:** completedCampaigns >= 1 AND score >= 50 AND < 85.
