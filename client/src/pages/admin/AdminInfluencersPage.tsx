@@ -31,6 +31,8 @@ import {
   Lock,
   ChevronLeft,
   ChevronRight,
+  ShieldX,
+  Ban,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -231,7 +233,17 @@ export default function AdminInfluencersPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {inf.restricted ? (
+                        {inf.blocked ? (
+                          <Badge className="bg-red-600 text-white border-red-700">
+                            <ShieldX className="h-3 w-3 mr-1" />
+                            Blocked
+                          </Badge>
+                        ) : inf.suspended ? (
+                          <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                            <Ban className="h-3 w-3 mr-1" />
+                            Suspended
+                          </Badge>
+                        ) : inf.restricted ? (
                           <Badge className="bg-red-500/10 text-red-600 border-red-500/20">
                             <Lock className="h-3 w-3 mr-1" />
                             Restricted

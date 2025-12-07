@@ -65,7 +65,7 @@ export function BlockedUserDialog({
             className="w-full"
             data-testid="button-confirm-blocked"
           >
-            I Understand
+            I understand & Log out
           </Button>
         </DialogFooter>
       </DialogContent>
