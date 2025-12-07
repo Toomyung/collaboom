@@ -1805,12 +1805,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageSize = Math.min(50, parseInt(req.query.pageSize as string) || 20);
       const search = req.query.search as string | undefined;
       const campaignId = req.query.campaignId as string | undefined;
+      const status = req.query.status as "suspended" | "blocked" | undefined;
 
       const result = await storage.getInfluencersPaginated({
         page,
         pageSize,
         search,
         campaignId,
+        status,
       });
 
       return res.json(result);

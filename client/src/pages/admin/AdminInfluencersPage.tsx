@@ -64,8 +64,9 @@ export default function AdminInfluencersPage() {
   const [selectedInfluencerId, setSelectedInfluencerId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [statusFilter, setStatusFilter] = useState<"all" | "suspended" | "blocked">("all");
 
-  const influencersQueryUrl = `/api/admin/influencers?page=${currentPage}&pageSize=${itemsPerPage}${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}`;
+  const influencersQueryUrl = `/api/admin/influencers?page=${currentPage}&pageSize=${itemsPerPage}${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}${statusFilter !== "all" ? `&status=${statusFilter}` : ''}`;
   
   const { data: paginatedData, isLoading } = useQuery<PaginatedResponse>({
     queryKey: [influencersQueryUrl],
@@ -145,32 +146,66 @@ export default function AdminInfluencersPage() {
           <p className="text-muted-foreground">Manage creator accounts and scores</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, or TikTok..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-10"
-              data-testid="input-search"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or TikTok..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="pl-10"
+                data-testid="input-search"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Show</span>
+              <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                <SelectTrigger className="w-20" data-testid="select-items-per-page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>per page</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Show</span>
-            <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
-              <SelectTrigger className="w-20" data-testid="select-items-per-page">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ITEMS_PER_PAGE_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={String(option)}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>per page</span>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Filter:</span>
+            <Button
+              variant={statusFilter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setStatusFilter("all"); setCurrentPage(1); }}
+              data-testid="button-filter-all"
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === "suspended" ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setStatusFilter("suspended"); setCurrentPage(1); }}
+              className={statusFilter === "suspended" ? "bg-orange-500 hover:bg-orange-600" : ""}
+              data-testid="button-filter-suspended"
+            >
+              <Ban className="h-3 w-3 mr-1" />
+              Suspended
+            </Button>
+            <Button
+              variant={statusFilter === "blocked" ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setStatusFilter("blocked"); setCurrentPage(1); }}
+              className={statusFilter === "blocked" ? "bg-red-600 hover:bg-red-700" : ""}
+              data-testid="button-filter-blocked"
+            >
+              <ShieldX className="h-3 w-3 mr-1" />
+              Blocked
+            </Button>
           </div>
         </div>
 

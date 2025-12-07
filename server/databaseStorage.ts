@@ -131,6 +131,7 @@ export class DatabaseStorage implements IStorage {
     pageSize?: number;
     search?: string;
     campaignId?: string;
+    status?: "suspended" | "blocked";
   }): Promise<{
     items: Array<Influencer & { appliedCount: number; acceptedCount: number; completedCount: number }>;
     totalCount: number;
@@ -151,6 +152,12 @@ export class DatabaseStorage implements IStorage {
       conditions.push(
         sql`(LOWER(${influencers.name}) LIKE ${searchPattern} OR LOWER(${influencers.email}) LIKE ${searchPattern} OR LOWER(${influencers.tiktokHandle}) LIKE ${searchPattern} OR LOWER(${influencers.instagramHandle}) LIKE ${searchPattern})`
       );
+    }
+
+    if (options.status === "suspended") {
+      conditions.push(eq(influencers.suspended, true));
+    } else if (options.status === "blocked") {
+      conditions.push(eq(influencers.blocked, true));
     }
 
     if (options.campaignId) {

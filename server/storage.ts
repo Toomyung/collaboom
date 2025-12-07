@@ -33,6 +33,7 @@ export interface GetInfluencersOptions {
   pageSize?: number;
   search?: string;
   campaignId?: string;
+  status?: "suspended" | "blocked";
 }
 
 export interface PaginatedCampaignsResult {
@@ -469,6 +470,12 @@ export class MemStorage implements IStorage {
           .map(a => a.influencerId)
       );
       allInfluencers = allInfluencers.filter(inf => appInfluencerIds.has(inf.id));
+    }
+
+    if (options.status === "suspended") {
+      allInfluencers = allInfluencers.filter(inf => inf.suspended === true);
+    } else if (options.status === "blocked") {
+      allInfluencers = allInfluencers.filter(inf => inf.blocked === true);
     }
     
     const totalCount = allInfluencers.length;
