@@ -144,6 +144,25 @@ export default function ScoreTierPage() {
             <Award className="h-6 w-6 text-primary" />
             Influencer Tiers
           </h2>
+
+          <Card className="mb-6 border-2 border-primary/30 bg-primary/5" data-testid="card-tier-unlock-info">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full bg-primary text-white shrink-0">
+                  <AlertTriangle className="h-6 w-6" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-bold text-lg">How to Unlock Tier Benefits</h3>
+                  <p className="text-muted-foreground">
+                    Even if you start with 60 points after signing up and adding your address, <strong className="text-foreground">you must complete at least one campaign successfully</strong> to unlock Standard Influencer benefits.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Until your first campaign is completed, you remain a <strong className="text-foreground">Starting Influencer</strong> — meaning you can only work on one campaign at a time. Once you successfully finish your first campaign, all Standard tier perks become available!
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           <div className="grid gap-6">
             <Card className="border-2 border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20" data-testid="card-tier-vip">
@@ -191,7 +210,7 @@ export default function ScoreTierPage() {
                   </div>
                   <div>
                     <CardTitle className="text-xl text-blue-700 dark:text-blue-300">Standard Influencer</CardTitle>
-                    <CardDescription>50 points or higher</CardDescription>
+                    <CardDescription>50+ points AND at least 1 completed campaign</CardDescription>
                   </div>
                   <Badge className="ml-auto bg-gradient-to-r from-blue-400 to-indigo-500 text-white border-0">
                     Active Creator
@@ -199,6 +218,12 @@ export default function ScoreTierPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                <div className="mb-4 p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-sm">
+                  <CheckCircle className="h-4 w-4 inline mr-2 text-blue-600 dark:text-blue-400" />
+                  <span className="text-blue-700 dark:text-blue-300">
+                    <strong>Unlock Requirement:</strong> Complete your first campaign successfully to access these benefits
+                  </span>
+                </div>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
                     <Gift className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
@@ -232,7 +257,7 @@ export default function ScoreTierPage() {
                   </div>
                   <div>
                     <CardTitle className="text-xl text-slate-700 dark:text-slate-300">Starting Influencer</CardTitle>
-                    <CardDescription>New creators before first campaign completion</CardDescription>
+                    <CardDescription>All new creators until first campaign is completed</CardDescription>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     Getting Started
@@ -240,20 +265,32 @@ export default function ScoreTierPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                <div className="mb-4 p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 text-sm">
+                  <Clock className="h-4 w-4 inline mr-2 text-slate-600 dark:text-slate-400" />
+                  <span className="text-slate-700 dark:text-slate-300">
+                    <strong>Note:</strong> Even with 60 points, you stay in this tier until you successfully complete your first campaign
+                  </span>
+                </div>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
                     <Target className="h-5 w-5 text-slate-500 mt-0.5 shrink-0" />
-                    <span><strong>One Campaign Focus</strong> — Complete your first campaign before applying to more</span>
+                    <span><strong>One Campaign at a Time</strong> — You cannot apply to other campaigns until you complete your current one</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-slate-500 mt-0.5 shrink-0" />
-                    <span><strong>Trial Dashboard</strong> — Experience the dashboard features as you complete your first campaign</span>
+                    <span><strong>Trial Dashboard</strong> — Experience the dashboard features as you work on your first campaign</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Mail className="h-5 w-5 text-slate-500 mt-0.5 shrink-0" />
                     <span><strong>Email Notifications</strong> — Receive important updates about your campaign</span>
                   </li>
                 </ul>
+                <div className="mt-4 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    <Rocket className="h-4 w-4 inline mr-2" />
+                    <strong>Level Up:</strong> Complete your first campaign successfully to unlock Standard Influencer benefits and apply to 3 campaigns per day!
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
