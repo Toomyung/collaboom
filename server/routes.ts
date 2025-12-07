@@ -12,7 +12,6 @@ import {
   strictAuthLimiter,
   uploadLimiter,
   loginSchema,
-  registrationSchema,
   noteSchema,
   issueReportSchema,
   scoreAdjustmentSchema,
@@ -294,90 +293,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ user: null, influencer: null, admin: null });
   });
 
-  // Influencer registration
-  app.post("/api/auth/influencer/register", authLimiter, async (req, res) => {
-    try {
-      const validationResult = registrationSchema.safeParse(req.body);
-      if (!validationResult.success) {
-        logSecurityEvent('registration_validation_failed', { 
-          ip: req.ip, 
-          errors: validationResult.error.errors 
-        });
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: validationResult.error.errors 
-        });
-      }
-
-      const { email, password } = validationResult.data;
-
-      const existing = await storage.getInfluencerByEmail(email);
-      if (existing) {
-        logSecurityEvent('registration_duplicate_email', { ip: req.ip, email });
-        return res.status(400).json({ message: "Email already registered" });
-      }
-
-      const passwordHash = await bcrypt.hash(password, 12);
-      const influencer = await storage.createInfluencer(email, passwordHash);
-
-      // Award signup bonus points (+50)
-      await storage.addScoreEvent({
-        influencerId: influencer.id,
-        delta: 50,
-        reason: "signup_bonus",
-      });
-      console.log(`[Auth] Signup bonus +50 points awarded to ${email}`);
-
-      req.session.userId = influencer.id;
-      req.session.userType = "influencer";
-
-      logSecurityEvent('registration_success', { ip: req.ip, userId: influencer.id });
-
-      sendWelcomeEmail(email, "Creator").catch(err => {
-        console.error("Failed to send welcome email:", err);
-      });
-
-      return res.json({ success: true });
-    } catch (error: any) {
-      logSecurityEvent('registration_error', { ip: req.ip, error: error.message });
-      return res.status(500).json({ message: "Registration failed" });
-    }
-  });
-
-  // Influencer login
-  app.post("/api/auth/influencer/login", strictAuthLimiter, async (req, res) => {
-    try {
-      const validationResult = loginSchema.safeParse(req.body);
-      if (!validationResult.success) {
-        logSecurityEvent('login_validation_failed', { ip: req.ip });
-        return res.status(400).json({ message: "Invalid input" });
-      }
-
-      const { email, password } = validationResult.data;
-
-      const influencer = await storage.getInfluencerByEmail(email);
-      if (!influencer) {
-        logSecurityEvent('login_unknown_email', { ip: req.ip });
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
-
-      const valid = await (storage as any).verifyInfluencerPassword(influencer.id, password);
-      if (!valid) {
-        logSecurityEvent('login_wrong_password', { ip: req.ip, userId: influencer.id });
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
-
-      req.session.userId = influencer.id;
-      req.session.userType = "influencer";
-
-      logSecurityEvent('login_success', { ip: req.ip, userId: influencer.id, userType: 'influencer' });
-
-      return res.json({ success: true });
-    } catch (error: any) {
-      logSecurityEvent('login_error', { ip: req.ip, error: error.message });
-      return res.status(500).json({ message: "Login failed" });
-    }
-  });
+  // Note: Influencer registration/login is only via Google Sign-In (Supabase OAuth)
+  // See /api/auth/supabase/callback for the Google login flow
 
   // Admin login
   app.post("/api/auth/admin/login", strictAuthLimiter, async (req, res) => {
