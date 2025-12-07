@@ -545,6 +545,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear pending tier upgrade (after showing celebration popup)
+  app.post("/api/me/clear-tier-upgrade", requireAuth("influencer"), async (req, res) => {
+    try {
+      await storage.updateInfluencer(req.session.userId!, { pendingTierUpgrade: null });
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get influencer's reported issues (to view admin responses)
   app.get("/api/my-issues", requireAuth("influencer"), async (req, res) => {
     try {
@@ -1787,6 +1797,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (previousTier !== newTier) {
             if (previousTier === "starting" && newTier === "standard") {
               // Starting → Standard upgrade (first campaign completed AND score >= 50)
+              // Set pending tier upgrade for celebration popup
+              await storage.updateInfluencer(updatedInfluencer.id, { pendingTierUpgrade: "standard" });
+              
               sendTierUpgradeEmail(
                 updatedInfluencer.email,
                 updatedInfluencer.name || updatedInfluencer.email.split("@")[0],
@@ -1796,6 +1809,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }).catch(console.error);
             } else if (newTier === "vip" && previousTier !== "vip") {
               // → VIP upgrade (score reached 85+)
+              // Set pending tier upgrade for celebration popup
+              await storage.updateInfluencer(updatedInfluencer.id, { pendingTierUpgrade: "vip" });
+              
               sendTierUpgradeEmail(
                 updatedInfluencer.email,
                 updatedInfluencer.name || updatedInfluencer.email.split("@")[0],

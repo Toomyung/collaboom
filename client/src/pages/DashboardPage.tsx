@@ -207,6 +207,8 @@ export default function DashboardPage() {
   const [showSupportSheet, setShowSupportSheet] = useState(false);
   const [supportSubject, setSupportSubject] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
+  const [showTierUpgradeDialog, setShowTierUpgradeDialog] = useState(false);
+  const [pendingTierUpgrade, setPendingTierUpgrade] = useState<string | null>(null);
 
   const { data: applications, isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/applications/detailed"],
@@ -353,6 +355,15 @@ export default function DashboardPage() {
     },
   });
 
+  const clearTierUpgradeMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/me/clear-tier-upgrade", {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    },
+  });
+
   useEffect(() => {
     if (applications) {
       const unviewedRejections = applications.filter(
@@ -363,6 +374,19 @@ export default function DashboardPage() {
       }
     }
   }, [applications]);
+
+  // Check for pending tier upgrade and show celebration popup
+  useEffect(() => {
+    if (influencer?.pendingTierUpgrade) {
+      setPendingTierUpgrade(influencer.pendingTierUpgrade);
+      setShowTierUpgradeDialog(true);
+    }
+  }, [influencer?.pendingTierUpgrade]);
+
+  const handleTierUpgradeAcknowledged = () => {
+    setShowTierUpgradeDialog(false);
+    clearTierUpgradeMutation.mutate();
+  };
 
   if (authLoading) {
     return (
@@ -1129,6 +1153,75 @@ export default function DashboardPage() {
               data-testid="button-confirm-dismiss"
             >
               {dismissMutation.isPending ? "Dismissing..." : "Dismiss"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tier Upgrade Celebration Dialog */}
+      <Dialog open={showTierUpgradeDialog} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md text-center" data-testid="dialog-tier-upgrade">
+          <DialogHeader className="space-y-4">
+            <div className="mx-auto">
+              {pendingTierUpgrade === "vip" ? (
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center animate-pulse">
+                  <Crown className="h-10 w-10 text-white" />
+                </div>
+              ) : (
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center animate-pulse">
+                  <Trophy className="h-10 w-10 text-white" />
+                </div>
+              )}
+            </div>
+            <DialogTitle className="text-2xl font-bold">
+              {pendingTierUpgrade === "vip" 
+                ? "Welcome to VIP!" 
+                : "You're Now a Standard Influencer!"}
+            </DialogTitle>
+            <DialogDescription className="text-base space-y-3">
+              {pendingTierUpgrade === "vip" ? (
+                <>
+                  <p className="text-lg font-medium text-foreground">
+                    Congratulations! You've reached VIP status!
+                  </p>
+                  <p>
+                    As a VIP influencer, you'll enjoy automatic approval for campaigns 
+                    and get priority access to exclusive opportunities.
+                  </p>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mt-4">
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      <span className="font-semibold">VIP Benefits:</span><br />
+                      Automatic campaign approvals, priority access to new campaigns, 
+                      and higher chances for premium collaborations.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-medium text-foreground">
+                    Congratulations on completing your first campaign!
+                  </p>
+                  <p>
+                    You've graduated from Starting Influencer to Standard Influencer. 
+                    Keep up the great work to reach VIP status!
+                  </p>
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 mt-4">
+                    <p className="text-sm text-primary dark:text-primary/80">
+                      <span className="font-semibold">Next Goal:</span> Reach 85 points to become a VIP 
+                      and enjoy automatic campaign approvals!
+                    </p>
+                  </div>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button 
+              onClick={handleTierUpgradeAcknowledged} 
+              className="w-full"
+              data-testid="button-tier-upgrade-close"
+            >
+              {pendingTierUpgrade === "vip" ? "Awesome!" : "Let's Go!"}
             </Button>
           </DialogFooter>
         </DialogContent>

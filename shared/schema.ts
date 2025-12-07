@@ -60,6 +60,7 @@ export const influencers = pgTable("influencers", {
   appealSubmitted: boolean("appeal_submitted").default(false),
   blocked: boolean("blocked").default(false),
   blockedAt: timestamp("blocked_at"),
+  pendingTierUpgrade: text("pending_tier_upgrade"), // 'standard' | 'vip' | null - for showing tier upgrade celebration popup
   createdAt: timestamp("created_at").defaultNow(),
 });
 
