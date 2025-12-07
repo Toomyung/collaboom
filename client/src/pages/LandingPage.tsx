@@ -108,6 +108,12 @@ export default function LandingPage() {
                           Dashboard
                         </Button>
                       </Link>
+                      <Link href="/score-tier">
+                        <Button variant="ghost" size="sm" data-testid="header-link-score-tier">
+                          <Star className="h-4 w-4 mr-2" />
+                          Score & Tier
+                        </Button>
+                      </Link>
                       <Link href="/profile">
                         <Button variant="ghost" size="sm" data-testid="header-link-profile">
                           <User className="h-4 w-4 mr-2" />
@@ -137,6 +143,12 @@ export default function LandingPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
+                  <Link href="/score-tier">
+                    <Button variant="ghost" data-testid="header-link-score-tier">
+                      <Star className="h-4 w-4 mr-2" />
+                      Score & Tier
+                    </Button>
+                  </Link>
                   <Link href="/login">
                     <Button variant="ghost" data-testid="header-link-signin">
                       Sign In
