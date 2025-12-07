@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **Server:** Express.js REST API with session-based authentication.
 - **Database:** PostgreSQL via Drizzle ORM and `@neondatabase/serverless` driver. A storage abstraction layer allows for flexible database implementations.
 - **Authentication:** Email/password with bcrypt, `express-session`, role-based access control, and session persistence.
+- **Security:** SESSION_SECRET required in production, Helmet CSP, sameSite cookies for CSRF protection, rate limiting on auth endpoints.
 - **Core Features:**
     - **State Machine:** Implements state transitions for applications, influencer accounts, and campaigns.
     - **Admin Tools:** Notes system, score/penalty event history, shipping issue management, support ticket system, enhanced influencer management.
