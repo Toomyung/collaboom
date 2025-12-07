@@ -35,6 +35,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Campaign, ApplicationWithDetails, Application } from "@shared/schema";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { ExternalLink } from "lucide-react";
@@ -98,6 +108,7 @@ export default function AdminCampaignDetailPage() {
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
   const [conversationApp, setConversationApp] = useState<{ id: string; influencerName: string } | null>(null);
+  const [pendingMissedAppId, setPendingMissedAppId] = useState<string | null>(null);
   const APPROVED_PAGE_SIZE = 20;
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<Campaign>({
@@ -1728,7 +1739,7 @@ export default function AdminCampaignDetailPage() {
                                   size="sm"
                                   variant="outline"
                                   className="text-red-600"
-                                  onClick={() => markMissedMutation.mutate(app.id)}
+                                  onClick={() => setPendingMissedAppId(app.id)}
                                   disabled={markMissedMutation.isPending}
                                   data-testid={`mark-missed-${app.id}`}
                                 >
@@ -2083,6 +2094,41 @@ export default function AdminCampaignDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mark as Missed Confirmation Dialog */}
+      <AlertDialog open={!!pendingMissedAppId} onOpenChange={(open) => !open && setPendingMissedAppId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Apply Penalty
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to mark this application as missed deadline. This will automatically apply a <strong>-5 point penalty</strong> to the influencer's score.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg text-sm">
+            <p className="text-red-700 dark:text-red-300">
+              This action cannot be easily undone. The influencer's score will decrease and this may affect their tier status.
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-missed">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (pendingMissedAppId) {
+                  markMissedMutation.mutate(pendingMissedAppId);
+                  setPendingMissedAppId(null);
+                }
+              }}
+              data-testid="button-confirm-missed"
+            >
+              Apply Penalty
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Influencer Detail Sheet */}
       <InfluencerDetailSheet
