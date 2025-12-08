@@ -76,8 +76,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {isInfluencer && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="gap-2" data-testid="button-influencer-menu">
-                          <Menu className="h-4 w-4" />
+                        <Button variant="outline" className="gap-2" data-testid="button-influencer-menu">
+                          <Menu className="h-5 w-5" />
                           <span className="font-medium">
                             {getInfluencerDisplayName(influencer, user?.name || user?.email || "Menu")}
                           </span>
@@ -130,8 +130,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {isAdmin && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="gap-2" data-testid="button-admin-menu">
-                          <Menu className="h-4 w-4" />
+                        <Button variant="outline" className="gap-2" data-testid="button-admin-menu">
+                          <Menu className="h-5 w-5" />
                           <span className="font-medium">{user?.name || "Admin"}</span>
                           <ChevronDown className="h-4 w-4" />
                         </Button>

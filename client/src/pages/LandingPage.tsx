@@ -18,9 +18,20 @@ import {
   LayoutDashboard,
   User,
   LogOut,
+  Menu,
+  Trophy,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 const steps = [
   {
@@ -101,45 +112,93 @@ export default function LandingPage() {
               ) : isAuthenticated ? (
                 <div className="flex items-center gap-3">
                   {isInfluencer ? (
-                    <>
-                      <Link href="/dashboard">
-                        <Button variant="ghost" size="sm" data-testid="header-link-dashboard">
-                          <LayoutDashboard className="h-4 w-4 mr-2" />
-                          Dashboard
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="gap-2" data-testid="button-influencer-menu">
+                          <Menu className="h-5 w-5" />
+                          <span className="font-medium">
+                            {getInfluencerDisplayName(influencer, user?.name || user?.email || "Menu")}
+                          </span>
+                          <ChevronDown className="h-4 w-4" />
                         </Button>
-                      </Link>
-                      <Link href="/score-tier">
-                        <Button variant="ghost" size="sm" data-testid="header-link-score-tier">
-                          <Star className="h-4 w-4 mr-2" />
-                          Score & Tier
-                        </Button>
-                      </Link>
-                      <Link href="/profile">
-                        <Button variant="ghost" size="sm" data-testid="header-link-profile">
-                          <User className="h-4 w-4 mr-2" />
-                          Profile
-                        </Button>
-                      </Link>
-                    </>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium">
+                              {getInfluencerDisplayName(influencer, user?.name || "Influencer")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{user?.email}</p>
+                            {influencer && !influencer.profileCompleted && (
+                              <p className="text-xs text-amber-500 font-medium">Profile incomplete</p>
+                            )}
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <Link href="/dashboard">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-dashboard">
+                            <LayoutDashboard className="h-4 w-4 mr-2" />
+                            Dashboard
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/profile">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
+                            <User className="h-4 w-4 mr-2" />
+                            Profile
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/score-tier">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-score-tier">
+                            <Trophy className="h-4 w-4 mr-2" />
+                            Score & Tier
+                          </DropdownMenuItem>
+                        </Link>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="cursor-pointer text-destructive focus:text-destructive" 
+                          onClick={() => logout()}
+                          data-testid="menu-logout"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   ) : (
-                    <Link href="/admin">
-                      <Button variant="ghost" size="sm" data-testid="header-link-admin-dashboard">
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
-                        Admin Dashboard
-                      </Button>
-                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="gap-2" data-testid="button-admin-menu">
+                          <Menu className="h-5 w-5" />
+                          <span className="font-medium">{user?.name || "Admin"}</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium">{user?.name || "Admin"}</p>
+                            <p className="text-xs text-muted-foreground">{user?.email}</p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <Link href="/admin">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-admin-dashboard">
+                            <LayoutDashboard className="h-4 w-4 mr-2" />
+                            Admin Dashboard
+                          </DropdownMenuItem>
+                        </Link>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="cursor-pointer text-destructive focus:text-destructive" 
+                          onClick={() => logout()}
+                          data-testid="menu-admin-logout"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{user?.name || user?.email}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => logout()}
-                    data-testid="header-button-logout"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
