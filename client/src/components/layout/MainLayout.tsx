@@ -2,11 +2,20 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles, LayoutDashboard, User, LogOut, Menu, X } from "lucide-react";
+import { Sparkles, LayoutDashboard, User, LogOut, Menu, X, Trophy, Settings, ChevronDown } from "lucide-react";
 import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
 import { BlockedUserDialog } from "@/components/BlockedUserDialog";
 import { PointsAwardPopup } from "@/components/PointsAwardPopup";
 import { useUnseenPoints } from "@/hooks/useUnseenPoints";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -50,7 +59,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-2">
               <Link href="/campaigns">
                 <Button
                   variant={location === "/campaigns" ? "secondary" : "ghost"}
@@ -59,63 +68,101 @@ export function MainLayout({ children }: MainLayoutProps) {
                   Campaigns
                 </Button>
               </Link>
-              {isInfluencer && (
-                <>
-                  <Link href="/dashboard">
-                    <Button
-                      variant={location === "/dashboard" ? "secondary" : "ghost"}
-                      data-testid="link-dashboard"
-                    >
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Link href="/profile">
-                    <Button
-                      variant={location === "/profile" ? "secondary" : "ghost"}
-                      data-testid="link-profile"
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Profile
-                    </Button>
-                  </Link>
-                </>
-              )}
-              {isAdmin && (
-                <Link href="/admin">
-                  <Button
-                    variant={location.startsWith("/admin") ? "secondary" : "ghost"}
-                    data-testid="link-admin-dashboard"
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Admin Dashboard
-                  </Button>
-                </Link>
-              )}
             </nav>
 
             <div className="hidden md:flex items-center gap-3">
               {isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Welcome,</span>{" "}
-                    <span className="font-medium">{user?.name || user?.email}</span>
-                    {isInfluencer && influencer && !influencer.profileCompleted && (
-                      <span className="ml-2 text-xs text-amber-500 font-medium">
-                        (Profile incomplete)
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => logout()}
-                    data-testid="button-logout"
-                    aria-label="Sign out"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
+                <>
+                  {isInfluencer && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="gap-2" data-testid="button-influencer-menu">
+                          <Menu className="h-4 w-4" />
+                          <span className="font-medium">
+                            {getInfluencerDisplayName(influencer, user?.name || user?.email || "Menu")}
+                          </span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium">
+                              {getInfluencerDisplayName(influencer, user?.name || "Influencer")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{user?.email}</p>
+                            {influencer && !influencer.profileCompleted && (
+                              <p className="text-xs text-amber-500 font-medium">Profile incomplete</p>
+                            )}
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <Link href="/dashboard">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-dashboard">
+                            <LayoutDashboard className="h-4 w-4 mr-2" />
+                            Dashboard
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/profile">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
+                            <User className="h-4 w-4 mr-2" />
+                            Profile
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/score-tier">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-score-tier">
+                            <Trophy className="h-4 w-4 mr-2" />
+                            Score & Tier
+                          </DropdownMenuItem>
+                        </Link>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="cursor-pointer text-destructive focus:text-destructive" 
+                          onClick={() => logout()}
+                          data-testid="menu-logout"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  {isAdmin && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="gap-2" data-testid="button-admin-menu">
+                          <Menu className="h-4 w-4" />
+                          <span className="font-medium">{user?.name || "Admin"}</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium">{user?.name || "Admin"}</p>
+                            <p className="text-xs text-muted-foreground">{user?.email}</p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <Link href="/admin">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-admin-dashboard">
+                            <LayoutDashboard className="h-4 w-4 mr-2" />
+                            Admin Dashboard
+                          </DropdownMenuItem>
+                        </Link>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="cursor-pointer text-destructive focus:text-destructive" 
+                          onClick={() => logout()}
+                          data-testid="menu-admin-logout"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
               ) : (
                 <div className="flex items-center gap-2">
                   <Link href="/login">
@@ -149,6 +196,17 @@ export function MainLayout({ children }: MainLayoutProps) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background">
             <nav className="flex flex-col p-4 gap-2">
+              {isAuthenticated && (
+                <div className="pb-2 mb-2 border-b">
+                  <p className="text-sm font-medium">
+                    {isInfluencer 
+                      ? getInfluencerDisplayName(influencer, user?.name || "Influencer")
+                      : user?.name || "Admin"
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                </div>
+              )}
               <Link href="/campaigns">
                 <Button
                   variant={location === "/campaigns" ? "secondary" : "ghost"}
@@ -180,6 +238,16 @@ export function MainLayout({ children }: MainLayoutProps) {
                         >
                           <User className="h-4 w-4 mr-2" />
                           Profile
+                        </Button>
+                      </Link>
+                      <Link href="/score-tier">
+                        <Button
+                          variant={location === "/score-tier" ? "secondary" : "ghost"}
+                          className="w-full justify-start"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Trophy className="h-4 w-4 mr-2" />
+                          Score & Tier
                         </Button>
                       </Link>
                     </>
