@@ -44,26 +44,31 @@ import { useState, useEffect } from "react";
 import { PlacementImageUpload } from "@/components/PlacementImageUpload";
 
 // URL validation helpers
-const isValidAmazonUrl = (url: string) => {
+const isValidAmazonUrl = (url: string | undefined) => {
   if (!url || url.trim() === "") return true; // Optional field
   const lowerUrl = url.toLowerCase();
   return lowerUrl.includes("amazon.com") || lowerUrl.includes("amzn.to") || lowerUrl.includes("a.co");
 };
 
-const isValidInstagramUrl = (url: string) => {
+const isValidInstagramUrl = (url: string | undefined) => {
   if (!url || url.trim() === "") return true; // Optional field
   const lowerUrl = url.toLowerCase();
   return lowerUrl.includes("instagram.com") || lowerUrl.includes("instagr.am");
 };
 
-const isValidTikTokUrl = (url: string) => {
+const isValidTikTokUrl = (url: string | undefined) => {
   if (!url || url.trim() === "") return true; // Optional field
   const lowerUrl = url.toLowerCase();
   return lowerUrl.includes("tiktok.com") || lowerUrl.includes("vm.tiktok.com");
 };
 
-const isValidWebsiteUrl = (url: string) => {
+const isValidWebsiteUrl = (url: string | undefined) => {
   if (!url || url.trim() === "") return true; // Optional field
+  const trimmedUrl = url.trim().toLowerCase();
+  // Allow www. prefix without protocol
+  if (trimmedUrl.startsWith("www.")) {
+    return trimmedUrl.length > 4; // Must have something after www.
+  }
   try {
     const parsed = new URL(url);
     return parsed.protocol === "http:" || parsed.protocol === "https:";
@@ -91,7 +96,7 @@ const formSchema = insertCampaignSchema.extend({
     message: "Please enter a valid TikTok URL (tiktok.com)",
   }),
   officialWebsiteUrl: z.string().optional().refine(isValidWebsiteUrl, {
-    message: "Please enter a valid website URL (must start with http:// or https://)",
+    message: "Please enter a valid website URL (e.g., www.example.com or https://example.com)",
   }),
   // Timeline
   campaignTimeline: z.string().optional(),
