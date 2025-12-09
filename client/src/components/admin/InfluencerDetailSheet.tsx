@@ -1588,7 +1588,10 @@ export function InfluencerDetailSheet({
                     +{confirmDialog.delta} points
                   </p>
                   <p>
-                    New Score: <strong>{confirmDialog.currentValue + confirmDialog.delta}</strong>
+                    New Score: <strong>{Math.min(100, confirmDialog.currentValue + confirmDialog.delta)}</strong>
+                    {confirmDialog.currentValue + confirmDialog.delta > 100 && (
+                      <span className="text-xs text-muted-foreground ml-1">(capped at 100)</span>
+                    )}
                   </p>
                 </div>
               ) : (
@@ -1600,7 +1603,10 @@ export function InfluencerDetailSheet({
                     -{confirmDialog?.delta} points (penalty)
                   </p>
                   <p>
-                    New Score: <strong>{(confirmDialog?.currentValue ?? 0) - (confirmDialog?.delta ?? 0)}</strong>
+                    New Score: <strong>{Math.max(0, (confirmDialog?.currentValue ?? 0) - (confirmDialog?.delta ?? 0))}</strong>
+                    {(confirmDialog?.currentValue ?? 0) - (confirmDialog?.delta ?? 0) < 0 && (
+                      <span className="text-xs text-muted-foreground ml-1">(capped at 0)</span>
+                    )}
                   </p>
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trophy, Star } from "lucide-react";
+import { Award, TrendingUp, CheckCircle2, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PointsAwardPopupProps {
@@ -17,130 +17,201 @@ interface PointsAwardPopupProps {
   onClose: () => void;
 }
 
-const reasonLabels: Record<string, { title: string; description: string }> = {
+const reasonLabels: Record<string, { title: string; description: string; icon: typeof Award }> = {
   signup_bonus: {
     title: "Welcome to Collaboom!",
     description: "You've earned a signup bonus for joining our community!",
+    icon: Zap,
   },
   address_completion: {
     title: "Profile Complete!",
     description: "You've earned points for completing your shipping address!",
+    icon: CheckCircle2,
   },
   upload_verified: {
     title: "Content Verified!",
     description: "Your content has been approved and you've earned reward points!",
+    icon: Award,
   },
   admin_adjustment: {
     title: "Points Awarded!",
-    description: "The admin has awarded you bonus points!",
+    description: "You've received bonus points!",
+    icon: TrendingUp,
   },
   default: {
     title: "Points Earned!",
     description: "You've earned points!",
+    icon: Award,
   },
 };
 
+function AnimatedCounter({ value, duration = 1200 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const startTime = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    startTime.current = null;
+    setDisplayValue(0);
+    
+    const animate = (timestamp: number) => {
+      if (!startTime.current) startTime.current = timestamp;
+      const progress = Math.min((timestamp - startTime.current) / duration, 1);
+      
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setDisplayValue(Math.round(easeOutQuart * value));
+      
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [value, duration]);
+
+  return <span>{displayValue}</span>;
+}
+
 export function PointsAwardPopup({ points, reason, open, onClose }: PointsAwardPopupProps) {
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [showCounter, setShowCounter] = useState(false);
   
   useEffect(() => {
     if (open) {
-      setShowConfetti(true);
-      const timer = setTimeout(() => setShowConfetti(false), 2000);
+      setShowCounter(false);
+      const timer = setTimeout(() => setShowCounter(true), 400);
       return () => clearTimeout(timer);
     }
   }, [open]);
 
   const labels = reasonLabels[reason] || reasonLabels.default;
   const isPositive = points > 0;
+  const IconComponent = labels.icon;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent 
-        className="sm:max-w-md text-center"
+        className="sm:max-w-md text-center overflow-hidden"
         data-testid="dialog-points-award"
       >
-        <DialogHeader className="items-center">
-          <div className="relative mb-4">
-            <AnimatePresence>
-              {showConfetti && (
-                <>
-                  {[...Array(12)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ 
-                        opacity: 1, 
-                        scale: 0,
-                        x: 0,
-                        y: 0,
-                      }}
-                      animate={{ 
-                        opacity: 0, 
-                        scale: 1,
-                        x: Math.cos(i * 30 * Math.PI / 180) * 80,
-                        y: Math.sin(i * 30 * Math.PI / 180) * 80,
-                      }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                    >
-                      <Sparkles className="h-4 w-4 text-yellow-400" />
-                    </motion.div>
-                  ))}
-                </>
-              )}
-            </AnimatePresence>
-            
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ 
-                type: "spring",
-                stiffness: 260,
-                damping: 20,
-                delay: 0.1,
-              }}
-              className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mx-auto shadow-lg"
-            >
-              {isPositive ? (
-                <Trophy className="h-10 w-10 text-white" />
-              ) : (
-                <Star className="h-10 w-10 text-white" />
-              )}
-            </motion.div>
-          </div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.08 }}
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0 bg-gradient-to-br from-primary via-transparent to-purple-500"
+          />
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 2.5, opacity: 0.05 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full bg-primary"
+          />
+        </div>
+
+        <DialogHeader className="items-center relative z-10">
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0, y: -20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ 
+              duration: 0.5,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="mb-4"
+          >
+            <div className="relative">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center mx-auto shadow-lg"
+              >
+                <IconComponent className="h-8 w-8 text-white" />
+              </motion.div>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: [0, 1.2, 1] }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"
+              >
+                <CheckCircle2 className="h-3 w-3 text-white" />
+              </motion.div>
+            </div>
+          </motion.div>
           
-          <DialogTitle className="text-2xl font-bold" data-testid="text-points-title">
-            {labels.title}
-          </DialogTitle>
-          <DialogDescription className="text-base" data-testid="text-points-description">
-            {labels.description}
-          </DialogDescription>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            <DialogTitle className="text-xl font-semibold" data-testid="text-points-title">
+              {labels.title}
+            </DialogTitle>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+          >
+            <DialogDescription className="text-sm text-muted-foreground" data-testid="text-points-description">
+              {labels.description}
+            </DialogDescription>
+          </motion.div>
         </DialogHeader>
 
         <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-          className="my-6"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          className="my-6 relative z-10"
         >
-          <div 
-            className={`text-5xl font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}
-            data-testid="text-points-amount"
-          >
-            {isPositive ? '+' : ''}{points}
+          <div className="inline-flex items-center gap-1">
+            <motion.span
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, duration: 0.3 }}
+              className={`text-4xl font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}
+            >
+              {isPositive ? '+' : ''}
+            </motion.span>
+            <span 
+              className={`text-5xl font-bold tabular-nums ${isPositive ? 'text-green-500' : 'text-red-500'}`}
+              data-testid="text-points-amount"
+            >
+              {showCounter ? <AnimatedCounter value={Math.abs(points)} /> : 0}
+            </span>
           </div>
-          <div className="text-lg text-muted-foreground mt-1">points</div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.3 }}
+            className="text-sm text-muted-foreground mt-1 font-medium uppercase tracking-wider"
+          >
+            points
+          </motion.div>
         </motion.div>
 
-        <Button 
-          onClick={onClose} 
-          className="w-full"
-          size="lg"
-          data-testid="button-points-continue"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.4 }}
+          className="relative z-10"
         >
-          Continue
-        </Button>
+          <Button 
+            onClick={onClose} 
+            className="w-full"
+            size="lg"
+            data-testid="button-points-continue"
+          >
+            Continue
+          </Button>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );
