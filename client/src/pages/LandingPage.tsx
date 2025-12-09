@@ -20,6 +20,7 @@ import {
   LogOut,
   Menu,
   Trophy,
+  Layers,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -153,6 +154,12 @@ export default function LandingPage() {
                             Score & Tier
                           </DropdownMenuItem>
                         </Link>
+                        <Link href="/campaign-types">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-campaign-types">
+                            <Layers className="h-4 w-4 mr-2" />
+                            Type of Campaign
+                          </DropdownMenuItem>
+                        </Link>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="cursor-pointer text-destructive focus:text-destructive" 
@@ -202,12 +209,39 @@ export default function LandingPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Link href="/score-tier">
+                  <Link href="/score-tier" className="hidden md:block">
                     <Button variant="ghost" data-testid="header-link-score-tier">
                       <Star className="h-4 w-4 mr-2" />
                       Score & Tier
                     </Button>
                   </Link>
+                  <Link href="/campaign-types" className="hidden md:block">
+                    <Button variant="ghost" data-testid="header-link-campaign-types">
+                      <Layers className="h-4 w-4 mr-2" />
+                      Campaign Types
+                    </Button>
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild className="md:hidden">
+                      <Button variant="ghost" size="icon" data-testid="button-mobile-menu-guest">
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <Link href="/score-tier">
+                        <DropdownMenuItem className="cursor-pointer" data-testid="menu-guest-score-tier">
+                          <Star className="h-4 w-4 mr-2" />
+                          Score & Tier
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/campaign-types">
+                        <DropdownMenuItem className="cursor-pointer" data-testid="menu-guest-campaign-types">
+                          <Layers className="h-4 w-4 mr-2" />
+                          Campaign Types
+                        </DropdownMenuItem>
+                      </Link>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Link href="/login">
                     <Button variant="ghost" data-testid="header-link-signin">
                       Sign In

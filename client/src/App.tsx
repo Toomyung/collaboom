@@ -15,6 +15,7 @@ const CampaignDetailPage = lazy(() => import("@/pages/CampaignDetailPage"));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const ScoreTierPage = lazy(() => import("@/pages/ScoreTierPage"));
+const CampaignTypesPage = lazy(() => import("@/pages/CampaignTypesPage"));
 
 const AdminLoginPage = lazy(() => import("@/pages/admin/AdminLoginPage"));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/AdminDashboardPage"));
@@ -45,6 +46,7 @@ function Router() {
         <Route path="/register" component={RegisterPage} />
         <Route path="/auth/callback" component={AuthCallbackPage} />
         <Route path="/score-tier" component={ScoreTierPage} />
+        <Route path="/campaign-types" component={CampaignTypesPage} />
         <Route path="/campaigns" component={CampaignListPage} />
         <Route path="/campaigns/:id" component={CampaignDetailPage} />
         

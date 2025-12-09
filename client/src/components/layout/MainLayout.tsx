@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles, LayoutDashboard, User, LogOut, Menu, X, Trophy, Settings, ChevronDown } from "lucide-react";
+import { Sparkles, LayoutDashboard, User, LogOut, Menu, X, Trophy, Settings, ChevronDown, Layers } from "lucide-react";
 import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
 import { BlockedUserDialog } from "@/components/BlockedUserDialog";
 import { PointsAwardPopup } from "@/components/PointsAwardPopup";
@@ -113,6 +113,12 @@ export function MainLayout({ children }: MainLayoutProps) {
                           <DropdownMenuItem className="cursor-pointer" data-testid="menu-score-tier">
                             <Trophy className="h-4 w-4 mr-2" />
                             Score & Tier
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/campaign-types">
+                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-campaign-types">
+                            <Layers className="h-4 w-4 mr-2" />
+                            Type of Campaign
                           </DropdownMenuItem>
                         </Link>
                         <DropdownMenuSeparator />
@@ -248,6 +254,16 @@ export function MainLayout({ children }: MainLayoutProps) {
                         >
                           <Trophy className="h-4 w-4 mr-2" />
                           Score & Tier
+                        </Button>
+                      </Link>
+                      <Link href="/campaign-types">
+                        <Button
+                          variant={location === "/campaign-types" ? "secondary" : "ghost"}
+                          className="w-full justify-start"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Layers className="h-4 w-4 mr-2" />
+                          Type of Campaign
                         </Button>
                       </Link>
                     </>

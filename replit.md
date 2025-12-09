@@ -37,6 +37,41 @@ Preferred communication style: Simple, everyday language.
         - Tier upgrades trigger congratulatory emails on first completion or reaching 85 points.
         - Points: +50 signup (auto), +10 address (auto), +0-100 configurable on upload verification.
 
+## Campaign Types (Future Implementation)
+
+Collaboom offers three types of campaigns, plus a bonus earning opportunity:
+
+### 1. Gifting Campaign (Current - Implemented)
+- **Reward:** Free product (no cash)
+- **Process:** Apply → Receive product at address → Create TikTok video → Upload link
+- **Platform:** TikTok only
+- **Description:** The current system - brands send free products to influencers in exchange for UGC content.
+
+### 2. Product Cost Covered Campaign (Planned)
+- **Reward:** $30 cash + product
+- **Process:**
+  1. Influencer purchases product on Amazon
+  2. Submits purchase screenshot as proof
+  3. Admin verifies and reimburses product cost
+  4. Influencer receives product
+  5. Creates and uploads TikTok video
+  6. Receives $30 reward upon verification
+- **Platform:** TikTok
+- **Requirements:** Amazon account required
+- **Note:** No upfront cost for influencers (fully reimbursed)
+
+### 3. Amazon Video Upload Campaign (Planned)
+- **Reward:** $50 cash + product
+- **Process:** Apply → Receive product → Create video → Post on BOTH TikTok AND Amazon Storefront → Get $50
+- **Platform:** TikTok + Amazon Storefront
+- **Requirements:** Must have active Amazon Influencer Storefront
+- **Description:** Similar to Gifting but with dual-platform posting requirement and higher reward.
+
+### Bonus: Usage of Rights
+- **Reward:** Additional $50
+- **Applies to:** Any campaign type
+- **Description:** If a brand wants to purchase rights to use your video content (for landing pages, social media ads, website, etc.), you receive an extra $50 bonus.
+
 ## External Dependencies
 
 - **PostgreSQL Database:** Primary data store, accessed via Drizzle ORM and Neon.
