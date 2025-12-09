@@ -105,6 +105,7 @@ export default function AdminCampaignDetailPage() {
   const [editingContentUrl, setEditingContentUrl] = useState<Set<string>>(new Set());
   const [pointsForms, setPointsForms] = useState<Record<string, number>>({});
   const [shippingForms, setShippingForms] = useState<Record<string, ShippingFormData>>({});
+  const [reimbursementForms, setReimbursementForms] = useState<Record<string, { amount: number; paypalTransactionId: string }>>({});
   const [approvedPage, setApprovedPage] = useState(1);
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
@@ -486,6 +487,48 @@ export default function AdminCampaignDetailPage() {
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Product Cost Covered: Verify purchase
+  const verifyPurchaseMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/verify-purchase`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Purchase verified" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to verify purchase", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Product Cost Covered: Send reimbursement
+  const sendReimbursementMutation = useMutation({
+    mutationFn: async ({ applicationId, amount, paypalTransactionId }: { applicationId: string; amount: number; paypalTransactionId?: string }) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/send-reimbursement`, { amount, paypalTransactionId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Reimbursement recorded" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to record reimbursement", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Product Cost Covered / Amazon Video: Send cash reward
+  const sendRewardMutation = useMutation({
+    mutationFn: async ({ applicationId, paypalTransactionId }: { applicationId: string; paypalTransactionId?: string }) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/send-reward`, { paypalTransactionId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Reward recorded" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to record reward", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1128,6 +1171,12 @@ export default function AdminCampaignDetailPage() {
                         <TableRow className="bg-muted/50">
                           <TableHead className="w-14 text-center text-xs">ID</TableHead>
                           <TableHead className="min-w-[160px] sticky left-[56px] bg-muted/50 z-10 text-xs">Influencer</TableHead>
+                          {campaign.campaignType === "product_cost_covered" && (
+                            <>
+                              <TableHead className="min-w-[120px] text-xs">Purchase Proof</TableHead>
+                              <TableHead className="min-w-[140px] text-xs">Reimbursement</TableHead>
+                            </>
+                          )}
                           <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
                           <TableHead className="min-w-[90px] text-xs">TikTok</TableHead>
                           <TableHead className="min-w-[180px] text-xs">Address</TableHead>
@@ -1187,6 +1236,96 @@ export default function AdminCampaignDetailPage() {
                                   <div className="text-xs text-muted-foreground truncate">{app.influencer?.email}</div>
                                 </div>
                               </TableCell>
+                              {campaign.campaignType === "product_cost_covered" && (
+                                <>
+                                  <TableCell className="p-2">
+                                    {app.purchaseScreenshotUrl ? (
+                                      <div className="space-y-1">
+                                        <a
+                                          href={app.purchaseScreenshotUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-primary hover:underline text-xs flex items-center gap-1"
+                                          data-testid={`link-purchase-proof-${app.id}`}
+                                        >
+                                          <ExternalLink className="h-3 w-3" />
+                                          View
+                                        </a>
+                                        {app.purchaseVerifiedAt ? (
+                                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
+                                            Verified
+                                          </Badge>
+                                        ) : (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-6 text-xs"
+                                            onClick={() => verifyPurchaseMutation.mutate(app.id)}
+                                            disabled={verifyPurchaseMutation.isPending}
+                                            data-testid={`button-verify-purchase-${app.id}`}
+                                          >
+                                            <CheckCircle className="h-3 w-3 mr-1" />
+                                            Verify
+                                          </Button>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">Not submitted</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    {app.reimbursementSentAt ? (
+                                      <div className="space-y-1">
+                                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
+                                          ${app.reimbursementAmount || 0} sent
+                                        </Badge>
+                                        {app.reimbursementPaypalTransactionId && (
+                                          <div className="text-xs text-muted-foreground truncate max-w-[100px]" title={app.reimbursementPaypalTransactionId}>
+                                            {app.reimbursementPaypalTransactionId}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : app.purchaseVerifiedAt ? (
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            min={0}
+                                            placeholder="$"
+                                            value={reimbursementForms[app.id]?.amount || ""}
+                                            onChange={(e) => setReimbursementForms(prev => ({
+                                              ...prev,
+                                              [app.id]: {
+                                                ...prev[app.id],
+                                                amount: parseInt(e.target.value) || 0,
+                                                paypalTransactionId: prev[app.id]?.paypalTransactionId || ""
+                                              }
+                                            }))}
+                                            className="h-6 text-xs w-16"
+                                            data-testid={`input-reimbursement-amount-${app.id}`}
+                                          />
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-6 text-xs"
+                                            onClick={() => sendReimbursementMutation.mutate({
+                                              applicationId: app.id,
+                                              amount: reimbursementForms[app.id]?.amount || 0,
+                                              paypalTransactionId: reimbursementForms[app.id]?.paypalTransactionId
+                                            })}
+                                            disabled={sendReimbursementMutation.isPending || !reimbursementForms[app.id]?.amount}
+                                            data-testid={`button-send-reimbursement-${app.id}`}
+                                          >
+                                            Send
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">Pending verification</span>
+                                    )}
+                                  </TableCell>
+                                </>
+                              )}
                               <TableCell className="p-1">
                                 <Input
                                   value={formData.phone}

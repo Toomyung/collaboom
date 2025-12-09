@@ -52,6 +52,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
@@ -364,6 +365,29 @@ export default function DashboardPage() {
     },
   });
 
+  // Product Cost Covered: Submit purchase proof
+  const [purchaseProofForms, setPurchaseProofForms] = useState<Record<string, { screenshotUrl: string; amazonOrderId: string }>>({});
+  
+  const submitPurchaseProofMutation = useMutation({
+    mutationFn: async ({ applicationId, screenshotUrl, amazonOrderId }: { applicationId: string; screenshotUrl: string; amazonOrderId?: string }) => {
+      await apiRequest("POST", `/api/applications/${applicationId}/submit-purchase`, { screenshotUrl, amazonOrderId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      toast({
+        title: "Purchase proof submitted",
+        description: "We'll verify your purchase and send the reimbursement soon.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to submit",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   useEffect(() => {
     if (applications) {
       const unviewedRejections = applications.filter(
@@ -550,6 +574,153 @@ export default function DashboardPage() {
             <span className="text-sm font-medium">
               Upload deadline: {format(deadline, "MMM d, h:mm a")} PST
             </span>
+          </div>
+        )}
+
+        {/* Product Cost Covered: Purchase Proof & Reimbursement Status */}
+        {campaign.campaignType === "product_cost_covered" && ["approved", "shipped", "delivered", "uploaded", "completed"].includes(application.status) && (
+          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-purple-600" />
+              <span className="font-medium text-purple-600">Purchase & Reimbursement</span>
+            </div>
+            
+            {application.purchaseScreenshotUrl ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-green-600">Purchase proof submitted</span>
+                </div>
+                
+                {application.purchaseVerifiedAt ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="text-green-600">Purchase verified</span>
+                    </div>
+                    
+                    {application.reimbursementSentAt ? (
+                      <div className="flex items-center gap-2 text-sm bg-green-500/10 rounded-lg p-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-green-600">
+                          Reimbursement of ${application.reimbursementAmount || 0} sent to your PayPal
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-amber-600">
+                        <Clock className="h-4 w-4" />
+                        <span>Reimbursement pending - we'll send it to your PayPal soon</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-amber-600">
+                    <Clock className="h-4 w-4" />
+                    <span>Verification pending - we'll review your purchase proof shortly</span>
+                  </div>
+                )}
+              </div>
+            ) : application.status === "approved" ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Please purchase the product on Amazon and submit a screenshot of your order confirmation.
+                </p>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Screenshot URL (e.g., Imgur, Google Drive link)"
+                    value={purchaseProofForms[application.id]?.screenshotUrl || ""}
+                    onChange={(e) => setPurchaseProofForms(prev => ({
+                      ...prev,
+                      [application.id]: {
+                        ...prev[application.id],
+                        screenshotUrl: e.target.value,
+                        amazonOrderId: prev[application.id]?.amazonOrderId || ""
+                      }
+                    }))}
+                    className="text-sm"
+                    data-testid={`input-screenshot-url-${application.id}`}
+                  />
+                  <Input
+                    placeholder="Amazon Order ID (optional)"
+                    value={purchaseProofForms[application.id]?.amazonOrderId || ""}
+                    onChange={(e) => setPurchaseProofForms(prev => ({
+                      ...prev,
+                      [application.id]: {
+                        ...prev[application.id],
+                        screenshotUrl: prev[application.id]?.screenshotUrl || "",
+                        amazonOrderId: e.target.value
+                      }
+                    }))}
+                    className="text-sm"
+                    data-testid={`input-amazon-order-id-${application.id}`}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const form = purchaseProofForms[application.id];
+                      if (form?.screenshotUrl) {
+                        submitPurchaseProofMutation.mutate({
+                          applicationId: application.id,
+                          screenshotUrl: form.screenshotUrl,
+                          amazonOrderId: form.amazonOrderId || undefined
+                        });
+                      }
+                    }}
+                    disabled={!purchaseProofForms[application.id]?.screenshotUrl || submitPurchaseProofMutation.isPending}
+                    data-testid={`button-submit-purchase-proof-${application.id}`}
+                  >
+                    {submitPurchaseProofMutation.isPending ? "Submitting..." : "Submit Purchase Proof"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-amber-600">
+                <Clock className="h-4 w-4" />
+                <span>Purchase proof not submitted</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Product Cost Covered: Cash Reward Status */}
+        {campaign.campaignType === "product_cost_covered" && application.status === "completed" && (
+          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-green-600">Cash Reward: $30</span>
+            </div>
+            {application.cashRewardSentAt ? (
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-green-600">Reward sent to your PayPal</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-amber-600">
+                <Clock className="h-4 w-4" />
+                <span>Reward pending - we'll send it to your PayPal soon</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Amazon Video Campaign: Cash Reward Status */}
+        {campaign.campaignType === "amazon_video" && application.status === "completed" && (
+          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-green-600">Cash Reward: $50</span>
+            </div>
+            {application.cashRewardSentAt ? (
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-green-600">Reward sent to your PayPal</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-amber-600">
+                <Clock className="h-4 w-4" />
+                <span>Reward pending - we'll send it to your PayPal soon</span>
+              </div>
+            )}
           </div>
         )}
 

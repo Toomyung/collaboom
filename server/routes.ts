@@ -964,6 +964,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product Cost Covered: Submit purchase proof (influencer)
+  app.post("/api/applications/:id/submit-purchase", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if campaign is product_cost_covered
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "product_cost_covered") {
+        return res.status(400).json({ message: "This campaign does not require purchase proof" });
+      }
+
+      // Check if application is approved
+      if (application.status !== "approved") {
+        return res.status(400).json({ message: "Application must be approved to submit purchase proof" });
+      }
+
+      const { screenshotUrl, amazonOrderId } = req.body;
+      if (!screenshotUrl) {
+        return res.status(400).json({ message: "Purchase screenshot URL is required" });
+      }
+
+      // Update application with purchase proof
+      await storage.updateApplication(application.id, {
+        purchaseScreenshotUrl: screenshotUrl,
+        purchaseSubmittedAt: new Date(),
+        amazonOrderId: amazonOrderId || null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // =====================
   // ADMIN ROUTES
   // =====================
@@ -1429,6 +1470,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateApplication(application.id, {
         status: "pending",
         approvedAt: null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Product Cost Covered: Verify purchase proof
+  app.post("/api/admin/applications/:id/verify-purchase", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Check if campaign is product_cost_covered
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "product_cost_covered") {
+        return res.status(400).json({ message: "This campaign is not a Product Cost Covered campaign" });
+      }
+
+      // Check if purchase proof was submitted
+      if (!application.purchaseScreenshotUrl) {
+        return res.status(400).json({ message: "No purchase proof has been submitted" });
+      }
+
+      // Mark purchase as verified
+      await storage.updateApplication(application.id, {
+        purchaseVerifiedAt: new Date(),
+        purchaseVerifiedByAdminId: req.session?.user?.id || null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Product Cost Covered: Send reimbursement
+  app.post("/api/admin/applications/:id/send-reimbursement", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Check if campaign is product_cost_covered
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "product_cost_covered") {
+        return res.status(400).json({ message: "This campaign is not a Product Cost Covered campaign" });
+      }
+
+      // Check if purchase was verified
+      if (!application.purchaseVerifiedAt) {
+        return res.status(400).json({ message: "Purchase proof must be verified before reimbursement" });
+      }
+
+      const { amount, paypalTransactionId } = req.body;
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Reimbursement amount is required" });
+      }
+
+      // Mark reimbursement as sent
+      await storage.updateApplication(application.id, {
+        reimbursementSentAt: new Date(),
+        reimbursementSentByAdminId: req.session?.user?.id || null,
+        reimbursementAmount: amount,
+        reimbursementPaypalTransactionId: paypalTransactionId || null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Product Cost Covered / Amazon Video: Send cash reward ($30/$50)
+  app.post("/api/admin/applications/:id/send-reward", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Check if campaign is a paid campaign
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || (campaign.campaignType !== "product_cost_covered" && campaign.campaignType !== "amazon_video")) {
+        return res.status(400).json({ message: "This campaign does not have a cash reward" });
+      }
+
+      // Check if content has been verified/completed
+      if (application.status !== "completed") {
+        return res.status(400).json({ message: "Content must be verified before sending reward" });
+      }
+
+      const { paypalTransactionId } = req.body;
+
+      // Mark reward as sent
+      await storage.updateApplication(application.id, {
+        cashRewardSentAt: new Date(),
+        cashRewardPaypalTransactionId: paypalTransactionId || null,
       });
 
       return res.json({ success: true });
