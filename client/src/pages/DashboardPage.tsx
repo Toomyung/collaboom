@@ -704,7 +704,7 @@ export default function DashboardPage() {
         )}
 
         {/* Amazon Video Campaign: Cash Reward Status */}
-        {campaign.campaignType === "amazon_video" && application.status === "completed" && (
+        {campaign.campaignType === "amazon_video_upload" && application.status === "completed" && (
           <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-2">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-green-600" />

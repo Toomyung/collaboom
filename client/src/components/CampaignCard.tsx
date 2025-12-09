@@ -17,7 +17,7 @@ const getCampaignTypeInfo = (campaignType: string | undefined) => {
         icon: ShoppingCart,
         color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
       };
-    case "amazon_video":
+    case "amazon_video_upload":
       return {
         label: "#AmazonVideo",
         anchor: "#amazon-video",

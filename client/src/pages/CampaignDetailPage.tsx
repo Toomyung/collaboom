@@ -55,7 +55,7 @@ const getCampaignTypeInfo = (campaignType: string | undefined) => {
         icon: ShoppingCart,
         color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
       };
-    case "amazon_video":
+    case "amazon_video_upload":
       return {
         label: "#AmazonVideo",
         anchor: "#amazon-video",
@@ -762,7 +762,7 @@ export default function CampaignDetailPage() {
                 </p>
               </div>
 
-              {((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video") && !influencer?.paypalEmail && (
+              {((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                   <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
                     This is a paid campaign that requires a PayPal account to receive your reward.
@@ -807,7 +807,7 @@ export default function CampaignDetailPage() {
                 !agreementChecked || 
                 applyMutation.isPending || 
                 !influencer?.tiktokHandle ||
-                (((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video") && !influencer?.paypalEmail)
+                (((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail)
               }
               data-testid="button-confirm-apply"
             >
