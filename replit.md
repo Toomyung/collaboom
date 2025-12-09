@@ -72,6 +72,22 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 - **Applies to:** Any campaign type
 - **Description:** If a brand wants to purchase rights to use your video content (for landing pages, social media ads, website, etc.), you receive an extra $50 bonus.
 
+## UI Design System
+
+### Campaign Type Color Scheme
+Consistent color gradients used across the platform for campaign types:
+- **Gifting:** Purple-pink gradient (`from-purple-50 to-pink-50` / `from-purple-950 to-pink-950` for dark mode)
+- **Product Cost Covered:** Emerald-teal gradient (`from-emerald-50 to-teal-50` / `from-emerald-950 to-teal-950` for dark mode)
+- **Amazon Video Upload:** Amber-orange gradient (`from-amber-50 to-orange-50` / `from-amber-950 to-orange-950` for dark mode)
+
+### Navigation
+- **MainLayout:** Unified header component used across all pages with:
+  - Collaboom logo linking to home
+  - Hamburger menu dropdown with navigation links (Score & Tier, Campaign Types)
+  - Authentication buttons (Sign Up / Login for unauthenticated, Dashboard / Logout for authenticated)
+  - Theme toggle for dark/light mode
+- **Mobile-first:** Hamburger menu provides consistent navigation on all screen sizes
+
 ## External Dependencies
 
 - **PostgreSQL Database:** Primary data store, accessed via Drizzle ORM and Neon.
