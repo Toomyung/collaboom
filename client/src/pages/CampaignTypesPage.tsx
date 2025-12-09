@@ -112,34 +112,55 @@ export default function CampaignTypesPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h1 className="text-4xl font-bold mb-4">Types of Campaigns</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Collaboom offers three unique campaign types to match your content creation style, plus bonus earning opportunities.
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
+            Collaboom is a growth platform designed for <strong className="text-foreground">Nano Influencers</strong> (1,000 - 10,000 followers) 
+            who are ready to take their creator journey to the next level.
           </p>
+          <div className="bg-muted/50 rounded-lg p-6 max-w-3xl mx-auto text-left">
+            <p className="text-muted-foreground leading-relaxed">
+              Through ongoing collaborations with diverse brands, we help influencers build lasting partnerships. 
+              Brands get authentic storytelling from passionate creators, while influencers start with gifting campaigns 
+              and grow into long-term <strong className="text-foreground">brand ambassadors</strong>. It's a win-win platform 
+              where both sides thrive together.
+            </p>
+          </div>
         </div>
 
-        {/* Quick Overview Cards */}
+        {/* Quick Overview Cards - Clickable Navigation */}
         <div className="grid sm:grid-cols-3 gap-4 mb-12">
-          <div className="text-center p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800">
+          <button 
+            onClick={() => document.getElementById('section-gifting')?.scrollIntoView({ behavior: 'smooth' })}
+            className="text-center p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 hover-elevate cursor-pointer transition-all"
+            data-testid="button-nav-gifting"
+          >
             <Gift className="h-8 w-8 mx-auto mb-2 text-green-600" />
             <p className="font-bold text-green-700 dark:text-green-300">Gifting</p>
             <p className="text-sm text-muted-foreground">Free Products</p>
-          </div>
-          <div className="text-center p-6 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800">
+          </button>
+          <button 
+            onClick={() => document.getElementById('section-cost-covered')?.scrollIntoView({ behavior: 'smooth' })}
+            className="text-center p-6 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 hover-elevate cursor-pointer transition-all"
+            data-testid="button-nav-cost-covered"
+          >
             <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-blue-600" />
             <p className="font-bold text-blue-700 dark:text-blue-300">Cost Covered</p>
             <Badge className="bg-blue-500 text-white mt-1">+$30</Badge>
-          </div>
-          <div className="text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200 dark:border-purple-800">
+          </button>
+          <button 
+            onClick={() => document.getElementById('section-amazon-store')?.scrollIntoView({ behavior: 'smooth' })}
+            className="text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200 dark:border-purple-800 hover-elevate cursor-pointer transition-all"
+            data-testid="button-nav-amazon-store"
+          >
             <Store className="h-8 w-8 mx-auto mb-2 text-purple-600" />
             <p className="font-bold text-purple-700 dark:text-purple-300">Amazon Store</p>
             <Badge className="bg-purple-500 text-white mt-1">+$50</Badge>
-          </div>
+          </button>
         </div>
 
         {/* Campaign Type 1: Gifting */}
-        <section className="mb-10">
+        <section id="section-gifting" className="mb-10 scroll-mt-20">
           <Card className="border-2 border-green-300 dark:border-green-700 overflow-hidden" data-testid="card-campaign-gifting">
             <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -208,7 +229,7 @@ export default function CampaignTypesPage() {
         </section>
 
         {/* Campaign Type 2: Product Cost Covered */}
-        <section className="mb-10">
+        <section id="section-cost-covered" className="mb-10 scroll-mt-20">
           <Card className="border-2 border-blue-300 dark:border-blue-700 overflow-hidden" data-testid="card-campaign-cost-covered">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -323,7 +344,7 @@ export default function CampaignTypesPage() {
         </section>
 
         {/* Campaign Type 3: Amazon Video Upload */}
-        <section className="mb-10">
+        <section id="section-amazon-store" className="mb-10 scroll-mt-20">
           <Card className="border-2 border-purple-300 dark:border-purple-700 overflow-hidden" data-testid="card-campaign-amazon-store">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/40 dark:to-violet-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
