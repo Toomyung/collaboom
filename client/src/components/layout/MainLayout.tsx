@@ -2,19 +2,11 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles, LayoutDashboard, User, LogOut, Menu, X, Trophy, Settings, ChevronDown, Layers } from "lucide-react";
+import { Sparkles, LayoutDashboard, User, LogOut, Menu, X, Trophy, Layers } from "lucide-react";
 import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
 import { BlockedUserDialog } from "@/components/BlockedUserDialog";
 import { PointsAwardPopup } from "@/components/PointsAwardPopup";
 import { useUnseenPoints } from "@/hooks/useUnseenPoints";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 interface MainLayoutProps {
@@ -58,150 +50,12 @@ export function MainLayout({ children }: MainLayoutProps) {
               </a>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-4">
-              <Link href="/score-tier">
-                <Button
-                  variant={location === "/score-tier" ? "secondary" : "ghost"}
-                  size="sm"
-                  data-testid="link-score-tier"
-                >
-                  <Trophy className="h-4 w-4 mr-1.5" />
-                  Score & Tier
-                </Button>
-              </Link>
-              <Link href="/campaign-types">
-                <Button
-                  variant={location === "/campaign-types" ? "secondary" : "ghost"}
-                  size="sm"
-                  data-testid="link-campaign-types"
-                >
-                  <Layers className="h-4 w-4 mr-1.5" />
-                  Campaign Types
-                </Button>
-              </Link>
-            </nav>
-
-            <div className="hidden md:flex items-center gap-3">
-              {isAuthenticated ? (
-                <>
-                  {isInfluencer && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-2" data-testid="button-influencer-menu">
-                          <Menu className="h-5 w-5" />
-                          <span className="font-medium">
-                            {getInfluencerDisplayName(influencer, user?.name || user?.email || "Menu")}
-                          </span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium">
-                              {getInfluencerDisplayName(influencer, user?.name || "Influencer")}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{user?.email}</p>
-                            {influencer && !influencer.profileCompleted && (
-                              <p className="text-xs text-amber-500 font-medium">Profile incomplete</p>
-                            )}
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <Link href="/dashboard">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-dashboard">
-                            <LayoutDashboard className="h-4 w-4 mr-2" />
-                            Dashboard
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/profile">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
-                            <User className="h-4 w-4 mr-2" />
-                            Profile
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/score-tier">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-score-tier">
-                            <Trophy className="h-4 w-4 mr-2" />
-                            Score & Tier
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/campaign-types">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-campaign-types">
-                            <Layers className="h-4 w-4 mr-2" />
-                            Type of Campaign
-                          </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="cursor-pointer text-destructive focus:text-destructive" 
-                          onClick={() => logout()}
-                          data-testid="menu-logout"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign Out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                  {isAdmin && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-2" data-testid="button-admin-menu">
-                          <Menu className="h-5 w-5" />
-                          <span className="font-medium">{user?.name || "Admin"}</span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium">{user?.name || "Admin"}</p>
-                            <p className="text-xs text-muted-foreground">{user?.email}</p>
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <Link href="/admin">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-admin-dashboard">
-                            <LayoutDashboard className="h-4 w-4 mr-2" />
-                            Admin Dashboard
-                          </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="cursor-pointer text-destructive focus:text-destructive" 
-                          onClick={() => logout()}
-                          data-testid="menu-admin-logout"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign Out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/login">
-                    <Button variant="ghost" data-testid="link-login">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button data-testid="link-register">Get Started</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
+            {/* Unified hamburger menu for all screen sizes */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              data-testid="button-mobile-menu"
+              data-testid="button-hamburger-menu"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
@@ -210,9 +64,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Navigation Menu - same for all screen sizes */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t bg-background">
+          <div className="border-t bg-background">
             <nav className="flex flex-col p-4 gap-2">
               {isAuthenticated && (
                 <div className="pb-2 mb-2 border-b">

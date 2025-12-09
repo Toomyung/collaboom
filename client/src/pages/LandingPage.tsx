@@ -10,7 +10,6 @@ import {
   Package,
   Upload,
   Star,
-  ChevronDown,
   Gift,
   Users,
   Clock,
@@ -19,19 +18,13 @@ import {
   User,
   LogOut,
   Menu,
+  X,
   Trophy,
   Layers,
+  ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 
 const steps = [
@@ -92,6 +85,7 @@ const faqs = [
 export default function LandingPage() {
   const { user, isAuthenticated, isAdmin, influencer, logout, isLoading } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const isInfluencer = isAuthenticated && !isAdmin;
 
   return (
@@ -107,154 +101,149 @@ export default function LandingPage() {
               </span>
             </Link>
 
-            <div className="flex items-center gap-3">
-              {isLoading ? (
-                <div className="h-9 w-20 bg-muted animate-pulse rounded-md" />
-              ) : isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  {isInfluencer ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-2" data-testid="button-influencer-menu">
-                          <Menu className="h-5 w-5" />
-                          <span className="font-medium">
-                            {getInfluencerDisplayName(influencer, user?.name || user?.email || "Menu")}
-                          </span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium">
-                              {getInfluencerDisplayName(influencer, user?.name || "Influencer")}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{user?.email}</p>
-                            {influencer && !influencer.profileCompleted && (
-                              <p className="text-xs text-amber-500 font-medium">Profile incomplete</p>
-                            )}
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <Link href="/dashboard">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-dashboard">
-                            <LayoutDashboard className="h-4 w-4 mr-2" />
-                            Dashboard
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/profile">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
-                            <User className="h-4 w-4 mr-2" />
-                            Profile
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/score-tier">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-score-tier">
-                            <Trophy className="h-4 w-4 mr-2" />
-                            Score & Tier
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/campaign-types">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-campaign-types">
-                            <Layers className="h-4 w-4 mr-2" />
-                            Type of Campaign
-                          </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="cursor-pointer text-destructive focus:text-destructive" 
-                          onClick={() => logout()}
-                          data-testid="menu-logout"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign Out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-2" data-testid="button-admin-menu">
-                          <Menu className="h-5 w-5" />
-                          <span className="font-medium">{user?.name || "Admin"}</span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium">{user?.name || "Admin"}</p>
-                            <p className="text-xs text-muted-foreground">{user?.email}</p>
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <Link href="/admin">
-                          <DropdownMenuItem className="cursor-pointer" data-testid="menu-admin-dashboard">
-                            <LayoutDashboard className="h-4 w-4 mr-2" />
-                            Admin Dashboard
-                          </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="cursor-pointer text-destructive focus:text-destructive" 
-                          onClick={() => logout()}
-                          data-testid="menu-admin-logout"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign Out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+            {/* Unified hamburger menu for all screen sizes */}
+            {isLoading ? (
+              <div className="h-9 w-9 bg-muted animate-pulse rounded-md" />
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMenuOpen(!menuOpen)}
+                data-testid="button-hamburger-menu"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+              >
+                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation Menu - same for all screen sizes */}
+        {menuOpen && (
+          <div className="border-t bg-background">
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-2">
+              {isAuthenticated && (
+                <div className="pb-2 mb-2 border-b">
+                  <p className="text-sm font-medium">
+                    {isInfluencer 
+                      ? getInfluencerDisplayName(influencer, user?.name || "Influencer")
+                      : user?.name || "Admin"
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  {isInfluencer && influencer && !influencer.profileCompleted && (
+                    <p className="text-xs text-amber-500 font-medium">Profile incomplete</p>
                   )}
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/score-tier" className="hidden md:block">
-                    <Button variant="ghost" data-testid="header-link-score-tier">
-                      <Star className="h-4 w-4 mr-2" />
-                      Score & Tier
-                    </Button>
-                  </Link>
-                  <Link href="/campaign-types" className="hidden md:block">
-                    <Button variant="ghost" data-testid="header-link-campaign-types">
-                      <Layers className="h-4 w-4 mr-2" />
-                      Campaign Types
-                    </Button>
-                  </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild className="md:hidden">
-                      <Button variant="ghost" size="icon" data-testid="button-mobile-menu-guest">
-                        <Menu className="h-5 w-5" />
+              )}
+              
+              {/* Common navigation - visible to all users */}
+              <Link href="/score-tier">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => setMenuOpen(false)}
+                  data-testid="menu-score-tier"
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Score & Tier
+                </Button>
+              </Link>
+              <Link href="/campaign-types">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => setMenuOpen(false)}
+                  data-testid="menu-campaign-types"
+                >
+                  <Layers className="h-4 w-4 mr-2" />
+                  Campaign Types
+                </Button>
+              </Link>
+              
+              <div className="border-b my-2" />
+              
+              {isAuthenticated ? (
+                <>
+                  {isInfluencer && (
+                    <>
+                      <Link href="/dashboard">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => setMenuOpen(false)}
+                          data-testid="menu-dashboard"
+                        >
+                          <LayoutDashboard className="h-4 w-4 mr-2" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="/profile">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => setMenuOpen(false)}
+                          data-testid="menu-profile"
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Profile
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                  {isAdmin && (
+                    <Link href="/admin">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => setMenuOpen(false)}
+                        data-testid="menu-admin-dashboard"
+                      >
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Admin Dashboard
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <Link href="/score-tier">
-                        <DropdownMenuItem className="cursor-pointer" data-testid="menu-guest-score-tier">
-                          <Star className="h-4 w-4 mr-2" />
-                          Score & Tier
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/campaign-types">
-                        <DropdownMenuItem className="cursor-pointer" data-testid="menu-guest-campaign-types">
-                          <Layers className="h-4 w-4 mr-2" />
-                          Campaign Types
-                        </DropdownMenuItem>
-                      </Link>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </Link>
+                  )}
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-destructive"
+                    onClick={() => {
+                      logout();
+                      setMenuOpen(false);
+                    }}
+                    data-testid="menu-logout"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
                   <Link href="/login">
-                    <Button variant="ghost" data-testid="header-link-signin">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setMenuOpen(false)}
+                      data-testid="menu-signin"
+                    >
                       Sign In
                     </Button>
                   </Link>
                   <Link href="/register">
-                    <Button data-testid="header-link-getstarted">Get Started</Button>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => setMenuOpen(false)}
+                      data-testid="menu-getstarted"
+                    >
+                      Get Started
+                    </Button>
                   </Link>
-                </div>
+                </>
               )}
-            </div>
+            </nav>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Hero Section */}

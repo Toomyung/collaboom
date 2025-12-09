@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Sparkles,
-  ArrowLeft,
   Crown,
   User,
   UserPlus,
@@ -26,6 +25,7 @@ import {
   Shield,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 export default function ScoreTierPage() {
   const { influencer, isAuthenticated, isAdmin, isLoading } = useAuth();
@@ -79,27 +79,8 @@ export default function ScoreTierPage() {
   const TierIcon = tierInfo.icon;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl" data-testid="link-score-home">
-              <Sparkles className="h-6 w-6 text-primary" />
-              <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                Collaboom
-              </span>
-            </Link>
-            <Link href="/">
-              <Button variant="ghost" size="sm" data-testid="button-back-home">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <MainLayout>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {isInfluencer && influencer && !isLoading && (
           <Card className={`mb-12 ${tierInfo.bgColor} ${tierInfo.borderColor} border-2`} data-testid="card-current-score">
             <CardContent className="pt-6">
@@ -501,13 +482,7 @@ export default function ScoreTierPage() {
             </div>
           ) : null}
         </div>
-      </main>
-
-      <footer className="border-t py-8 mt-12">
-        <div className="max-w-5xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Collaboom. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
