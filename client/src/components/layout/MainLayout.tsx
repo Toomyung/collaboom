@@ -59,13 +59,25 @@ export function MainLayout({ children }: MainLayoutProps) {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-2">
-              <Link href="/campaigns">
+            <nav className="hidden md:flex items-center gap-4">
+              <Link href="/score-tier">
                 <Button
-                  variant={location === "/campaigns" ? "secondary" : "ghost"}
-                  data-testid="link-campaigns"
+                  variant={location === "/score-tier" ? "secondary" : "ghost"}
+                  size="sm"
+                  data-testid="link-score-tier"
                 >
-                  Campaigns
+                  <Trophy className="h-4 w-4 mr-1.5" />
+                  Score & Tier
+                </Button>
+              </Link>
+              <Link href="/campaign-types">
+                <Button
+                  variant={location === "/campaign-types" ? "secondary" : "ghost"}
+                  size="sm"
+                  data-testid="link-campaign-types"
+                >
+                  <Layers className="h-4 w-4 mr-1.5" />
+                  Campaign Types
                 </Button>
               </Link>
             </nav>
@@ -213,15 +225,28 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
               )}
-              <Link href="/campaigns">
+              {/* Common navigation - visible to all users */}
+              <Link href="/score-tier">
                 <Button
-                  variant={location === "/campaigns" ? "secondary" : "ghost"}
+                  variant={location === "/score-tier" ? "secondary" : "ghost"}
                   className="w-full justify-start"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Campaigns
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Score & Tier
                 </Button>
               </Link>
+              <Link href="/campaign-types">
+                <Button
+                  variant={location === "/campaign-types" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Layers className="h-4 w-4 mr-2" />
+                  Campaign Types
+                </Button>
+              </Link>
+              <div className="border-b my-2" />
               {isAuthenticated ? (
                 <>
                   {isInfluencer && (
@@ -244,26 +269,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                         >
                           <User className="h-4 w-4 mr-2" />
                           Profile
-                        </Button>
-                      </Link>
-                      <Link href="/score-tier">
-                        <Button
-                          variant={location === "/score-tier" ? "secondary" : "ghost"}
-                          className="w-full justify-start"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <Trophy className="h-4 w-4 mr-2" />
-                          Score & Tier
-                        </Button>
-                      </Link>
-                      <Link href="/campaign-types">
-                        <Button
-                          variant={location === "/campaign-types" ? "secondary" : "ghost"}
-                          className="w-full justify-start"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <Layers className="h-4 w-4 mr-2" />
-                          Type of Campaign
                         </Button>
                       </Link>
                     </>

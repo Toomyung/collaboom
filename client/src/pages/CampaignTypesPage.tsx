@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles,
-  ArrowLeft,
   Gift,
   DollarSign,
   ShoppingCart,
@@ -23,8 +21,10 @@ import {
   ExternalLink,
   Heart,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { SiTiktok, SiAmazon } from "react-icons/si";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 function StepIndicator({ number, isLast = false }: { number: number; isLast?: boolean }) {
   return (
@@ -90,27 +90,8 @@ function HorizontalProcess({ steps }: { steps: { icon: React.ComponentType<{ cla
 
 export default function CampaignTypesPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl" data-testid="link-campaign-types-home">
-              <Sparkles className="h-6 w-6 text-primary" />
-              <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                Collaboom
-              </span>
-            </Link>
-            <Link href="/">
-              <Button variant="ghost" size="sm" data-testid="button-back-home">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <MainLayout>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold mb-4">Types of Campaigns</h1>
@@ -132,45 +113,45 @@ export default function CampaignTypesPage() {
         <div className="grid sm:grid-cols-3 gap-4 mb-12">
           <button 
             onClick={() => document.getElementById('section-gifting')?.scrollIntoView({ behavior: 'smooth' })}
-            className="text-center p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 hover-elevate cursor-pointer transition-all"
+            className="text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 hover-elevate cursor-pointer transition-all"
             data-testid="button-nav-gifting"
           >
-            <Gift className="h-8 w-8 mx-auto mb-2 text-green-600" />
-            <p className="font-bold text-green-700 dark:text-green-300">Gifting</p>
+            <Gift className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+            <p className="font-bold text-purple-700 dark:text-purple-300">Gifting</p>
             <p className="text-sm text-muted-foreground">Free Products</p>
           </button>
           <button 
             onClick={() => document.getElementById('section-cost-covered')?.scrollIntoView({ behavior: 'smooth' })}
-            className="text-center p-6 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 hover-elevate cursor-pointer transition-all"
+            className="text-center p-6 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 hover-elevate cursor-pointer transition-all"
             data-testid="button-nav-cost-covered"
           >
-            <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-            <p className="font-bold text-blue-700 dark:text-blue-300">Cost Covered</p>
-            <Badge className="bg-blue-500 text-white mt-1">+$30</Badge>
+            <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
+            <p className="font-bold text-emerald-700 dark:text-emerald-300">Cost Covered</p>
+            <Badge className="bg-emerald-500 text-white mt-1">+$30</Badge>
           </button>
           <button 
             onClick={() => document.getElementById('section-amazon-store')?.scrollIntoView({ behavior: 'smooth' })}
-            className="text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200 dark:border-purple-800 hover-elevate cursor-pointer transition-all"
+            className="text-center p-6 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 hover-elevate cursor-pointer transition-all"
             data-testid="button-nav-amazon-store"
           >
-            <Store className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-            <p className="font-bold text-purple-700 dark:text-purple-300">Amazon Store</p>
-            <Badge className="bg-purple-500 text-white mt-1">+$50</Badge>
+            <Store className="h-8 w-8 mx-auto mb-2 text-amber-600" />
+            <p className="font-bold text-amber-700 dark:text-amber-300">Amazon Video</p>
+            <Badge className="bg-amber-500 text-white mt-1">+$50</Badge>
           </button>
         </div>
 
         {/* Campaign Type 1: Gifting */}
         <section id="section-gifting" className="mb-10 scroll-mt-20">
-          <Card className="border-2 border-green-300 dark:border-green-700 overflow-hidden" data-testid="card-campaign-gifting">
-            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40">
+          <Card className="border-2 border-purple-300 dark:border-purple-700 overflow-hidden" data-testid="card-campaign-gifting">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="p-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white w-fit">
+                <div className="p-4 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 text-white w-fit">
                   <Gift className="h-8 w-8" />
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <CardTitle className="text-2xl text-green-700 dark:text-green-300">Gifting Campaign</CardTitle>
-                    <Badge variant="outline" className="border-green-500 text-green-600">Most Popular</Badge>
+                    <CardTitle className="text-2xl text-purple-700 dark:text-purple-300">Gifting Campaign</CardTitle>
+                    <Badge variant="outline" className="border-purple-500 text-purple-600">Most Popular</Badge>
                   </div>
                   <CardDescription className="text-base">
                     Receive free products in exchange for TikTok content
@@ -178,7 +159,7 @@ export default function CampaignTypesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Reward</p>
-                  <p className="text-2xl font-bold text-green-600">Free Product</p>
+                  <p className="text-2xl font-bold text-purple-600">Free Product</p>
                 </div>
               </div>
             </CardHeader>
@@ -186,7 +167,7 @@ export default function CampaignTypesPage() {
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <h4 className="font-semibold mb-4 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-green-500" />
+                    <Zap className="h-4 w-4 text-purple-500" />
                     How It Works
                   </h4>
                   <HorizontalProcess steps={[
@@ -199,27 +180,27 @@ export default function CampaignTypesPage() {
                 </div>
                 <div>
                   <h4 className="font-semibold mb-4 flex items-center gap-2">
-                    <Star className="h-4 w-4 text-green-500" />
+                    <Star className="h-4 w-4 text-purple-500" />
                     What You Get
                   </h4>
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                      <CheckCircle className="h-4 w-4 text-purple-500 shrink-0" />
                       <span>Free K-Beauty, Food, or Lifestyle products</span>
                     </li>
                     <li className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                      <CheckCircle className="h-4 w-4 text-purple-500 shrink-0" />
                       <span>Build your portfolio with brand collaborations</span>
                     </li>
                     <li className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                      <CheckCircle className="h-4 w-4 text-purple-500 shrink-0" />
                       <span>Earn points toward VIP status</span>
                     </li>
                   </ul>
                 </div>
               </div>
-              <div className="mt-6 p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-                <p className="text-sm text-green-700 dark:text-green-300 flex items-start gap-2">
+              <div className="mt-6 p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                <p className="text-sm text-purple-700 dark:text-purple-300 flex items-start gap-2">
                   <SiTiktok className="h-4 w-4 mt-0.5 shrink-0" />
                   <span><strong>Platform:</strong> Post your video on TikTok and share the link with us</span>
                 </p>
@@ -230,16 +211,16 @@ export default function CampaignTypesPage() {
 
         {/* Campaign Type 2: Product Cost Covered */}
         <section id="section-cost-covered" className="mb-10 scroll-mt-20">
-          <Card className="border-2 border-blue-300 dark:border-blue-700 overflow-hidden" data-testid="card-campaign-cost-covered">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40">
+          <Card className="border-2 border-emerald-300 dark:border-emerald-700 overflow-hidden" data-testid="card-campaign-cost-covered">
+            <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="p-4 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white w-fit">
+                <div className="p-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white w-fit">
                   <ShoppingCart className="h-8 w-8" />
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <CardTitle className="text-2xl text-blue-700 dark:text-blue-300">Product Cost Covered</CardTitle>
-                    <Badge className="bg-blue-500 text-white">Paid Campaign</Badge>
+                    <CardTitle className="text-2xl text-emerald-700 dark:text-emerald-300">Product Cost Covered</CardTitle>
+                    <Badge className="bg-emerald-500 text-white">Paid Campaign</Badge>
                   </div>
                   <CardDescription className="text-base">
                     Buy on Amazon, get reimbursed, plus earn $30 reward
@@ -247,52 +228,52 @@ export default function CampaignTypesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Reward</p>
-                  <p className="text-3xl font-bold text-blue-600">$30</p>
+                  <p className="text-3xl font-bold text-emerald-600">$30</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="mb-6">
                 <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-blue-500" />
+                  <Zap className="h-4 w-4 text-emerald-500" />
                   Step-by-Step Process
                 </h4>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-2">
-                      <SiAmazon className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
+                      <SiAmazon className="h-5 w-5 text-emerald-600" />
                     </div>
                     <span className="text-xs font-medium">1. Buy on Amazon</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-2">
-                      <FileImage className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
+                      <FileImage className="h-5 w-5 text-emerald-600" />
                     </div>
                     <span className="text-xs font-medium">2. Screenshot Order</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-2">
-                      <Upload className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
+                      <Upload className="h-5 w-5 text-emerald-600" />
                     </div>
                     <span className="text-xs font-medium">3. Submit Proof</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mb-2">
-                      <CreditCard className="h-5 w-5 text-green-600" />
+                    <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center mb-2">
+                      <CreditCard className="h-5 w-5 text-teal-600" />
                     </div>
                     <span className="text-xs font-medium">4. Get Reimbursed</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-2">
-                      <Video className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
+                      <Video className="h-5 w-5 text-emerald-600" />
                     </div>
                     <span className="text-xs font-medium">5. Create & Upload</span>
                   </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50">
-                    <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mb-2">
+                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center mb-2">
                       <DollarSign className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-green-700 dark:text-green-300">6. Earn $30</span>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">6. Earn $30</span>
                   </div>
                 </div>
               </div>
@@ -300,27 +281,27 @@ export default function CampaignTypesPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="p-4 rounded-lg border bg-card">
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-emerald-500" />
                     Key Benefits
                   </h4>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-blue-500 shrink-0" />
+                      <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
                       <span>No upfront cost (fully reimbursed)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-blue-500 shrink-0" />
+                      <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
                       <span>Keep the product + earn $30</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-blue-500 shrink-0" />
+                      <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
                       <span>Quick reimbursement after verification</span>
                     </li>
                   </ul>
                 </div>
                 <div className="p-4 rounded-lg border bg-card">
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <Camera className="h-4 w-4 text-blue-500" />
+                    <Camera className="h-4 w-4 text-emerald-500" />
                     Requirements
                   </h4>
                   <ul className="space-y-2 text-sm">
@@ -337,14 +318,14 @@ export default function CampaignTypesPage() {
                       <span>TikTok video upload</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CreditCard className="h-3 w-3 mt-1.5 text-blue-500 shrink-0" />
+                      <CreditCard className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
                       <span>
                         <strong>PayPal account required</strong> for payment
                         <a 
                           href="https://www.paypal.com/us/webapps/mpp/account-selection" 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="ml-1 text-blue-600 hover:underline inline-flex items-center gap-0.5"
+                          className="ml-1 text-emerald-600 hover:underline inline-flex items-center gap-0.5"
                           data-testid="link-paypal-signup"
                         >
                           Sign up
@@ -361,16 +342,16 @@ export default function CampaignTypesPage() {
 
         {/* Campaign Type 3: Amazon Video Upload */}
         <section id="section-amazon-store" className="mb-10 scroll-mt-20">
-          <Card className="border-2 border-purple-300 dark:border-purple-700 overflow-hidden" data-testid="card-campaign-amazon-store">
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/40 dark:to-violet-950/40">
+          <Card className="border-2 border-amber-300 dark:border-amber-700 overflow-hidden" data-testid="card-campaign-amazon-store">
+            <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="p-4 rounded-full bg-gradient-to-br from-purple-400 to-violet-500 text-white w-fit">
+                <div className="p-4 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white w-fit">
                   <Store className="h-8 w-8" />
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <CardTitle className="text-2xl text-purple-700 dark:text-purple-300">Amazon Video Upload</CardTitle>
-                    <Badge className="bg-purple-500 text-white">Premium Paid</Badge>
+                    <CardTitle className="text-2xl text-amber-700 dark:text-amber-300">Amazon Video Upload</CardTitle>
+                    <Badge className="bg-amber-500 text-white">Premium Paid</Badge>
                   </div>
                   <CardDescription className="text-base">
                     Post on TikTok + Amazon Storefront for maximum earnings
@@ -378,14 +359,14 @@ export default function CampaignTypesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Reward</p>
-                  <p className="text-3xl font-bold text-purple-600">$50</p>
+                  <p className="text-3xl font-bold text-amber-600">$50</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="mb-6">
                 <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-purple-500" />
+                  <Zap className="h-4 w-4 text-amber-500" />
                   How It Works
                 </h4>
                 <HorizontalProcess steps={[
@@ -399,18 +380,18 @@ export default function CampaignTypesPage() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-amber-700 dark:text-amber-300">
                     <Store className="h-4 w-4" />
                     Requirements
                   </h4>
                   <ul className="space-y-2 text-sm text-muted-foreground mb-3">
                     <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-purple-500 shrink-0" />
+                      <ArrowRight className="h-3 w-3 mt-1.5 text-amber-500 shrink-0" />
                       <span>Active Amazon Influencer Storefront</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CreditCard className="h-3 w-3 mt-1.5 text-purple-500 shrink-0" />
+                      <CreditCard className="h-3 w-3 mt-1.5 text-amber-500 shrink-0" />
                       <span>
                         <strong className="text-foreground">PayPal account</strong> for $50 payment
                       </span>
@@ -421,7 +402,7 @@ export default function CampaignTypesPage() {
                       href="https://affiliate-program.amazon.com/influencers" 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-sm text-purple-600 hover:underline flex items-center gap-1"
+                      className="text-sm text-amber-600 hover:underline flex items-center gap-1"
                       data-testid="link-amazon-influencer-program"
                     >
                       Amazon Influencer Program
@@ -431,7 +412,7 @@ export default function CampaignTypesPage() {
                       href="https://www.paypal.com/us/webapps/mpp/account-selection" 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-sm text-purple-600 hover:underline flex items-center gap-1"
+                      className="text-sm text-amber-600 hover:underline flex items-center gap-1"
                       data-testid="link-paypal-signup-amazon"
                     >
                       Create PayPal Account
@@ -441,7 +422,7 @@ export default function CampaignTypesPage() {
                 </div>
                 <div className="p-4 rounded-lg border bg-card">
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <Video className="h-4 w-4 text-purple-500" />
+                    <Video className="h-4 w-4 text-amber-500" />
                     Dual Platform Posting
                   </h4>
                   <div className="space-y-3">
@@ -459,8 +440,8 @@ export default function CampaignTypesPage() {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-950/50 dark:to-violet-950/50 border border-purple-200 dark:border-purple-800">
-                <p className="text-sm text-purple-700 dark:text-purple-300 flex items-start gap-2">
+              <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-950/50 dark:to-orange-950/50 border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
                   <Trophy className="h-4 w-4 mt-0.5 shrink-0" />
                   <span><strong>Pro Tip:</strong> This is similar to Gifting but with higher rewards! Perfect for influencers who already have an Amazon Storefront.</span>
                 </p>
@@ -547,17 +528,17 @@ export default function CampaignTypesPage() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-semibold">Feature</th>
-                    <th className="text-center py-3 px-4 font-semibold text-green-600">
+                    <th className="text-center py-3 px-4 font-semibold text-purple-600">
                       <Gift className="h-4 w-4 mx-auto mb-1" />
                       Gifting
                     </th>
-                    <th className="text-center py-3 px-4 font-semibold text-blue-600">
+                    <th className="text-center py-3 px-4 font-semibold text-emerald-600">
                       <ShoppingCart className="h-4 w-4 mx-auto mb-1" />
                       Cost Covered
                     </th>
-                    <th className="text-center py-3 px-4 font-semibold text-purple-600">
+                    <th className="text-center py-3 px-4 font-semibold text-amber-600">
                       <Store className="h-4 w-4 mx-auto mb-1" />
-                      Amazon Store
+                      Amazon Video
                     </th>
                   </tr>
                 </thead>
@@ -565,8 +546,8 @@ export default function CampaignTypesPage() {
                   <tr className="border-b">
                     <td className="py-3 px-4">Cash Reward</td>
                     <td className="text-center py-3 px-4">-</td>
-                    <td className="text-center py-3 px-4 font-semibold text-blue-600">$30</td>
-                    <td className="text-center py-3 px-4 font-semibold text-purple-600">$50</td>
+                    <td className="text-center py-3 px-4 font-semibold text-emerald-600">$30</td>
+                    <td className="text-center py-3 px-4 font-semibold text-amber-600">$50</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Free Product</td>
@@ -629,7 +610,7 @@ export default function CampaignTypesPage() {
             </CardContent>
           </Card>
         </section>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
