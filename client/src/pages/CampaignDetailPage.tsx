@@ -53,14 +53,14 @@ const getCampaignTypeInfo = (campaignType: string | undefined) => {
         label: "#ProductCostCovered",
         anchor: "#product-cost-covered",
         icon: ShoppingCart,
-        color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+        color: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0",
       };
     case "amazon_video_upload":
       return {
         label: "#AmazonVideo",
         anchor: "#amazon-video",
         icon: Store,
-        color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+        color: "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0",
       };
     case "gifting":
     default:
@@ -68,7 +68,7 @@ const getCampaignTypeInfo = (campaignType: string | undefined) => {
         label: "#Gifting",
         anchor: "#gifting",
         icon: Gift,
-        color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+        color: "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0",
       };
   }
 };
