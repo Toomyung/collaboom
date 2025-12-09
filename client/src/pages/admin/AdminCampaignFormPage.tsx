@@ -107,32 +107,9 @@ const formSchema = insertCampaignSchema.extend({
   videoKeyPoints: z.string().optional(),
   applicationDeadline: z.string().min(1, "Application deadline is required"),
   deadline: z.string().min(1, "Upload deadline is required"),
-  rewardAmount: z.number().optional().nullable(),
-}).refine(
-  (data) => {
-    if (data.rewardType === "paid") {
-      return data.rewardAmount != null && data.rewardAmount > 0;
-    }
-    return true;
-  },
-  {
-    message: "Reward amount is required for paid campaigns",
-    path: ["rewardAmount"],
-  }
-);
+});
 
 type FormData = z.infer<typeof formSchema>;
-
-// Helper to normalize legacy reward types (20usd, 50usd) to new format
-function normalizeLegacyRewardType(rewardType: string, rewardAmount: number | null | undefined): { rewardType: string; rewardAmount: number | null } {
-  if (rewardType === "20usd") {
-    return { rewardType: "paid", rewardAmount: 20 };
-  }
-  if (rewardType === "50usd") {
-    return { rewardType: "paid", rewardAmount: 50 };
-  }
-  return { rewardType, rewardAmount: rewardAmount ?? null };
-}
 
 // Helper to detect platform from URL
 type Platform = "instagram" | "tiktok" | "amazon" | "unknown";
@@ -215,8 +192,6 @@ export default function AdminCampaignFormPage() {
       productName: "",
       campaignType: "gifting",
       category: "beauty",
-      rewardType: "gift",
-      rewardAmount: null,
       inventory: 50,
       imageUrls: [],
       amazonUrl: "",
@@ -241,15 +216,12 @@ export default function AdminCampaignFormPage() {
     },
     values: campaign
       ? (() => {
-          const normalizedReward = normalizeLegacyRewardType(campaign.rewardType, campaign.rewardAmount);
           return {
             name: campaign.name,
             brandName: campaign.brandName,
             productName: (campaign as any).productName || "",
             campaignType: (campaign as any).campaignType || "gifting",
             category: campaign.category,
-            rewardType: normalizedReward.rewardType,
-            rewardAmount: normalizedReward.rewardAmount,
             inventory: campaign.inventory,
             imageUrls: campaign.imageUrls || (campaign.imageUrl ? [campaign.imageUrl] : []),
             amazonUrl: campaign.amazonUrl || "",
@@ -279,8 +251,6 @@ export default function AdminCampaignFormPage() {
         })()
       : undefined,
   });
-
-  const watchRewardType = form.watch("rewardType");
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -636,86 +606,28 @@ export default function AdminCampaignFormPage() {
                   )}
                 />
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-category">
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="beauty">Beauty</SelectItem>
-                            <SelectItem value="food">Food</SelectItem>
-                            <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="rewardType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Reward Type *</FormLabel>
-                        <Select 
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            if (value === "gift") {
-                              form.setValue("rewardAmount", null);
-                            }
-                          }} 
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger data-testid="select-reward">
-                              <SelectValue placeholder="Select reward" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="gift">Gift Only</SelectItem>
-                            <SelectItem value="paid">Gift + Cash Reward</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {watchRewardType === "paid" && (
-                  <FormField
-                    control={form.control}
-                    name="rewardAmount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Reward Amount (USD) *</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="e.g., 20, 50, 100"
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                            data-testid="input-reward-amount"
-                          />
+                          <SelectTrigger data-testid="select-category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormDescription>
-                          Enter the cash reward amount in USD
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                        <SelectContent>
+                          <SelectItem value="beauty">Beauty</SelectItem>
+                          <SelectItem value="food">Food</SelectItem>
+                          <SelectItem value="lifestyle">Lifestyle</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}

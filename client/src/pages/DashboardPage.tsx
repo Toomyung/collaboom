@@ -1060,8 +1060,12 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold">
                   ${allApplications?.filter(a => 
                     (a.status === "uploaded" || a.status === "completed") && 
-                    a.campaign.rewardType === "gift_paid"
-                  ).reduce((sum, a) => sum + (a.campaign.rewardAmount || 0), 0) || 0}
+                    (a.campaign.campaignType === "product_cost_covered" || a.campaign.campaignType === "amazon_video_upload")
+                  ).reduce((sum, a) => {
+                    if (a.campaign.campaignType === "product_cost_covered") return sum + 30;
+                    if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                    return sum;
+                  }, 0) || 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Cash Earned</p>
               </div>
@@ -1622,8 +1626,12 @@ export default function DashboardPage() {
               Total earned: <span className="font-bold text-foreground">
                 ${allApplications?.filter(a => 
                   (a.status === "uploaded" || a.status === "completed") && 
-                  a.campaign.rewardType === "gift_paid"
-                ).reduce((sum, a) => sum + (a.campaign.rewardAmount || 0), 0) || 0}
+                  (a.campaign.campaignType === "product_cost_covered" || a.campaign.campaignType === "amazon_video_upload")
+                ).reduce((sum, a) => {
+                  if (a.campaign.campaignType === "product_cost_covered") return sum + 30;
+                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                  return sum;
+                }, 0) || 0}
               </span>
             </SheetDescription>
           </SheetHeader>
@@ -1631,7 +1639,7 @@ export default function DashboardPage() {
             {(() => {
               const paidCampaigns = allApplications?.filter(a => 
                 (a.status === "uploaded" || a.status === "completed") && 
-                a.campaign.rewardType === "gift_paid"
+                (a.campaign.campaignType === "product_cost_covered" || a.campaign.campaignType === "amazon_video_upload")
               ) || [];
               return paidCampaigns.length > 0 ? (
                 <div className="space-y-3">
@@ -1658,7 +1666,7 @@ export default function DashboardPage() {
                         <p className="text-xs text-muted-foreground">{app.campaign.brandName}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
-                            ${app.campaign.rewardAmount || 0}
+                            ${app.campaign.campaignType === "product_cost_covered" ? 30 : app.campaign.campaignType === "amazon_video_upload" ? 50 : 0}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {app.uploadedAt ? format(new Date(app.uploadedAt), "MMM d, yyyy") : ""}

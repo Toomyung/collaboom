@@ -538,7 +538,7 @@ export function InfluencerDetailSheet({
   ) || [];
 
   const cashApps = completedApps.filter(
-    (a) => a.campaign?.rewardType === "gift_paid" && (a.campaign?.rewardAmount || 0) > 0
+    (a) => a.campaign?.campaignType === "product_cost_covered" || a.campaign?.campaignType === "amazon_video_upload"
   );
 
   const renderProgressBar = (status: string) => {
@@ -897,7 +897,7 @@ export function InfluencerDetailSheet({
                       </div>
                       <Badge className="bg-emerald-500/10 text-emerald-600 text-xs">
                         <DollarSign className="h-3 w-3 mr-0.5" />
-                        ${app.campaign?.rewardAmount || 0}
+                        ${app.campaign?.campaignType === "product_cost_covered" ? 30 : app.campaign?.campaignType === "amazon_video_upload" ? 50 : 0}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">

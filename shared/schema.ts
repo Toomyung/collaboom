@@ -132,8 +132,6 @@ export const campaigns = pgTable("campaigns", {
   productName: text("product_name"), // Product name for the campaign
   campaignType: text("campaign_type").notNull().default("gifting"), // 'gifting' | 'product_cost_covered' | 'amazon_video_upload'
   category: text("category").notNull(), // 'beauty' | 'food' | 'lifestyle'
-  rewardType: text("reward_type").notNull(), // 'gift' | 'paid'
-  rewardAmount: integer("reward_amount"), // Amount in USD for 'paid' type (e.g., 20, 50, 100)
   inventory: integer("inventory").notNull(),
   approvedCount: integer("approved_count").default(0),
   imageUrl: text("image_url"), // Legacy single image (deprecated)
@@ -181,8 +179,6 @@ export type MinimalCampaign = {
   productName: string | null;
   campaignType: CampaignType;
   category: string;
-  rewardType: string;
-  rewardAmount: number | null;
   inventory: number;
   approvedCount: number | null;
   thumbnailUrl: string | null;

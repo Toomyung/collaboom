@@ -265,24 +265,19 @@ export default function CampaignDetailPage() {
     !isApplicationClosed;
 
   const getRewardDisplay = () => {
-    // Handle new 'paid' type with custom amount
-    if (campaign.rewardType === "paid" && campaign.rewardAmount) {
-      return { label: `Free Product + $${campaign.rewardAmount}`, icon: DollarSign, color: "from-emerald-500 to-teal-500" };
+    const campaignType = (campaign as any).campaignType || 'gifting';
+    
+    // Product Cost Covered - $30 reward
+    if (campaignType === "product_cost_covered") {
+      return { label: "Free Product + $30", icon: DollarSign, color: "from-emerald-500 to-teal-500" };
     }
     
-    // Handle gift type
-    if (campaign.rewardType === "gift") {
-      return { label: "Free Product", icon: Gift, color: "from-purple-500 to-pink-500" };
-    }
-    
-    // Legacy support for old reward types
-    if (campaign.rewardType === "20usd") {
-      return { label: "Free Product + $20", icon: DollarSign, color: "from-emerald-500 to-teal-500" };
-    }
-    if (campaign.rewardType === "50usd") {
+    // Amazon Video Upload - $50 reward
+    if (campaignType === "amazon_video_upload") {
       return { label: "Free Product + $50", icon: DollarSign, color: "from-amber-500 to-orange-500" };
     }
     
+    // Gifting - Free Product only
     return { label: "Free Product", icon: Gift, color: "from-purple-500 to-pink-500" };
   };
 

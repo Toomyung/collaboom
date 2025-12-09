@@ -876,11 +876,11 @@ export default function AdminCampaignDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Reward</p>
                     <p className="font-medium">
-                      {campaign.rewardType === "paid" && campaign.rewardAmount
-                        ? `Gift + $${campaign.rewardAmount} Reward`
-                        : campaign.rewardType === "gift"
-                        ? "Gift Only"
-                        : campaign.rewardType.replace("usd", " USD")}
+                      {(campaign as any).campaignType === "product_cost_covered"
+                        ? "Gift + $30 Reward"
+                        : (campaign as any).campaignType === "amazon_video_upload"
+                        ? "Gift + $50 Reward"
+                        : "Gift Only"}
                     </p>
                   </div>
                   <div>

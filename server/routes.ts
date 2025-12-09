@@ -603,8 +603,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             productName: c.productName,
             campaignType: c.campaignType || 'gifting',
             category: c.category,
-            rewardType: c.rewardType,
-            rewardAmount: c.rewardAmount,
             inventory: c.inventory,
             approvedCount: c.approvedCount,
             thumbnailUrl, // Single thumbnail instead of full imageUrls array
@@ -637,8 +635,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           productName: c.productName,
           campaignType: c.campaignType || 'gifting',
           category: c.category,
-          rewardType: c.rewardType,
-          rewardAmount: c.rewardAmount,
           inventory: c.inventory,
           approvedCount: c.approvedCount,
           thumbnailUrl,
@@ -1059,11 +1055,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sanitize all text inputs
       const sanitizedBody = sanitizeObject(req.body);
       
-      // Validate that paid campaigns have a reward amount
-      if (sanitizedBody.rewardType === 'paid' && (!sanitizedBody.rewardAmount || sanitizedBody.rewardAmount <= 0)) {
-        return res.status(400).json({ message: "Reward amount is required for paid campaigns" });
-      }
-      
       // Parse deadline strings to Date if provided
       let deadline = sanitizedBody.deadline;
       if (deadline && typeof deadline === 'string') {
@@ -1096,8 +1087,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrls,
         deadline,
         applicationDeadline,
-        // Clear rewardAmount if gift type
-        rewardAmount: sanitizedBody.rewardType === 'gift' ? null : sanitizedBody.rewardAmount,
         createdByAdminId: req.session.userId,
       });
       const campaign = await storage.createCampaign(data);
@@ -1128,16 +1117,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data.applicationDeadline = new Date(data.applicationDeadline);
       }
       
-      // Validate that paid campaigns have a reward amount
-      if (data.rewardType === 'paid' && (!data.rewardAmount || data.rewardAmount <= 0)) {
-        return res.status(400).json({ message: "Reward amount is required for paid campaigns" });
-      }
-      
-      // Clear rewardAmount if switching to gift type
-      if (data.rewardType === 'gift') {
-        data.rewardAmount = null;
-      }
-
       // Upload any new base64 images to Supabase Storage
       if (data.imageUrls && data.imageUrls.length > 0 && data.imageUrls.some((img: string) => isBase64Image(img))) {
         try {
@@ -2185,9 +2164,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const missedApps = enrichedApplications.filter(
         (a) => a.status === "deadline_missed"
       );
-      const cashEarned = completedApps
-        .filter((a) => a.campaign?.rewardType === "gift_paid")
-        .reduce((sum, a) => sum + (a.campaign?.rewardAmount || 0), 0);
+      // Calculate cash earned based on campaign type
+      const cashEarned = completedApps.reduce((sum, a) => {
+        if (a.campaign?.campaignType === "product_cost_covered") return sum + 30;
+        if (a.campaign?.campaignType === "amazon_video_upload") return sum + 50;
+        return sum;
+      }, 0);
       
       // Total points earned from campaigns
       const totalPointsFromCampaigns = completedApps.reduce(
