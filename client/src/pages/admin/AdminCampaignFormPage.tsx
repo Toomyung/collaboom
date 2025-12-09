@@ -213,6 +213,7 @@ export default function AdminCampaignFormPage() {
       name: "",
       brandName: "",
       productName: "",
+      campaignType: "gifting",
       category: "beauty",
       rewardType: "gift",
       rewardAmount: null,
@@ -245,6 +246,7 @@ export default function AdminCampaignFormPage() {
             name: campaign.name,
             brandName: campaign.brandName,
             productName: (campaign as any).productName || "",
+            campaignType: (campaign as any).campaignType || "gifting",
             category: campaign.category,
             rewardType: normalizedReward.rewardType,
             rewardAmount: normalizedReward.rewardAmount,
@@ -604,6 +606,35 @@ export default function AdminCampaignFormPage() {
                     )}
                   />
                 </div>
+
+                {/* Campaign Type Selection */}
+                <FormField
+                  control={form.control}
+                  name="campaignType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Campaign Type *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || "gifting"}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-campaign-type">
+                            <SelectValue placeholder="Select campaign type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="gifting">Gifting (Free Product Only)</SelectItem>
+                          <SelectItem value="product_cost_covered">Product Cost Covered (+$30 Reward)</SelectItem>
+                          <SelectItem value="amazon_video_upload">Amazon Video Upload (+$50 Reward)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        {field.value === "product_cost_covered" && "Influencer purchases product on Amazon, submits proof, gets reimbursed, then creates TikTok content for $30 reward."}
+                        {field.value === "amazon_video_upload" && "Influencer receives product and posts on both TikTok AND Amazon Storefront for $50 reward. Requires Amazon Storefront."}
+                        {(!field.value || field.value === "gifting") && "Influencer receives free product and creates TikTok content."}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField

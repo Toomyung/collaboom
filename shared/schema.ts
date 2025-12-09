@@ -120,12 +120,17 @@ export type InsertInfluencer = z.infer<typeof insertInfluencerSchema>;
 export type Influencer = typeof influencers.$inferSelect;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 
+// Campaign Types
+export const campaignTypeEnum = ['gifting', 'product_cost_covered', 'amazon_video_upload'] as const;
+export type CampaignType = typeof campaignTypeEnum[number];
+
 // Campaigns
 export const campaigns = pgTable("campaigns", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   brandName: text("brand_name").notNull(),
   productName: text("product_name"), // Product name for the campaign
+  campaignType: text("campaign_type").notNull().default("gifting"), // 'gifting' | 'product_cost_covered' | 'amazon_video_upload'
   category: text("category").notNull(), // 'beauty' | 'food' | 'lifestyle'
   rewardType: text("reward_type").notNull(), // 'gift' | 'paid'
   rewardAmount: integer("reward_amount"), // Amount in USD for 'paid' type (e.g., 20, 50, 100)
@@ -174,6 +179,7 @@ export type MinimalCampaign = {
   name: string;
   brandName: string;
   productName: string | null;
+  campaignType: CampaignType;
   category: string;
   rewardType: string;
   rewardAmount: number | null;
@@ -213,6 +219,20 @@ export const applications = pgTable("applications", {
   shippingState: text("shipping_state"),
   shippingZipCode: text("shipping_zip_code"),
   shippingCountry: text("shipping_country"),
+  // Product Cost Covered campaign fields
+  purchaseScreenshotUrl: text("purchase_screenshot_url"), // URL of Amazon purchase screenshot
+  purchaseSubmittedAt: timestamp("purchase_submitted_at"), // When influencer submitted purchase proof
+  purchaseVerifiedAt: timestamp("purchase_verified_at"), // When admin verified the purchase
+  purchaseVerifiedByAdminId: varchar("purchase_verified_by_admin_id"),
+  amazonOrderId: text("amazon_order_id"), // Optional Amazon order ID for reference
+  reimbursementSentAt: timestamp("reimbursement_sent_at"), // When admin sent reimbursement
+  reimbursementSentByAdminId: varchar("reimbursement_sent_by_admin_id"),
+  reimbursementAmount: integer("reimbursement_amount"), // Amount reimbursed (typically product cost)
+  reimbursementPaypalTransactionId: text("reimbursement_paypal_transaction_id"), // PayPal transaction ID
+  cashRewardSentAt: timestamp("cash_reward_sent_at"), // When admin sent the $30/$50 cash reward
+  cashRewardSentByAdminId: varchar("cash_reward_sent_by_admin_id"),
+  cashRewardAmount: integer("cash_reward_amount"), // Cash reward amount ($30 for product_cost_covered, $50 for amazon_video_upload)
+  cashRewardPaypalTransactionId: text("cash_reward_paypal_transaction_id"), // PayPal transaction ID for cash reward
   // Email threading - stores the first email's Message-ID for threading subsequent emails
   emailThreadId: text("email_thread_id"),
   createdAt: timestamp("created_at").defaultNow(),
