@@ -336,6 +336,22 @@ export default function CampaignTypesPage() {
                       <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
                       <span>TikTok video upload</span>
                     </li>
+                    <li className="flex items-start gap-2">
+                      <CreditCard className="h-3 w-3 mt-1.5 text-blue-500 shrink-0" />
+                      <span>
+                        <strong>PayPal account required</strong> for payment
+                        <a 
+                          href="https://www.paypal.com/us/webapps/mpp/account-selection" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="ml-1 text-blue-600 hover:underline inline-flex items-center gap-0.5"
+                          data-testid="link-paypal-signup"
+                        >
+                          Sign up
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -386,21 +402,42 @@ export default function CampaignTypesPage() {
                 <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-purple-700 dark:text-purple-300">
                     <Store className="h-4 w-4" />
-                    Amazon Storefront Required
+                    Requirements
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    You must have an active Amazon Influencer Storefront to participate in this campaign type.
-                  </p>
-                  <a 
-                    href="https://affiliate-program.amazon.com/influencers" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-purple-600 hover:underline flex items-center gap-1"
-                    data-testid="link-amazon-influencer-program"
-                  >
-                    Learn about Amazon Influencer Program
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <ul className="space-y-2 text-sm text-muted-foreground mb-3">
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-3 w-3 mt-1.5 text-purple-500 shrink-0" />
+                      <span>Active Amazon Influencer Storefront</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CreditCard className="h-3 w-3 mt-1.5 text-purple-500 shrink-0" />
+                      <span>
+                        <strong className="text-foreground">PayPal account</strong> for $50 payment
+                      </span>
+                    </li>
+                  </ul>
+                  <div className="flex flex-col gap-2">
+                    <a 
+                      href="https://affiliate-program.amazon.com/influencers" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-purple-600 hover:underline flex items-center gap-1"
+                      data-testid="link-amazon-influencer-program"
+                    >
+                      Amazon Influencer Program
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <a 
+                      href="https://www.paypal.com/us/webapps/mpp/account-selection" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-purple-600 hover:underline flex items-center gap-1"
+                      data-testid="link-paypal-signup-amazon"
+                    >
+                      Create PayPal Account
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
                 </div>
                 <div className="p-4 rounded-lg border bg-card">
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">

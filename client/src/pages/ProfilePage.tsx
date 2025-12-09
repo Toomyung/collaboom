@@ -39,7 +39,7 @@ import { updateProfileSchema, UpdateProfile } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Redirect, useLocation } from "wouter";
+import { Redirect, useLocation, Link } from "wouter";
 import {
   User,
   MapPin,
@@ -574,11 +574,26 @@ export default function ProfilePage() {
                     <SiPaypal className="h-4 w-4 text-blue-600" />
                     <span className="font-medium text-foreground">About Paid Campaigns</span>
                   </div>
-                  <p className="text-xs leading-relaxed">
-                    Some campaigns offer cash rewards in addition to free products. Payments are processed via PayPal. 
-                    You can skip this for now, but you'll need to add your PayPal email to receive paid campaign rewards.
-                    Don't have PayPal? You can easily create a free account at paypal.com.
+                  <p className="text-xs leading-relaxed mb-2">
+                    Some campaigns offer cash rewards ($30-$50+) in addition to free products. Payments are processed via PayPal. 
+                    You can skip this for now, but you'll need to add your PayPal email to apply for paid campaigns.
                   </p>
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <a 
+                      href="https://www.paypal.com/us/webapps/mpp/account-selection" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                      data-testid="link-paypal-signup-profile"
+                    >
+                      Create PayPal Account
+                    </a>
+                    <Link href="/campaign-types#product-cost-covered">
+                      <span className="text-blue-600 hover:underline cursor-pointer" data-testid="link-campaign-types-profile">
+                        Learn about Paid Campaigns
+                      </span>
+                    </Link>
+                  </div>
                 </div>
 
                 <FormField

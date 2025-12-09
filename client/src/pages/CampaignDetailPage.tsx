@@ -22,7 +22,10 @@ import {
   Info,
   Globe,
   Link as LinkIcon,
+  ShoppingCart,
+  Store,
 } from "lucide-react";
+
 import { SiAmazon, SiInstagram, SiTiktok } from "react-icons/si";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +45,33 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fixImageUrl } from "@/lib/imageUtils";
 import { VideoGuidelinesSheet } from "@/components/VideoGuidelinesSheet";
 import { Video } from "lucide-react";
+
+const getCampaignTypeInfo = (campaignType: string | undefined) => {
+  switch (campaignType) {
+    case "product_cost_covered":
+      return {
+        label: "#ProductCostCovered",
+        anchor: "#product-cost-covered",
+        icon: ShoppingCart,
+        color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      };
+    case "amazon_video":
+      return {
+        label: "#AmazonVideo",
+        anchor: "#amazon-video",
+        icon: Store,
+        color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+      };
+    case "gifting":
+    default:
+      return {
+        label: "#Gifting",
+        anchor: "#gifting",
+        icon: Gift,
+        color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+      };
+  }
+};
 
 function ImageGallery({ images, alt }: { images: string[]; alt: string }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -289,6 +319,21 @@ export default function CampaignDetailPage() {
             <Badge variant="outline" className="capitalize">
               {campaign.category}
             </Badge>
+            {(() => {
+              const typeInfo = getCampaignTypeInfo((campaign as any).campaignType);
+              const TypeIcon = typeInfo.icon;
+              return (
+                <Link href={`/campaign-types${typeInfo.anchor}`}>
+                  <Badge 
+                    className={cn(typeInfo.color, "cursor-pointer hover-elevate")}
+                    data-testid="badge-campaign-type"
+                  >
+                    <TypeIcon className="h-3 w-3 mr-1" />
+                    {typeInfo.label}
+                  </Badge>
+                </Link>
+              );
+            })()}
             {isClosed && <Badge variant="secondary">Closed</Badge>}
             {!isClosed && isApplicationClosed && <Badge variant="secondary">Applications Closed</Badge>}
             {isFull && <Badge variant="secondary">Full</Badge>}
@@ -722,6 +767,17 @@ export default function CampaignDetailPage() {
                 </p>
               </div>
 
+              {((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video") && !influencer?.paypalEmail && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                  <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                    This is a paid campaign that requires a PayPal account to receive your reward.
+                  </p>
+                  <Link href="/profile" className="text-sm text-amber-600 hover:underline mt-1 block">
+                    Add your PayPal email in your profile to apply
+                  </Link>
+                </div>
+              )}
+
               <div className="flex items-start space-x-3">
                 <Checkbox
                   id="agreement"
@@ -752,7 +808,12 @@ export default function CampaignDetailPage() {
             </Button>
             <Button
               onClick={() => applyMutation.mutate()}
-              disabled={!agreementChecked || applyMutation.isPending || !influencer?.tiktokHandle}
+              disabled={
+                !agreementChecked || 
+                applyMutation.isPending || 
+                !influencer?.tiktokHandle ||
+                (((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video") && !influencer?.paypalEmail)
+              }
               data-testid="button-confirm-apply"
             >
               {applyMutation.isPending ? "Applying..." : "Apply Now"}

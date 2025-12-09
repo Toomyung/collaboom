@@ -2,11 +2,38 @@ import { Campaign, MinimalCampaign } from "@shared/schema";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, Gift, DollarSign } from "lucide-react";
+import { Clock, Users, Gift, DollarSign, ShoppingCart, Store } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
 import type { MouseEvent } from "react";
+
+const getCampaignTypeInfo = (campaignType: string | undefined) => {
+  switch (campaignType) {
+    case "product_cost_covered":
+      return {
+        label: "#ProductCostCovered",
+        anchor: "#product-cost-covered",
+        icon: ShoppingCart,
+        color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      };
+    case "amazon_video":
+      return {
+        label: "#AmazonVideo",
+        anchor: "#amazon-video",
+        icon: Store,
+        color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+      };
+    case "gifting":
+    default:
+      return {
+        label: "#Gifting",
+        anchor: "#gifting",
+        icon: Gift,
+        color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+      };
+  }
+};
 
 interface CampaignCardProps {
   campaign: Campaign | MinimalCampaign;
@@ -168,7 +195,27 @@ export function CampaignCard({
             </p>
             <h3 className="font-semibold text-lg leading-tight truncate">{campaign.name}</h3>
           </div>
-          {getCategoryBadge()}
+          <div className="flex flex-col gap-1 items-end shrink-0">
+            {getCategoryBadge()}
+            {(() => {
+              const typeInfo = getCampaignTypeInfo((campaign as any).campaignType);
+              const TypeIcon = typeInfo.icon;
+              return (
+                <Link 
+                  href={`/campaign-types${typeInfo.anchor}`}
+                  onClick={(e: MouseEvent) => e.stopPropagation()}
+                >
+                  <Badge 
+                    className={cn(typeInfo.color, "text-xs cursor-pointer hover-elevate")}
+                    data-testid={`badge-campaign-type-${campaign.id}`}
+                  >
+                    <TypeIcon className="h-3 w-3 mr-1" />
+                    {typeInfo.label}
+                  </Badge>
+                </Link>
+              );
+            })()}
+          </div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

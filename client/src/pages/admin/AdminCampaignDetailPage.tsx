@@ -825,6 +825,12 @@ export default function AdminCampaignDetailPage() {
                     <p className="font-medium capitalize">{campaign.category}</p>
                   </div>
                   <div>
+                    <p className="text-sm text-muted-foreground">Campaign Type</p>
+                    <p className="font-medium capitalize">
+                      {((campaign as any).campaignType || "gifting").replace(/_/g, " ")}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-sm text-muted-foreground">Reward</p>
                     <p className="font-medium">
                       {campaign.rewardType === "paid" && campaign.rewardAmount

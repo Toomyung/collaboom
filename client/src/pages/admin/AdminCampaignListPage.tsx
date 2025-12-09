@@ -331,6 +331,7 @@ export default function AdminCampaignListPage() {
                   <TableRow>
                     <TableHead>Campaign</TableHead>
                     <TableHead>Category</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Slots</TableHead>
                     <TableHead>Deadline</TableHead>
@@ -364,6 +365,11 @@ export default function AdminCampaignListPage() {
                         <Badge variant="outline" className="capitalize">
                           {campaign.category}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {((campaign as any).campaignType || "gifting").replace(/_/g, " ")}
+                        </span>
                       </TableCell>
                       <TableCell>{getStatusBadge(campaign.status)}</TableCell>
                       <TableCell>
