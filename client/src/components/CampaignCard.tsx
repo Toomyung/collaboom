@@ -2,8 +2,8 @@ import { Campaign, MinimalCampaign } from "@shared/schema";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, Gift, DollarSign, ShoppingCart, Store } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Clock, Users, Gift, ShoppingCart, Store } from "lucide-react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
 import type { MouseEvent } from "react";
@@ -68,34 +68,36 @@ export function CampaignCard({
   const isFull = (campaign.approvedCount ?? 0) >= campaign.inventory;
   const isClosed = campaign.status === "closed" || campaign.status === "archived";
 
-  const getRewardBadge = () => {
+  const getCampaignTypeBadge = () => {
     const campaignType = campaign.campaignType || 'gifting';
+    const typeInfo = getCampaignTypeInfo(campaignType);
+    const TypeIcon = typeInfo.icon;
     
-    // Product Cost Covered - $30 reward
+    // Product Cost Covered
     if (campaignType === "product_cost_covered") {
       return (
         <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white">
-          <DollarSign className="h-3 w-3 mr-1" />
-          +$30 Reward
+          <TypeIcon className="h-3 w-3 mr-1" />
+          Product Cost Covered
         </Badge>
       );
     }
     
-    // Amazon Video Upload - $50 reward
+    // Amazon Video Upload
     if (campaignType === "amazon_video_upload") {
       return (
         <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white">
-          <DollarSign className="h-3 w-3 mr-1" />
-          +$50 Reward
+          <TypeIcon className="h-3 w-3 mr-1" />
+          Amazon Video
         </Badge>
       );
     }
     
-    // Gifting - Gift Only
+    // Gifting
     return (
       <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 text-white">
-        <Gift className="h-3 w-3 mr-1" />
-        Gift Only
+        <TypeIcon className="h-3 w-3 mr-1" />
+        Gifting
       </Badge>
     );
   };
@@ -170,7 +172,7 @@ export function CampaignCard({
           </div>
         )}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
-          {getRewardBadge()}
+          {getCampaignTypeBadge()}
         </div>
         <div className="absolute bottom-3 left-3">{getStatusBadge()}</div>
       </div>
@@ -186,24 +188,6 @@ export function CampaignCard({
           </div>
           <div className="flex flex-col gap-1 items-end shrink-0">
             {getCategoryBadge()}
-            {(() => {
-              const typeInfo = getCampaignTypeInfo((campaign as any).campaignType);
-              const TypeIcon = typeInfo.icon;
-              return (
-                <Link 
-                  href={`/campaign-types${typeInfo.anchor}`}
-                  onClick={(e: MouseEvent) => e.stopPropagation()}
-                >
-                  <Badge 
-                    className={cn(typeInfo.color, "text-xs cursor-pointer hover-elevate")}
-                    data-testid={`badge-campaign-type-${campaign.id}`}
-                  >
-                    <TypeIcon className="h-3 w-3 mr-1" />
-                    {typeInfo.label}
-                  </Badge>
-                </Link>
-              );
-            })()}
           </div>
         </div>
 
