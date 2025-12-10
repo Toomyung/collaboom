@@ -223,7 +223,7 @@ export default function CampaignTypesPage() {
                     <Badge className="bg-emerald-500 text-white">Paid Campaign</Badge>
                   </div>
                   <CardDescription className="text-base">
-                    Buy on Amazon, get reimbursed, plus earn $30 reward
+                    Get paid upfront to buy on Amazon, then earn $30 reward
                   </CardDescription>
                 </div>
                 <div className="text-right">
@@ -238,42 +238,48 @@ export default function CampaignTypesPage() {
                   <Zap className="h-4 w-4 text-emerald-500" />
                   Step-by-Step Process
                 </h4>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-7 gap-3">
+                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center mb-2">
+                      <CreditCard className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">1. Get Paid</span>
+                  </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
                       <SiAmazon className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs font-medium">1. Buy on Amazon</span>
+                    <span className="text-xs font-medium">2. Buy on Amazon</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
                       <FileImage className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs font-medium">2. Screenshot Order</span>
+                    <span className="text-xs font-medium">3. Screenshot Order</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
                       <Upload className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs font-medium">3. Submit Proof</span>
+                    <span className="text-xs font-medium">4. Submit Proof</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center mb-2">
-                      <CreditCard className="h-5 w-5 text-teal-600" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
+                      <Package className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs font-medium">4. Get Reimbursed</span>
+                    <span className="text-xs font-medium">5. Receive Product</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
                       <Video className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs font-medium">5. Create & Upload</span>
+                    <span className="text-xs font-medium">6. Create & Upload</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center mb-2">
                       <DollarSign className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">6. Earn $30</span>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">7. Earn $30</span>
                   </div>
                 </div>
               </div>
@@ -287,15 +293,15 @@ export default function CampaignTypesPage() {
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>No upfront cost (fully reimbursed)</span>
+                      <span>Get product cost upfront via PayPal</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>Keep the product + earn $30</span>
+                      <span>Keep the product + earn $30 reward</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>Quick reimbursement after verification</span>
+                      <span>No out-of-pocket expense</span>
                     </li>
                   </ul>
                 </div>

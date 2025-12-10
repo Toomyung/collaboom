@@ -1250,11 +1250,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Campaign is full - no more inventory available" });
       }
 
-      // Update application status first
-      const updatedApp = await storage.updateApplication(application.id, {
+      // For Product Cost Covered campaigns, we need PayPal payment info
+      const { productCostPaypalTransactionId, productCostAmount } = req.body || {};
+      const isProductCostCovered = (campaign as any).campaignType === "product_cost_covered";
+      
+      // Build update data
+      const updateData: any = {
         status: "approved",
         approvedAt: new Date(),
-      });
+      };
+
+      // Add product cost payment info for Product Cost Covered campaigns
+      if (isProductCostCovered && productCostPaypalTransactionId) {
+        updateData.productCostSentAt = new Date();
+        updateData.productCostSentByAdminId = (req.session as any)?.user?.id || null;
+        updateData.productCostAmount = productCostAmount || (campaign as any).productCost || null;
+        updateData.productCostPaypalTransactionId = productCostPaypalTransactionId;
+      }
+
+      // Update application status first
+      const updatedApp = await storage.updateApplication(application.id, updateData);
       
       if (!updatedApp) {
         return res.status(500).json({ message: "Failed to update application" });
@@ -1479,7 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mark purchase as verified
       await storage.updateApplication(application.id, {
         purchaseVerifiedAt: new Date(),
-        purchaseVerifiedByAdminId: req.session?.user?.id || null,
+        purchaseVerifiedByAdminId: (req.session as any)?.user?.id || null,
       });
 
       return res.json({ success: true });
@@ -1515,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mark reimbursement as sent
       await storage.updateApplication(application.id, {
         reimbursementSentAt: new Date(),
-        reimbursementSentByAdminId: req.session?.user?.id || null,
+        reimbursementSentByAdminId: (req.session as any)?.user?.id || null,
         reimbursementAmount: amount,
         reimbursementPaypalTransactionId: paypalTransactionId || null,
       });

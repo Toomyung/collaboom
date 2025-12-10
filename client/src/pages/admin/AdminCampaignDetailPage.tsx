@@ -108,6 +108,14 @@ export default function AdminCampaignDetailPage() {
   const [reimbursementForms, setReimbursementForms] = useState<Record<string, { amount: number; paypalTransactionId: string }>>({});
   const [approvedPage, setApprovedPage] = useState(1);
   const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
+  // Product Cost Covered approval dialog
+  const [approveWithPaymentDialog, setApproveWithPaymentDialog] = useState<{
+    applicationId: string;
+    influencerName: string;
+    paypalEmail: string;
+    productCost: number;
+  } | null>(null);
+  const [paymentTransactionId, setPaymentTransactionId] = useState("");
   const [bulkSending, setBulkSending] = useState(false);
   const [conversationApp, setConversationApp] = useState<{ id: string; influencerName: string } | null>(null);
   const [pendingMissedAppId, setPendingMissedAppId] = useState<string | null>(null);
@@ -140,15 +148,23 @@ export default function AdminCampaignDetailPage() {
   };
 
   const approveMutation = useMutation({
-    mutationFn: async (applicationId: string) => {
-      await apiRequest("POST", `/api/admin/applications/${applicationId}/approve`);
+    mutationFn: async ({ applicationId, productCostPaypalTransactionId, productCostAmount }: { 
+      applicationId: string; 
+      productCostPaypalTransactionId?: string;
+      productCostAmount?: number;
+    }) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/approve`, {
+        productCostPaypalTransactionId,
+        productCostAmount,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      // Also invalidate the campaigns list to update slot counts
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
       toast({ title: "Application approved" });
+      setApproveWithPaymentDialog(null);
+      setPaymentTransactionId("");
     },
     onError: (error: Error) => {
       toast({ title: "Failed to approve", description: error.message, variant: "destructive" });
@@ -1098,7 +1114,19 @@ export default function AdminCampaignDetailPage() {
                                   <div className="flex gap-2">
                                     <Button
                                       size="sm"
-                                      onClick={() => approveMutation.mutate(app.id)}
+                                      onClick={() => {
+                                        const isProductCostCovered = (campaign as any)?.campaignType === "product_cost_covered";
+                                        if (isProductCostCovered) {
+                                          setApproveWithPaymentDialog({
+                                            applicationId: app.id,
+                                            influencerName: getInfluencerDisplayName(inf),
+                                            paypalEmail: inf?.paypalEmail || "",
+                                            productCost: (campaign as any)?.productCost || 0,
+                                          });
+                                        } else {
+                                          approveMutation.mutate({ applicationId: app.id });
+                                        }
+                                      }}
                                       disabled={approveMutation.isPending}
                                       data-testid={`approve-${app.id}`}
                                     >
@@ -2294,6 +2322,75 @@ export default function AdminCampaignDetailPage() {
         influencerName={conversationApp?.influencerName || ""}
         campaignName={campaign?.name || "Campaign"}
       />
+
+      {/* Product Cost Covered Approval Dialog */}
+      <Dialog open={!!approveWithPaymentDialog} onOpenChange={(open) => {
+        if (!open) {
+          setApproveWithPaymentDialog(null);
+          setPaymentTransactionId("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-emerald-500" />
+              Approve with PayPal Payment
+            </DialogTitle>
+            <DialogDescription>
+              This is a Product Cost Covered campaign. Approving will require sending product cost to the influencer via PayPal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-lg space-y-2">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                Influencer: {approveWithPaymentDialog?.influencerName}
+              </p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                PayPal Email: <span className="font-mono">{approveWithPaymentDialog?.paypalEmail || "Not provided"}</span>
+              </p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                Product Cost: <span className="font-bold">${approveWithPaymentDialog?.productCost ? (approveWithPaymentDialog.productCost / 100).toFixed(2) : "0.00"}</span>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="paypal-transaction-id">PayPal Transaction ID (optional)</Label>
+              <Input
+                id="paypal-transaction-id"
+                placeholder="Enter PayPal transaction ID"
+                value={paymentTransactionId}
+                onChange={(e) => setPaymentTransactionId(e.target.value)}
+                data-testid="input-paypal-transaction-id"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter the PayPal transaction ID after sending payment. You can also approve now and add it later.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setApproveWithPaymentDialog(null);
+              setPaymentTransactionId("");
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (approveWithPaymentDialog) {
+                  approveMutation.mutate({
+                    applicationId: approveWithPaymentDialog.applicationId,
+                    productCostPaypalTransactionId: paymentTransactionId || undefined,
+                    productCostAmount: approveWithPaymentDialog.productCost,
+                  });
+                }
+              }}
+              disabled={approveMutation.isPending}
+              data-testid="button-confirm-approve-with-payment"
+            >
+              {approveMutation.isPending ? "Approving..." : "Approve & Record Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </AdminLayout>
   );

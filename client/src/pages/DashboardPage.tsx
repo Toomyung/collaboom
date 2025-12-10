@@ -577,14 +577,30 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Product Cost Covered: Purchase Proof & Reimbursement Status */}
+        {/* Product Cost Covered: Payment & Purchase Status - NEW WORKFLOW */}
         {campaign.campaignType === "product_cost_covered" && ["approved", "shipped", "delivered", "uploaded", "completed"].includes(application.status) && (
-          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 space-y-3">
+          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-purple-600" />
-              <span className="font-medium text-purple-600">Purchase & Reimbursement</span>
+              <DollarSign className="h-4 w-4 text-emerald-600" />
+              <span className="font-medium text-emerald-600">Product Cost Payment</span>
             </div>
             
+            {/* Step 1: Show product cost payment status */}
+            {(application as any).productCostSentAt ? (
+              <div className="flex items-center gap-2 text-sm bg-emerald-500/10 rounded-lg p-2">
+                <CheckCircle className="h-4 w-4 text-emerald-500" />
+                <span className="text-emerald-600">
+                  ${((application as any).productCostAmount || 0) / 100} sent to your PayPal for product purchase
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-amber-600">
+                <Clock className="h-4 w-4" />
+                <span>Product cost will be sent to your PayPal shortly</span>
+              </div>
+            )}
+
+            {/* Step 2: Purchase proof submission */}
             {application.purchaseScreenshotUrl ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
@@ -593,25 +609,9 @@ export default function DashboardPage() {
                 </div>
                 
                 {application.purchaseVerifiedAt ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-green-600">Purchase verified</span>
-                    </div>
-                    
-                    {application.reimbursementSentAt ? (
-                      <div className="flex items-center gap-2 text-sm bg-green-500/10 rounded-lg p-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-green-600">
-                          Reimbursement of ${application.reimbursementAmount || 0} sent to your PayPal
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm text-amber-600">
-                        <Clock className="h-4 w-4" />
-                        <span>Reimbursement pending - we'll send it to your PayPal soon</span>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-green-600">Purchase verified - awaiting product delivery</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-sm text-amber-600">
@@ -623,7 +623,9 @@ export default function DashboardPage() {
             ) : application.status === "approved" ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Please purchase the product on Amazon and submit a screenshot of your order confirmation.
+                  {(application as any).productCostSentAt 
+                    ? "You've received the product cost! Now please purchase the product on Amazon and submit a screenshot of your order confirmation."
+                    : "Please purchase the product on Amazon and submit a screenshot of your order confirmation. Product cost payment will be sent to your PayPal."}
                 </p>
                 <div className="space-y-2">
                   <Input
@@ -673,12 +675,12 @@ export default function DashboardPage() {
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : !application.purchaseScreenshotUrl ? (
               <div className="flex items-center gap-2 text-sm text-amber-600">
                 <Clock className="h-4 w-4" />
-                <span>Purchase proof not submitted</span>
+                <span>Purchase proof not yet submitted</span>
               </div>
-            )}
+            ) : null}
           </div>
         )}
 

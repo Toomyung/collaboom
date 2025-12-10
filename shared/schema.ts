@@ -157,6 +157,7 @@ export const campaigns = pgTable("campaigns", {
   applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
   deadline: timestamp("deadline").notNull(), // Upload deadline (content submission deadline)
   campaignTimeline: text("campaign_timeline"), // Free-form campaign timeline description
+  productCost: integer("product_cost"), // Product cost in cents for product_cost_covered campaigns (e.g., 2000 = $20)
   status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'
   createdByAdminId: varchar("created_by_admin_id"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -215,12 +216,17 @@ export const applications = pgTable("applications", {
   shippingState: text("shipping_state"),
   shippingZipCode: text("shipping_zip_code"),
   shippingCountry: text("shipping_country"),
-  // Product Cost Covered campaign fields
+  // Product Cost Covered campaign fields - NEW WORKFLOW: PayPal payment sent on approval, then influencer purchases product
+  productCostSentAt: timestamp("product_cost_sent_at"), // When admin sent product cost on approval (new workflow)
+  productCostSentByAdminId: varchar("product_cost_sent_by_admin_id"),
+  productCostAmount: integer("product_cost_amount"), // Amount sent for product purchase (in cents)
+  productCostPaypalTransactionId: text("product_cost_paypal_transaction_id"), // PayPal transaction ID for product cost
   purchaseScreenshotUrl: text("purchase_screenshot_url"), // URL of Amazon purchase screenshot
   purchaseSubmittedAt: timestamp("purchase_submitted_at"), // When influencer submitted purchase proof
   purchaseVerifiedAt: timestamp("purchase_verified_at"), // When admin verified the purchase
   purchaseVerifiedByAdminId: varchar("purchase_verified_by_admin_id"),
   amazonOrderId: text("amazon_order_id"), // Optional Amazon order ID for reference
+  // Legacy reimbursement fields (kept for backward compatibility, no longer used in new workflow)
   reimbursementSentAt: timestamp("reimbursement_sent_at"), // When admin sent reimbursement
   reimbursementSentByAdminId: varchar("reimbursement_sent_by_admin_id"),
   reimbursementAmount: integer("reimbursement_amount"), // Amount reimbursed (typically product cost)
