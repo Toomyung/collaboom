@@ -32,6 +32,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const steps = [
   {
@@ -107,21 +108,48 @@ export default function LandingPage() {
               </span>
             </Link>
 
-            {/* Unified hamburger menu for all screen sizes - Side Panel style */}
+            {/* Unified menu for all screen sizes - Profile picture or hamburger */}
             {isLoading ? (
-              <div className="h-11 w-11 bg-muted animate-pulse rounded-md" />
+              <div className="h-11 w-11 bg-muted animate-pulse rounded-full" />
             ) : (
               <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                 <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-11 w-11"
-                    data-testid="button-hamburger-menu"
-                    aria-label="Open menu"
-                  >
-                    <Menu className="h-7 w-7" />
-                  </Button>
+                  {isAuthenticated && influencer?.profileImageUrl ? (
+                    <button
+                      className="h-11 w-11 rounded-full overflow-hidden border-2 border-transparent hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      data-testid="button-profile-menu"
+                      aria-label="Open menu"
+                    >
+                      <Avatar className="h-full w-full">
+                        <AvatarImage src={influencer.profileImageUrl} alt="Profile" />
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                          {(influencer.firstName?.[0] || influencer.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  ) : isAuthenticated ? (
+                    <button
+                      className="h-11 w-11 rounded-full overflow-hidden border-2 border-transparent hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      data-testid="button-profile-menu"
+                      aria-label="Open menu"
+                    >
+                      <Avatar className="h-full w-full">
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                          {(influencer?.firstName?.[0] || influencer?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-11 w-11"
+                      data-testid="button-hamburger-menu"
+                      aria-label="Open menu"
+                    >
+                      <Menu className="h-7 w-7" />
+                    </Button>
+                  )}
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80 sm:w-96">
                   <SheetHeader className="text-left pb-6 border-b">
