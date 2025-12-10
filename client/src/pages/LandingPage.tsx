@@ -18,7 +18,6 @@ import {
   User,
   LogOut,
   Menu,
-  X,
   Trophy,
   Layers,
   ChevronDown,
@@ -26,6 +25,13 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { getInfluencerDisplayName } from "@/lib/influencer-utils";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const steps = [
   {
@@ -85,7 +91,7 @@ const faqs = [
 export default function LandingPage() {
   const { user, isAuthenticated, isAdmin, influencer, logout, isLoading } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const isInfluencer = isAuthenticated && !isAdmin;
 
   return (
@@ -101,149 +107,158 @@ export default function LandingPage() {
               </span>
             </Link>
 
-            {/* Unified hamburger menu for all screen sizes */}
+            {/* Unified hamburger menu for all screen sizes - Side Panel style */}
             {isLoading ? (
-              <div className="h-9 w-9 bg-muted animate-pulse rounded-md" />
+              <div className="h-11 w-11 bg-muted animate-pulse rounded-md" />
             ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMenuOpen(!menuOpen)}
-                data-testid="button-hamburger-menu"
-                aria-label={menuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={menuOpen}
-              >
-                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
+              <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11"
+                    data-testid="button-hamburger-menu"
+                    aria-label="Open menu"
+                  >
+                    <Menu className="h-7 w-7" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-80 sm:w-96">
+                  <SheetHeader className="text-left pb-6 border-b">
+                    <SheetTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                        Collaboom
+                      </span>
+                    </SheetTitle>
+                    {isAuthenticated && (
+                      <div className="pt-2">
+                        <p className="text-sm font-medium text-foreground">
+                          {isInfluencer 
+                            ? getInfluencerDisplayName(influencer, user?.name || "Influencer")
+                            : user?.name || "Admin"
+                          }
+                        </p>
+                        <p className="text-xs text-muted-foreground">{user?.email}</p>
+                        {isInfluencer && influencer && !influencer.profileCompleted && (
+                          <p className="text-xs text-amber-500 font-medium">Profile incomplete</p>
+                        )}
+                      </div>
+                    )}
+                  </SheetHeader>
+
+                  <nav className="flex flex-col py-6 gap-1">
+                    <Link href="/score-tier">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start h-12 text-base"
+                        onClick={() => setSheetOpen(false)}
+                        data-testid="menu-score-tier"
+                      >
+                        <Trophy className="h-5 w-5 mr-3" />
+                        Score & Tier
+                      </Button>
+                    </Link>
+                    <Link href="/campaign-types">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start h-12 text-base"
+                        onClick={() => setSheetOpen(false)}
+                        data-testid="menu-campaign-types"
+                      >
+                        <Layers className="h-5 w-5 mr-3" />
+                        Campaign Types
+                      </Button>
+                    </Link>
+
+                    <div className="border-b my-4" />
+
+                    {isAuthenticated ? (
+                      <>
+                        {isInfluencer && (
+                          <>
+                            <Link href="/dashboard">
+                              <Button
+                                variant="ghost"
+                                className="w-full justify-start h-12 text-base"
+                                onClick={() => setSheetOpen(false)}
+                                data-testid="menu-dashboard"
+                              >
+                                <LayoutDashboard className="h-5 w-5 mr-3" />
+                                Dashboard
+                              </Button>
+                            </Link>
+                            <Link href="/profile">
+                              <Button
+                                variant="ghost"
+                                className="w-full justify-start h-12 text-base"
+                                onClick={() => setSheetOpen(false)}
+                                data-testid="menu-profile"
+                              >
+                                <User className="h-5 w-5 mr-3" />
+                                Profile
+                              </Button>
+                            </Link>
+                          </>
+                        )}
+                        {isAdmin && (
+                          <Link href="/admin">
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start h-12 text-base"
+                              onClick={() => setSheetOpen(false)}
+                              data-testid="menu-admin-dashboard"
+                            >
+                              <LayoutDashboard className="h-5 w-5 mr-3" />
+                              Admin Dashboard
+                            </Button>
+                          </Link>
+                        )}
+
+                        <div className="border-b my-4" />
+
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start h-12 text-base text-destructive hover:text-destructive"
+                          onClick={() => {
+                            logout();
+                            setSheetOpen(false);
+                          }}
+                          data-testid="menu-logout"
+                        >
+                          <LogOut className="h-5 w-5 mr-3" />
+                          Sign Out
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/login">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start h-12 text-base"
+                            onClick={() => setSheetOpen(false)}
+                            data-testid="menu-signin"
+                          >
+                            Sign In
+                          </Button>
+                        </Link>
+                        <Link href="/register">
+                          <Button
+                            className="w-full h-12 text-base mt-2"
+                            onClick={() => setSheetOpen(false)}
+                            data-testid="menu-getstarted"
+                          >
+                            Get Started
+                          </Button>
+                        </Link>
+                      </>
+                    )}
+                  </nav>
+                </SheetContent>
+              </Sheet>
             )}
           </div>
         </div>
-
-        {/* Navigation Menu - same for all screen sizes */}
-        {menuOpen && (
-          <div className="border-t bg-background">
-            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-2">
-              {isAuthenticated && (
-                <div className="pb-2 mb-2 border-b">
-                  <p className="text-sm font-medium">
-                    {isInfluencer 
-                      ? getInfluencerDisplayName(influencer, user?.name || "Influencer")
-                      : user?.name || "Admin"
-                    }
-                  </p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
-                  {isInfluencer && influencer && !influencer.profileCompleted && (
-                    <p className="text-xs text-amber-500 font-medium">Profile incomplete</p>
-                  )}
-                </div>
-              )}
-              
-              {/* Common navigation - visible to all users */}
-              <Link href="/score-tier">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => setMenuOpen(false)}
-                  data-testid="menu-score-tier"
-                >
-                  <Trophy className="h-4 w-4 mr-2" />
-                  Score & Tier
-                </Button>
-              </Link>
-              <Link href="/campaign-types">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => setMenuOpen(false)}
-                  data-testid="menu-campaign-types"
-                >
-                  <Layers className="h-4 w-4 mr-2" />
-                  Campaign Types
-                </Button>
-              </Link>
-              
-              <div className="border-b my-2" />
-              
-              {isAuthenticated ? (
-                <>
-                  {isInfluencer && (
-                    <>
-                      <Link href="/dashboard">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => setMenuOpen(false)}
-                          data-testid="menu-dashboard"
-                        >
-                          <LayoutDashboard className="h-4 w-4 mr-2" />
-                          Dashboard
-                        </Button>
-                      </Link>
-                      <Link href="/profile">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => setMenuOpen(false)}
-                          data-testid="menu-profile"
-                        >
-                          <User className="h-4 w-4 mr-2" />
-                          Profile
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                  {isAdmin && (
-                    <Link href="/admin">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => setMenuOpen(false)}
-                        data-testid="menu-admin-dashboard"
-                      >
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
-                        Admin Dashboard
-                      </Button>
-                    </Link>
-                  )}
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-destructive"
-                    onClick={() => {
-                      logout();
-                      setMenuOpen(false);
-                    }}
-                    data-testid="menu-logout"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/login">
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => setMenuOpen(false)}
-                      data-testid="menu-signin"
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button 
-                      className="w-full" 
-                      onClick={() => setMenuOpen(false)}
-                      data-testid="menu-getstarted"
-                    >
-                      Get Started
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </nav>
-          </div>
-        )}
       </header>
 
       {/* Hero Section */}
