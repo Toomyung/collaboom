@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles, LayoutDashboard, User, LogOut, Menu, Trophy, Layers } from "lucide-react";
+import { Sparkles, LayoutDashboard, User, LogOut, LogIn, Menu, Trophy, Layers } from "lucide-react";
 import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
 import { BlockedUserDialog } from "@/components/BlockedUserDialog";
 import { PointsAwardPopup } from "@/components/PointsAwardPopup";
@@ -200,27 +200,29 @@ export function MainLayout({ children }: MainLayoutProps) {
                       </Button>
                     </>
                   ) : (
-                    <>
+                    <div className="space-y-3 pt-2">
                       <Link href="/login">
                         <Button
-                          variant="ghost"
-                          className="w-full justify-start h-12 text-base"
+                          variant="outline"
+                          className="w-full h-12 text-base border-2 border-primary/30 hover:border-primary hover:bg-primary/5"
                           onClick={() => setSheetOpen(false)}
                           data-testid="menu-signin"
                         >
+                          <LogIn className="h-5 w-5 mr-2" />
                           Sign In
                         </Button>
                       </Link>
                       <Link href="/register">
                         <Button
-                          className="w-full h-12 text-base mt-2"
+                          className="w-full h-12 text-base"
                           onClick={() => setSheetOpen(false)}
                           data-testid="menu-getstarted"
                         >
-                          Get Started
+                          <Sparkles className="h-5 w-5 mr-2" />
+                          Get Started Free
                         </Button>
                       </Link>
-                    </>
+                    </div>
                   )}
                 </nav>
               </SheetContent>
