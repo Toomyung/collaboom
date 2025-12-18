@@ -729,6 +729,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Check Bio Link requirement for Link in Bio campaigns
+      if (campaign.campaignType === "link_in_bio" && !influencer.bioLinkProfileUrl) {
+        return res.status(400).json({ 
+          message: "This campaign requires a bio link service (like Linktree or Beacons) to add the product link. Please set up your bio link URL in your profile first.",
+          requiresBioLink: true
+        });
+      }
+
+      // Check Amazon Storefront requirement for Amazon Video campaigns
+      if (campaign.campaignType === "amazon_video_upload" && !influencer.amazonStorefrontUrl) {
+        return res.status(400).json({ 
+          message: "This campaign requires an Amazon Influencer Storefront. Please add your Amazon Storefront URL in your profile first.",
+          requiresAmazonStorefront: true
+        });
+      }
+
       // Check application deadline
       const applicationDeadline = campaign.applicationDeadline 
         ? new Date(campaign.applicationDeadline) 
