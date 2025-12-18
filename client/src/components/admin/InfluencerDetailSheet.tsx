@@ -1352,6 +1352,22 @@ export function InfluencerDetailSheet({
                         <p className="text-muted-foreground">PayPal</p>
                         <p className="truncate">{selectedInfluencer.paypalEmail || "-"}</p>
                       </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Bio Link (Linktree)</p>
+                        {selectedInfluencer.bioLinkProfileUrl ? (
+                          <a
+                            href={selectedInfluencer.bioLinkProfileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-primary hover:underline break-all"
+                          >
+                            {selectedInfluencer.bioLinkProfileUrl}
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <p>-</p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
