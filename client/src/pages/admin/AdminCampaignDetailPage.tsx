@@ -1024,6 +1024,9 @@ export default function AdminCampaignDetailPage() {
                           <TableHead>Status</TableHead>
                           <TableHead>Influencer</TableHead>
                           <TableHead>TikTok</TableHead>
+                          {campaign.campaignType === "link_in_bio" && (
+                            <TableHead>Bio Link</TableHead>
+                          )}
                           <TableHead>Phone</TableHead>
                           <TableHead>Address</TableHead>
                           <TableHead>City</TableHead>
@@ -1099,6 +1102,25 @@ export default function AdminCampaignDetailPage() {
                                   <span className="text-muted-foreground">-</span>
                                 )}
                               </TableCell>
+                              {campaign.campaignType === "link_in_bio" && (
+                                <TableCell>
+                                  {inf?.bioLinkProfileUrl ? (
+                                    <a
+                                      href={inf.bioLinkProfileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-muted-foreground hover:text-primary hover:underline flex items-center gap-1 max-w-[150px]"
+                                      onClick={(e) => e.stopPropagation()}
+                                      data-testid={`biolink-${app.id}`}
+                                    >
+                                      <span className="truncate">{inf.bioLinkProfileUrl.replace(/^https?:\/\//, '')}</span>
+                                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                              )}
                               {/* Original profile info - READ ONLY */}
                               <TableCell className="text-sm text-muted-foreground">
                                 {inf?.phone || "-"}
