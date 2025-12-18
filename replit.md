@@ -37,28 +37,29 @@ Preferred communication style: Simple, everyday language.
         - Tier upgrades trigger congratulatory emails on first completion or reaching 85 points.
         - Points: +50 signup (auto), +10 address (auto), +0-100 configurable on upload verification.
 
-## Campaign Types (Future Implementation)
+## Campaign Types
 
 Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 
-### 1. Gifting Campaign (Current - Implemented)
+### 1. Gifting Campaign (Implemented)
 - **Reward:** Free product (no cash)
 - **Process:** Apply → Receive product at address → Create TikTok video → Upload link
 - **Platform:** TikTok only
-- **Description:** The current system - brands send free products to influencers in exchange for UGC content.
+- **Description:** Brands send free products to influencers in exchange for UGC content.
 
-### 2. Product Cost Covered Campaign (Planned)
-- **Reward:** $30 cash + product
+### 2. Link in Bio Campaign (Implemented)
+- **Reward:** $30 cash + free product
 - **Process:**
-  1. Influencer purchases product on Amazon
-  2. Submits purchase screenshot as proof
-  3. Admin verifies and reimburses product cost
-  4. Influencer receives product
-  5. Creates and uploads TikTok video
-  6. Receives $30 reward upon verification
+  1. Apply to campaign
+  2. Receive free product at address
+  3. Add product purchase link to TikTok bio via Linktree/Beacons
+  4. Submit bio link URL for admin verification
+  5. Create and upload TikTok video
+  6. Receive $30 reward upon both bio link and video verification
 - **Platform:** TikTok
-- **Requirements:** Amazon account required
-- **Note:** No upfront cost for influencers (fully reimbursed)
+- **Requirements:** Linktree, Beacons, or similar bio link service
+- **Schema Fields:** `bioLinkUrl` (influencer submission), `bioLinkVerifiedAt` (admin verification timestamp), `bioLinkVerifiedByAdminId` (admin ID)
+- **Admin Workflow:** Single "Bio Link" column in Uploads tab shows verification status; admin can verify link after product delivery
 
 ### 3. Amazon Video Upload Campaign (Planned)
 - **Reward:** $50 cash + product
@@ -77,7 +78,7 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 ### Campaign Type Color Scheme
 Consistent color gradients used across the platform for campaign types:
 - **Gifting:** Purple-pink gradient (`from-purple-50 to-pink-50` / `from-purple-950 to-pink-950` for dark mode)
-- **Product Cost Covered:** Emerald-teal gradient (`from-emerald-50 to-teal-50` / `from-emerald-950 to-teal-950` for dark mode)
+- **Link in Bio:** Emerald-teal gradient (`from-emerald-50 to-teal-50` / `from-emerald-950 to-teal-950` for dark mode)
 - **Amazon Video Upload:** Amber-orange gradient (`from-amber-50 to-orange-50` / `from-amber-950 to-orange-950` for dark mode)
 
 ### Navigation
