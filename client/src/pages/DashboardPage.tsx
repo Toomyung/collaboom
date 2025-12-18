@@ -746,48 +746,15 @@ export default function DashboardPage() {
                   <ExternalLink className="h-3 w-3" />
                   {(application as any).bioLinkUrl}
                 </a>
-                {/* Only show resubmission form if status allows updates */}
-                {["delivered", "uploaded"].includes(application.status) && (
-                  <>
-                    <p className="text-xs text-muted-foreground">
-                      Need to update? Re-submit below:
-                    </p>
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
-                        value={bioLinkForms[application.id] ?? (application as any).bioLinkUrl ?? ""}
-                        onChange={(e) => setBioLinkForms(prev => ({
-                          ...prev,
-                          [application.id]: e.target.value
-                        }))}
-                        className="text-sm"
-                        data-testid={`input-bio-link-${application.id}`}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const bioLink = bioLinkForms[application.id] ?? (application as any).bioLinkUrl;
-                          if (bioLink) {
-                            submitBioLinkMutation.mutate({
-                              applicationId: application.id,
-                              bioLinkUrl: bioLink
-                            });
-                          }
-                        }}
-                        disabled={submitBioLinkMutation.isPending}
-                        data-testid={`button-submit-bio-link-${application.id}`}
-                      >
-                        {submitBioLinkMutation.isPending ? "Updating..." : "Update Bio Link"}
-                      </Button>
-                    </div>
-                  </>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Our team will verify that the product purchase link is visible on your bio page.
+                </p>
               </div>
             ) : application.status === "delivered" ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Add the product purchase link to your TikTok bio using Linktree, Beacons, or similar service, then submit your bio link URL below.
+                  <strong>Step 1:</strong> Add the campaign's product purchase link (e.g., Amazon link) to your Linktree, Beacons, or similar bio link service.<br />
+                  <strong>Step 2:</strong> Submit the URL to your bio link page below so we can verify the product link is visible.
                 </p>
                 <div className="space-y-2">
                   <Input
