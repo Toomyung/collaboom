@@ -28,8 +28,40 @@ function getNotificationIcon(type: string) {
       return <Trophy className="h-4 w-4 text-amber-500" />;
     case "comment_reply":
       return <MessageCircle className="h-4 w-4 text-purple-500" />;
+    case "upload_verified":
+      return <Star className="h-4 w-4 text-amber-500" />;
     default:
       return <Star className="h-4 w-4 text-primary" />;
+  }
+}
+
+function getNotificationRoute(notification: Notification): string {
+  switch (notification.type) {
+    case "approved":
+    case "shipping_shipped":
+    case "shipping_delivered":
+    case "upload_verified":
+    case "deadline_missed":
+      // Navigate to the specific campaign if available
+      if (notification.campaignId) {
+        return `/campaigns/${notification.campaignId}`;
+      }
+      return "/dashboard";
+    case "rejected":
+      // Rejected - go to browse campaigns
+      return "/dashboard";
+    case "score_updated":
+    case "tier_upgraded":
+      // Score/Tier related - go to score page
+      return "/score-tier";
+    case "comment_reply":
+      // Comment - go to the campaign
+      if (notification.campaignId) {
+        return `/campaigns/${notification.campaignId}`;
+      }
+      return "/dashboard";
+    default:
+      return "/dashboard";
   }
 }
 
@@ -69,12 +101,22 @@ export function NotificationBell() {
 
   const unreadCount = unreadData?.count || 0;
 
-  const handleNotificationClick = (notification: Notification, e: React.MouseEvent) => {
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read if not already
+    if (!notification.read) {
+      markAsReadMutation.mutate(notification.id);
+    }
+    // Navigate to the relevant page
+    const route = getNotificationRoute(notification);
+    setOpen(false);
+    setLocation(route);
+  };
+
+  const handleMarkAsReadOnly = (notification: Notification, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
-    // Don't close - just mark as read
   };
 
   return (
@@ -126,7 +168,7 @@ export function NotificationBell() {
                     "flex gap-3 px-4 py-3 hover-elevate cursor-pointer transition-colors",
                     !notification.read && "bg-primary/5"
                   )}
-                  onClick={(e) => handleNotificationClick(notification, e)}
+                  onClick={() => handleNotificationClick(notification)}
                   data-testid={`notification-item-${notification.id}`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
@@ -152,9 +194,10 @@ export function NotificationBell() {
                   </div>
                   {!notification.read && (
                     <button
-                      onClick={(e) => handleNotificationClick(notification, e)}
-                      className="flex-shrink-0 hover:scale-110 transition-transform"
+                      onClick={(e) => handleMarkAsReadOnly(notification, e)}
+                      className="flex-shrink-0 hover:scale-110 transition-transform p-1"
                       aria-label="Mark as read"
+                      title="Mark as read"
                     >
                       <div className="h-2 w-2 rounded-full bg-primary" />
                     </button>
