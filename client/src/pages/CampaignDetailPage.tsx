@@ -210,9 +210,8 @@ export default function CampaignDetailPage() {
     
     if (campaignType === "link_in_bio" && !influencer?.bioLinkProfileUrl) {
       toast({
-        title: "Bio Link Required",
-        description: "This campaign requires a Linktree or similar bio link. Please add it in your profile first.",
-        variant: "destructive",
+        title: "Set Up Your Bio Link First",
+        description: "This campaign requires you to add a product link to your Linktree or Beacons. Please add your bio link URL in your profile to apply.",
       });
       setLocation("/profile");
       return;
@@ -220,9 +219,8 @@ export default function CampaignDetailPage() {
     
     if (campaignType === "amazon_video_upload" && !influencer?.amazonStorefrontUrl) {
       toast({
-        title: "Amazon Storefront Required",
-        description: "This campaign requires an Amazon Influencer Storefront. Please add it in your profile first.",
-        variant: "destructive",
+        title: "Set Up Your Amazon Storefront First",
+        description: "This campaign requires you to post on your Amazon Influencer Storefront. Please add your storefront URL in your profile to apply.",
       });
       setLocation("/profile");
       return;
