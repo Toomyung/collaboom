@@ -44,6 +44,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fixImageUrl } from "@/lib/imageUtils";
 import { VideoGuidelinesSheet } from "@/components/VideoGuidelinesSheet";
 import { Video } from "lucide-react";
+import { useCampaignSocket } from "@/lib/socket";
 
 const getCampaignTypeInfo = (campaignType: string | undefined) => {
   switch (campaignType) {
@@ -135,6 +136,8 @@ export default function CampaignDetailPage() {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
+
+  useCampaignSocket(id);
 
   const { data: campaign, isLoading } = useQuery<Campaign>({
     queryKey: ["/api/campaigns", id],

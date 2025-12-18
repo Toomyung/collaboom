@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useCampaignSocket } from "@/lib/socket";
 import {
   Select,
   SelectContent,
@@ -97,6 +98,8 @@ export default function AdminCampaignDetailPage() {
   const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  
+  useCampaignSocket(id);
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set());
   const [showCsvDialog, setShowCsvDialog] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
