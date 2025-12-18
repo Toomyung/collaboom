@@ -50,8 +50,11 @@ import {
   Loader2,
   Lock,
   Pencil,
+  Link2,
+  ExternalLink,
+  ShoppingBag,
 } from "lucide-react";
-import { SiTiktok, SiInstagram, SiPaypal } from "react-icons/si";
+import { SiTiktok, SiInstagram, SiPaypal, SiAmazon, SiLinktree } from "react-icons/si";
 import { PointsAwardPopup } from "@/components/PointsAwardPopup";
 
 const US_STATES = [
@@ -132,6 +135,8 @@ export default function ProfilePage() {
       state: influencer?.state || "",
       zipCode: influencer?.zipCode || "",
       paypalEmail: influencer?.paypalEmail || "",
+      bioLinkProfileUrl: influencer?.bioLinkProfileUrl || "",
+      amazonStorefrontUrl: influencer?.amazonStorefrontUrl || "",
     },
     values: {
       firstName: influencer?.firstName || "",
@@ -145,6 +150,8 @@ export default function ProfilePage() {
       state: influencer?.state || "",
       zipCode: influencer?.zipCode || "",
       paypalEmail: influencer?.paypalEmail || "",
+      bioLinkProfileUrl: influencer?.bioLinkProfileUrl || "",
+      amazonStorefrontUrl: influencer?.amazonStorefrontUrl || "",
     },
   });
 
@@ -622,6 +629,142 @@ export default function ProfilePage() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* Campaign Requirements - Bio Link & Amazon Storefront */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Link2 className="h-5 w-5" />
+                  Campaign Requirements
+                </CardTitle>
+                <CardDescription>Optional links needed for specific campaign types</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Bio Link Section */}
+                <div className="space-y-4">
+                  <div className="text-sm text-muted-foreground bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <SiLinktree className="h-4 w-4 text-emerald-600" />
+                      <span className="font-medium text-foreground">Bio Link (for Link in Bio Campaigns)</span>
+                    </div>
+                    <p className="text-xs leading-relaxed mb-2">
+                      To participate in Link in Bio campaigns (earn $30 + free product), you'll need a bio link service like Linktree or Beacons. 
+                      This link goes in your TikTok bio and includes the product purchase link for the brand.
+                    </p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-2">
+                      Don't have one yet? It's free and takes just 2 minutes to set up!
+                    </p>
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      <a 
+                        href="https://linktr.ee/register" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-emerald-600 hover:underline inline-flex items-center gap-1"
+                        data-testid="link-linktree-signup"
+                      >
+                        Create Linktree (Free)
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                      <a 
+                        href="https://beacons.ai/signup" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-emerald-600 hover:underline inline-flex items-center gap-1"
+                        data-testid="link-beacons-signup"
+                      >
+                        Create Beacons (Free)
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="bioLinkProfileUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <SiLinktree className="h-4 w-4" />
+                          Bio Link URL
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="url"
+                            placeholder="https://linktr.ee/yourname"
+                            {...field}
+                            value={field.value || ""}
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            data-testid="input-bio-link"
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Your Linktree, Beacons, or similar bio link URL
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Amazon Storefront Section */}
+                <div className="space-y-4">
+                  <div className="text-sm text-muted-foreground bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <SiAmazon className="h-4 w-4 text-amber-600" />
+                      <span className="font-medium text-foreground">Amazon Storefront (for Amazon Video Campaigns)</span>
+                    </div>
+                    <p className="text-xs leading-relaxed mb-2">
+                      Amazon Video Upload campaigns (earn $50 + free product) require you to post videos on both TikTok AND your Amazon Influencer Storefront. 
+                      This gives brands extra visibility on Amazon.
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">
+                      Don't have an Amazon Storefront? You can apply through the Amazon Influencer Program.
+                    </p>
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      <a 
+                        href="https://affiliate-program.amazon.com/influencers" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-amber-600 hover:underline inline-flex items-center gap-1"
+                        data-testid="link-amazon-influencer"
+                      >
+                        Apply for Amazon Influencer Program
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="amazonStorefrontUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <SiAmazon className="h-4 w-4" />
+                          Amazon Storefront URL
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="url"
+                            placeholder="https://www.amazon.com/shop/yourname"
+                            {...field}
+                            value={field.value || ""}
+                            disabled={isProfileLocked}
+                            className={isProfileLocked ? "bg-muted text-muted-foreground" : ""}
+                            data-testid="input-amazon-storefront"
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Your Amazon Influencer Storefront URL
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
 
