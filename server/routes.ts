@@ -25,6 +25,18 @@ import {
   validateUUID,
   logSecurityEvent,
 } from "./security";
+import {
+  initializeSocket,
+  emitCampaignCreated,
+  emitCampaignUpdated,
+  emitCampaignDeleted,
+  emitCommentCreated,
+  emitCommentDeleted,
+  emitApplicationCreated,
+  emitApplicationUpdated,
+  emitInfluencerUpdated,
+  emitScoreUpdated,
+} from "./socket";
 
 // Session types
 declare module "express-session" {
@@ -61,19 +73,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Session middleware with secure configuration
-  app.use(
-    session({
-      secret: sessionSecret || "dev-only-secret-key-not-for-production",
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: isProduction, // HTTPS only in production
-        httpOnly: true, // Prevent XSS access to cookie
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        sameSite: "lax", // CSRF protection - blocks cross-site POST requests
-      },
-    })
-  );
+  const sessionMiddleware = session({
+    secret: sessionSecret || "dev-only-secret-key-not-for-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: isProduction, // HTTPS only in production
+      httpOnly: true, // Prevent XSS access to cookie
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: "lax", // CSRF protection - blocks cross-site POST requests
+    },
+  });
+  app.use(sessionMiddleware);
 
   // =====================
   // CONFIG ROUTES
@@ -822,11 +833,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }).catch(console.error);
 
+        // Emit real-time event for VIP auto-approval
+        emitApplicationUpdated(campaignId, application.id, "approved");
+        emitCampaignUpdated(campaignId);
+
         // Return with auto-approved status
         const updatedApplication = await storage.getApplication(application.id);
         return res.json({ ...updatedApplication, autoApproved: true });
       }
 
+      // Emit real-time event for new application
+      emitApplicationCreated(campaignId, application.id);
+      
       return res.json(application);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -1198,6 +1216,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdByAdminId: req.session.userId,
       });
       const campaign = await storage.createCampaign(data);
+      
+      // Emit real-time event
+      emitCampaignCreated(campaign.id);
+      
       return res.json(campaign);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -1241,6 +1263,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!campaign) {
         return res.status(404).json({ message: "Campaign not found" });
       }
+      
+      // Emit real-time event
+      emitCampaignUpdated(req.params.id);
+      
       return res.json(campaign);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -1322,6 +1348,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete campaign and all related data
       await storage.deleteCampaign(req.params.id);
+      
+      // Emit real-time event
+      emitCampaignDeleted(req.params.id);
+      
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -1420,6 +1450,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Emit real-time event
+      emitApplicationUpdated(application.campaignId, application.id, "approved");
+      emitCampaignUpdated(application.campaignId);
+
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -1457,6 +1491,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "rejected",
       });
 
+      // Emit real-time event
+      emitApplicationUpdated(application.campaignId, application.id, "rejected");
+
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -1489,6 +1526,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           deliveredAt: new Date(),
         });
       }
+
+      // Emit real-time event
+      emitApplicationUpdated(application.campaignId, application.id, "delivered");
 
       return res.json({ success: true });
     } catch (error: any) {
@@ -1902,6 +1942,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Failed to send shipping notification:", err);
         });
       }
+
+      // Emit real-time event
+      emitApplicationUpdated(application.campaignId, application.id, "shipped");
 
       return res.json({ success: true });
     } catch (error: any) {
@@ -3202,5 +3245,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize Socket.IO with session middleware
+  initializeSocket(httpServer, sessionMiddleware);
+  
   return httpServer;
 }
