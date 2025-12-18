@@ -695,9 +695,21 @@ export default function AdminCampaignDetailPage() {
     ["shipped", "delivered"].includes(a.status)
   ) || [];
   const shippedOnlyApplications = applications?.filter((a) => a.status === "shipped") || [];
-  const deliveredApplications = applications?.filter((a) => 
-    a.status === "delivered"
+  
+  // For Link in Bio campaigns: bio tab shows delivered apps awaiting bio link verification
+  const bioLinkAwaitingApplications = applications?.filter((a) => 
+    a.status === "delivered" && !a.bioLinkVerifiedAt
   ) || [];
+  
+  // For Link in Bio campaigns: uploads tab shows only apps with verified bio link
+  // For other campaigns: show all delivered apps
+  const deliveredApplications = applications?.filter((a) => {
+    if (a.status !== "delivered") return false;
+    if (campaign?.campaignType === "link_in_bio") {
+      return !!a.bioLinkVerifiedAt;
+    }
+    return true;
+  }) || [];
   const uploadedApplications = applications?.filter((a) => 
     ["uploaded", "completed"].includes(a.status)
   ) || [];
@@ -850,6 +862,17 @@ export default function AdminCampaignDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            {campaign.campaignType === "link_in_bio" && (
+              <TabsTrigger value="bio" data-testid="tab-bio">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Bio
+                {bioLinkAwaitingApplications.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {bioLinkAwaitingApplications.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )}
             <TabsTrigger value="uploads" data-testid="tab-uploads">
               <Upload className="h-4 w-4 mr-2" />
               Uploads
@@ -1713,6 +1736,113 @@ export default function AdminCampaignDetailPage() {
             </Card>
           </TabsContent>
 
+          {/* Bio Tab - Link in Bio verification (only for link_in_bio campaigns) */}
+          {campaign.campaignType === "link_in_bio" && (
+            <TabsContent value="bio" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ExternalLink className="h-5 w-5" />
+                    Bio Link Verification
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {bioLinkAwaitingApplications.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-14">ID</TableHead>
+                          <TableHead>Influencer</TableHead>
+                          <TableHead>TikTok</TableHead>
+                          <TableHead>Bio Link URL</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {bioLinkAwaitingApplications.map((app) => (
+                          <TableRow key={app.id}>
+                            <TableCell className="font-mono text-sm text-muted-foreground">
+                              {String(app.sequenceNumber || 0).padStart(3, "0")}
+                            </TableCell>
+                            <TableCell>
+                              <button
+                                className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
+                                onClick={() => {
+                                  if (app.influencer) {
+                                    setSelectedInfluencerId(app.influencer?.id || null);
+                                  }
+                                }}
+                                data-testid={`link-influencer-bio-${app.id}`}
+                              >
+                                {getInfluencerDisplayName(app.influencer)}
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              {app.influencer?.tiktokHandle && (
+                                <a
+                                  href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-muted-foreground hover:text-primary flex items-center gap-1"
+                                >
+                                  <SiTiktok className="h-3 w-3" />
+                                  @{app.influencer.tiktokHandle}
+                                </a>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {app.bioLinkUrl ? (
+                                <a
+                                  href={app.bioLinkUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline flex items-center gap-1"
+                                  data-testid={`link-bio-url-${app.id}`}
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  <span className="truncate max-w-[200px]">{app.bioLinkUrl}</span>
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">Not submitted yet</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {app.bioLinkSubmittedAt 
+                                ? format(new Date(app.bioLinkSubmittedAt), "MMM d, h:mm a")
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {app.bioLinkUrl ? (
+                                <Button
+                                  size="sm"
+                                  onClick={() => verifyBioLinkMutation.mutate(app.id)}
+                                  disabled={verifyBioLinkMutation.isPending}
+                                  data-testid={`button-verify-bio-${app.id}`}
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Verify
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">Awaiting submission</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ExternalLink className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No bio links awaiting verification</p>
+                      <p className="text-sm mt-1">Influencers will submit their bio links after receiving their products</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
           {/* Uploads Tab */}
           <TabsContent value="uploads" className="mt-6">
             <Card>
@@ -1727,9 +1857,6 @@ export default function AdminCampaignDetailPage() {
                         <TableHead className="w-14">ID</TableHead>
                         <TableHead>Influencer</TableHead>
                         <TableHead>TikTok</TableHead>
-                        {campaign.campaignType === "link_in_bio" && (
-                          <TableHead className="min-w-[150px]">Bio Link</TableHead>
-                        )}
                         <TableHead>Video Link</TableHead>
                         <TableHead className="w-20">Points</TableHead>
                         <TableHead>Deadline</TableHead>
@@ -1794,43 +1921,6 @@ export default function AdminCampaignDetailPage() {
                                 </a>
                               )}
                             </TableCell>
-                            {campaign.campaignType === "link_in_bio" && (
-                              <TableCell>
-                                {app.bioLinkUrl ? (
-                                  <div className="space-y-1">
-                                    <a
-                                      href={app.bioLinkUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-primary hover:underline text-xs flex items-center gap-1"
-                                      data-testid={`link-bio-link-uploads-${app.id}`}
-                                    >
-                                      <ExternalLink className="h-3 w-3" />
-                                      View Link
-                                    </a>
-                                    {app.bioLinkVerifiedAt ? (
-                                      <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
-                                        Verified
-                                      </Badge>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-6 text-xs"
-                                        onClick={() => verifyBioLinkMutation.mutate(app.id)}
-                                        disabled={verifyBioLinkMutation.isPending}
-                                        data-testid={`button-verify-bio-link-uploads-${app.id}`}
-                                      >
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Verify
-                                      </Button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-muted-foreground text-xs">Not submitted</span>
-                                )}
-                              </TableCell>
-                            )}
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {app.contentUrl && !editingContentUrl.has(app.id) ? (
