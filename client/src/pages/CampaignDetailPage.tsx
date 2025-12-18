@@ -271,9 +271,9 @@ export default function CampaignDetailPage() {
       return { label: "Free Product + $30", icon: DollarSign, color: "from-emerald-500 to-teal-500" };
     }
     
-    // Amazon Video Upload - $50 reward
+    // Amazon Video Upload - $30 reward
     if (campaignType === "amazon_video_upload") {
-      return { label: "Free Product + $50", icon: DollarSign, color: "from-amber-500 to-orange-500" };
+      return { label: "Free Product + $30", icon: DollarSign, color: "from-amber-500 to-orange-500" };
     }
     
     // Gifting - Free Product only

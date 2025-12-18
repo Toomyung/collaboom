@@ -136,7 +136,7 @@ export default function CampaignTypesPage() {
           >
             <Store className="h-8 w-8 mx-auto mb-2 text-amber-600" />
             <p className="font-bold text-amber-700 dark:text-amber-300">Amazon Video</p>
-            <Badge className="bg-amber-500 text-white mt-1">+$50</Badge>
+            <Badge className="bg-amber-500 text-white mt-1">+$30</Badge>
           </button>
         </div>
 
@@ -345,7 +345,7 @@ export default function CampaignTypesPage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <CardTitle className="text-2xl text-amber-700 dark:text-amber-300">Amazon Video Upload</CardTitle>
-                    <Badge className="bg-amber-500 text-white">Premium Paid</Badge>
+                    <Badge className="bg-amber-500 text-white">Paid Campaign</Badge>
                   </div>
                   <CardDescription className="text-base">
                     Post on TikTok + Amazon Storefront for maximum earnings
@@ -353,7 +353,7 @@ export default function CampaignTypesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Reward</p>
-                  <p className="text-3xl font-bold text-amber-600">$50</p>
+                  <p className="text-3xl font-bold text-amber-600">$30</p>
                 </div>
               </div>
             </CardHeader>
@@ -369,7 +369,7 @@ export default function CampaignTypesPage() {
                   { icon: Video, label: "Create" },
                   { icon: SiTiktok, label: "Post TikTok" },
                   { icon: SiAmazon, label: "Post Amazon" },
-                  { icon: DollarSign, label: "Earn $50" },
+                  { icon: DollarSign, label: "Earn $30" },
                 ]} />
               </div>
 
@@ -387,7 +387,7 @@ export default function CampaignTypesPage() {
                     <li className="flex items-start gap-2">
                       <CreditCard className="h-3 w-3 mt-1.5 text-amber-500 shrink-0" />
                       <span>
-                        <strong className="text-foreground">PayPal account</strong> for $50 payment
+                        <strong className="text-foreground">PayPal account</strong> for $30 payment
                       </span>
                     </li>
                   </ul>
@@ -527,8 +527,8 @@ export default function CampaignTypesPage() {
                       Gifting
                     </th>
                     <th className="text-center py-3 px-4 font-semibold text-emerald-600">
-                      <ShoppingCart className="h-4 w-4 mx-auto mb-1" />
-                      Cost Covered
+                      <ExternalLink className="h-4 w-4 mx-auto mb-1" />
+                      Link in Bio
                     </th>
                     <th className="text-center py-3 px-4 font-semibold text-amber-600">
                       <Store className="h-4 w-4 mx-auto mb-1" />
@@ -541,7 +541,7 @@ export default function CampaignTypesPage() {
                     <td className="py-3 px-4">Cash Reward</td>
                     <td className="text-center py-3 px-4">-</td>
                     <td className="text-center py-3 px-4 font-semibold text-emerald-600">$30</td>
-                    <td className="text-center py-3 px-4 font-semibold text-amber-600">$50</td>
+                    <td className="text-center py-3 px-4 font-semibold text-amber-600">$30</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">Free Product</td>

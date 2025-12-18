@@ -895,7 +895,7 @@ export default function AdminCampaignDetailPage() {
                       {(campaign as any).campaignType === "link_in_bio"
                         ? "Gift + $30 Reward"
                         : (campaign as any).campaignType === "amazon_video_upload"
-                        ? "Gift + $50 Reward"
+                        ? "Gift + $30 Reward"
                         : "Gift Only"}
                     </p>
                   </div>

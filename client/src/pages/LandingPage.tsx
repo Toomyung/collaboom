@@ -86,7 +86,7 @@ const faqs = [
   {
     question: "Are the products really free?",
     answer:
-      "Yes! All products are gifted to you at no cost. Some campaigns also offer additional monetary rewards ($20-$50) on top of the free products.",
+      "Yes! All products are gifted to you at no cost. Some campaigns also offer additional cash rewards ($30) on top of the free products.",
   },
 ];
 
@@ -426,9 +426,9 @@ export default function LandingPage() {
                   <div className="space-y-3">
                     <p className="text-sm font-medium">Recent Campaigns</p>
                     {[
-                      { name: "K-Beauty Serum", brand: "GlowLab", status: "Completed", reward: "Gift + $20" },
+                      { name: "K-Beauty Serum", brand: "GlowLab", status: "Completed", reward: "Gift + $30" },
                       { name: "Organic Snacks", brand: "NatureBite", status: "Shipped", reward: "Gift" },
-                      { name: "Home Decor Set", brand: "CozyLife", status: "Approved", reward: "Gift + $50" },
+                      { name: "Home Decor Set", brand: "CozyLife", status: "Approved", reward: "Gift + $30" },
                     ].map((campaign, i) => (
                       <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                         <div>

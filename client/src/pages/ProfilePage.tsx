@@ -575,7 +575,7 @@ export default function ProfilePage() {
                     <span className="font-medium text-foreground">About Paid Campaigns</span>
                   </div>
                   <p className="text-xs leading-relaxed mb-2">
-                    Some campaigns offer cash rewards ($30-$50+) in addition to free products. Payments are processed via PayPal. 
+                    Some campaigns offer cash rewards ($30) in addition to free products. Payments are processed via PayPal. 
                     You can skip this for now, but you'll need to add your PayPal email to apply for paid campaigns.
                   </p>
                   <div className="flex flex-wrap gap-3 text-xs">
@@ -588,7 +588,7 @@ export default function ProfilePage() {
                     >
                       Create PayPal Account
                     </a>
-                    <Link href="/campaign-types#product-cost-covered">
+                    <Link href="/campaign-types#link-in-bio">
                       <span className="text-blue-600 hover:underline cursor-pointer" data-testid="link-campaign-types-profile">
                         Learn about Paid Campaigns
                       </span>

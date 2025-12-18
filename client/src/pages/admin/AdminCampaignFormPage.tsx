@@ -597,12 +597,12 @@ export default function AdminCampaignFormPage() {
                         <SelectContent>
                           <SelectItem value="gifting">Gifting (Free Product Only)</SelectItem>
                           <SelectItem value="link_in_bio">Link in Bio (+$30 Reward)</SelectItem>
-                          <SelectItem value="amazon_video_upload">Amazon Video Upload (+$50 Reward)</SelectItem>
+                          <SelectItem value="amazon_video_upload">Amazon Video Upload (+$30 Reward)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
                         {field.value === "link_in_bio" && "Influencer receives product, adds purchase link to TikTok bio (Linktree/Beacons), and creates TikTok content for $30 reward."}
-                        {field.value === "amazon_video_upload" && "Influencer receives product and posts on both TikTok AND Amazon Storefront for $50 reward. Requires Amazon Storefront."}
+                        {field.value === "amazon_video_upload" && "Influencer receives product and posts on both TikTok AND Amazon Storefront for $30 reward. Requires Amazon Storefront."}
                         {(!field.value || field.value === "gifting") && "Influencer receives free product and creates TikTok content."}
                       </FormDescription>
                       <FormMessage />
