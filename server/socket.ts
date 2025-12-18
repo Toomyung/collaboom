@@ -99,17 +99,17 @@ export function emitCommentDeleted(campaignId: string, applicationId: string): v
 }
 
 export function emitApplicationCreated(campaignId: string, applicationId: string): void {
-  emitEvent("application:created", { campaignId, applicationId }, ["admin", `campaign:${campaignId}`]);
+  emitEvent("application:created", { campaignId, applicationId }, ["public", "admin", `campaign:${campaignId}`]);
 }
 
 export function emitApplicationUpdated(campaignId: string, applicationId: string, status?: string): void {
-  emitEvent("application:updated", { campaignId, applicationId, status }, ["admin", `campaign:${campaignId}`]);
+  emitEvent("application:updated", { campaignId, applicationId, status }, ["public", "admin", `campaign:${campaignId}`]);
 }
 
 export function emitInfluencerUpdated(influencerId: string): void {
-  emitEvent("influencer:updated", { influencerId }, [`user:${influencerId}`, "admin"]);
+  emitEvent("influencer:updated", { influencerId }, ["public", "admin"]);
 }
 
 export function emitScoreUpdated(influencerId: string, newScore: number, tier: string): void {
-  emitEvent("score:updated", { influencerId, newScore, tier }, [`user:${influencerId}`, "admin"]);
+  emitEvent("score:updated", { influencerId, newScore, tier }, ["public", "admin"]);
 }

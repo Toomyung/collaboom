@@ -39,17 +39,21 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketInstance.on("campaign:created", (data: { campaignId: string }) => {
       console.log("[Socket] Campaign created:", data.campaignId);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
     });
 
     socketInstance.on("campaign:updated", (data: { campaignId: string }) => {
       console.log("[Socket] Campaign updated:", data.campaignId);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId] });
     });
 
     socketInstance.on("campaign:deleted", (data: { campaignId: string }) => {
       console.log("[Socket] Campaign deleted:", data.campaignId);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
     });
 
     socketInstance.on("comment:created", (data: { campaignId: string; applicationId: string }) => {
@@ -75,8 +79,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       console.log("[Socket] Application updated:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/my-ids"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId, "applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
     });
 
