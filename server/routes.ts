@@ -788,11 +788,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check Bio Link requirement for Link in Bio campaigns
-      if (campaign.campaignType === "link_in_bio" && !influencer.bioLinkProfileUrl) {
-        return res.status(400).json({ 
-          message: "This campaign requires a bio link service (like Linktree or Beacons) to add the product link. Please set up your bio link URL in your profile first.",
-          requiresBioLink: true
-        });
+      if (campaign.campaignType === "link_in_bio") {
+        if (!influencer.bioLinkProfileUrl) {
+          return res.status(400).json({ 
+            message: "This campaign requires a bio link service (like Linktree or Beacons) to add the product link. Please set up your bio link URL in your profile first.",
+            requiresBioLink: true
+          });
+        }
+        
+        // Validate that the bio link URL is a valid profile URL (not a login/register page)
+        const bioLinkUrl = influencer.bioLinkProfileUrl.toLowerCase();
+        const isInvalidBioLink = 
+          bioLinkUrl.includes('/login') || 
+          bioLinkUrl.includes('/register') || 
+          bioLinkUrl.includes('/signin') || 
+          bioLinkUrl.includes('/signup') ||
+          bioLinkUrl.includes('universal-login') ||
+          bioLinkUrl === 'https://linktr.ee' ||
+          bioLinkUrl === 'https://linktr.ee/' ||
+          bioLinkUrl === 'https://beacons.ai' ||
+          bioLinkUrl === 'https://beacons.ai/';
+        
+        if (isInvalidBioLink) {
+          return res.status(400).json({ 
+            message: "Please enter your actual Linktree or Beacons profile URL (e.g., linktr.ee/yourname), not a login page. Update your profile with your correct bio link URL.",
+            requiresBioLink: true
+          });
+        }
       }
 
       // Check Amazon Storefront requirement for Amazon Video campaigns

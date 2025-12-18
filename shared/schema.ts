@@ -132,6 +132,22 @@ export const updateProfileSchema = z.object({
              lowerUrl.includes('solo.to') ||
              url.startsWith('https://');
     }, "Please enter a valid bio link URL (Linktree, Beacons, etc.)")
+    .refine(url => {
+      if (!url) return true;
+      const lowerUrl = url.toLowerCase();
+      // Reject login/register/signup pages - these are not valid profile URLs
+      const isInvalidPage = 
+        lowerUrl.includes('/login') || 
+        lowerUrl.includes('/register') || 
+        lowerUrl.includes('/signin') || 
+        lowerUrl.includes('/signup') ||
+        lowerUrl.includes('universal-login') ||
+        lowerUrl === 'https://linktr.ee' ||
+        lowerUrl === 'https://linktr.ee/' ||
+        lowerUrl === 'https://beacons.ai' ||
+        lowerUrl === 'https://beacons.ai/';
+      return !isInvalidPage;
+    }, "Please enter your actual profile URL (e.g., linktr.ee/yourname), not a login page")
     .optional()
     .or(z.literal("")),
   amazonStorefrontUrl: z.string()
