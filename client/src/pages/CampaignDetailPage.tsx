@@ -204,6 +204,30 @@ export default function CampaignDetailPage() {
       });
       return;
     }
+    
+    // Check campaign type requirements
+    const campaignType = (campaign as any)?.campaignType;
+    
+    if (campaignType === "link_in_bio" && !influencer?.bioLinkProfileUrl) {
+      toast({
+        title: "Bio Link Required",
+        description: "This campaign requires a Linktree or similar bio link. Please add it in your profile first.",
+        variant: "destructive",
+      });
+      setLocation("/profile");
+      return;
+    }
+    
+    if (campaignType === "amazon_video_upload" && !influencer?.amazonStorefrontUrl) {
+      toast({
+        title: "Amazon Storefront Required",
+        description: "This campaign requires an Amazon Influencer Storefront. Please add it in your profile first.",
+        variant: "destructive",
+      });
+      setLocation("/profile");
+      return;
+    }
+    
     setShowApplyDialog(true);
   };
 
