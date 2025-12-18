@@ -121,7 +121,10 @@ export interface IStorage {
   
   // Notifications
   createNotification(notification: InsertNotification): Promise<Notification>;
-  getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number }): Promise<Notification[]>;
+  getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number; channel?: string }): Promise<Notification[]>;
+  getUnreadNotificationCount(influencerId: string): Promise<number>;
+  markNotificationAsRead(notificationId: string): Promise<void>;
+  markAllNotificationsAsRead(influencerId: string): Promise<void>;
   
   // Shipping Issues
   createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue>;
@@ -954,8 +957,11 @@ export class MemStorage implements IStorage {
       campaignId: notification.campaignId || null,
       applicationId: notification.applicationId || null,
       type: notification.type,
+      title: notification.title || null,
+      message: notification.message || null,
       channel: notification.channel || 'email',
       status: 'sent',
+      read: false,
       errorMessage: null,
       sentAt: new Date(),
       createdAt: new Date(),
@@ -964,12 +970,13 @@ export class MemStorage implements IStorage {
     return newNotification;
   }
 
-  async getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number }): Promise<Notification[]> {
+  async getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number; channel?: string }): Promise<Notification[]> {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
     
     const notifications = Array.from(this.notifications.values())
       .filter(n => n.influencerId === influencerId)
+      .filter(n => !options?.channel || n.channel === options.channel || n.channel === 'both')
       .sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -977,6 +984,29 @@ export class MemStorage implements IStorage {
       });
     
     return notifications.slice(offset, offset + limit);
+  }
+
+  async getUnreadNotificationCount(influencerId: string): Promise<number> {
+    return Array.from(this.notifications.values())
+      .filter(n => n.influencerId === influencerId && !n.read && (n.channel === 'in_app' || n.channel === 'both'))
+      .length;
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    const notification = this.notifications.get(notificationId);
+    if (notification) {
+      notification.read = true;
+      this.notifications.set(notificationId, notification);
+    }
+  }
+
+  async markAllNotificationsAsRead(influencerId: string): Promise<void> {
+    for (const [id, notification] of this.notifications.entries()) {
+      if (notification.influencerId === influencerId) {
+        notification.read = true;
+        this.notifications.set(id, notification);
+      }
+    }
   }
 
   // Shipping Issues

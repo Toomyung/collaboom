@@ -592,6 +592,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get in-app notifications for influencer
+  app.get("/api/notifications", requireAuth("influencer"), async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const notifications = await storage.getNotificationsByInfluencer(req.session.userId!, { 
+        limit, 
+        offset,
+        channel: 'in_app'
+      });
+      return res.json(notifications);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get unread notification count
+  app.get("/api/notifications/unread-count", requireAuth("influencer"), async (req, res) => {
+    try {
+      const count = await storage.getUnreadNotificationCount(req.session.userId!);
+      return res.json({ count });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mark a notification as read
+  app.post("/api/notifications/:id/read", requireAuth("influencer"), async (req, res) => {
+    try {
+      await storage.markNotificationAsRead(req.params.id);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mark all notifications as read
+  app.post("/api/notifications/read-all", requireAuth("influencer"), async (req, res) => {
+    try {
+      await storage.markAllNotificationsAsRead(req.session.userId!);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get campaigns (public) - with optional pagination and field selection
   app.get("/api/campaigns", async (req, res) => {
     const startTime = Date.now();
