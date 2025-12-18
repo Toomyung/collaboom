@@ -721,7 +721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check PayPal requirement for paid campaigns
-      const isPaidCampaign = campaign.campaignType === "link_in_bio" || campaign.campaignType === "amazon_video";
+      const isPaidCampaign = campaign.campaignType === "link_in_bio" || campaign.campaignType === "amazon_video_upload";
       if (isPaidCampaign && !influencer.paypalEmail) {
         return res.status(400).json({ 
           message: "PayPal email required for paid campaigns. Please add your PayPal email in your profile to apply for this campaign.",
@@ -1700,7 +1700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if campaign is a paid campaign
       const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || (campaign.campaignType !== "link_in_bio" && campaign.campaignType !== "amazon_video")) {
+      if (!campaign || (campaign.campaignType !== "link_in_bio" && campaign.campaignType !== "amazon_video_upload")) {
         return res.status(400).json({ message: "This campaign does not have a cash reward" });
       }
 
