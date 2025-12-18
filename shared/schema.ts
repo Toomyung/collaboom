@@ -398,15 +398,18 @@ export const insertAdminNoteSchema = createInsertSchema(adminNotes).pick({
 export type InsertAdminNote = z.infer<typeof insertAdminNoteSchema>;
 export type AdminNote = typeof adminNotes.$inferSelect;
 
-// Notifications
+// Notifications (email and in-app)
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   influencerId: varchar("influencer_id").notNull(),
   campaignId: varchar("campaign_id"),
   applicationId: varchar("application_id"),
-  type: text("type").notNull(), // 'welcome', 'approved', 'rejected', 'shipping_shipped', 'shipping_delivered', 'deadline_48h', 'deadline_missed', 'account_restricted'
-  channel: text("channel").notNull().default("email"),
+  type: text("type").notNull(), // 'welcome', 'approved', 'rejected', 'shipping_shipped', 'shipping_delivered', 'deadline_48h', 'deadline_missed', 'account_restricted', 'comment_reply', 'score_updated', 'tier_upgraded'
+  title: text("title"), // For in-app notifications
+  message: text("message"), // For in-app notifications
+  channel: text("channel").notNull().default("email"), // 'email' | 'in_app' | 'both'
   status: text("status").notNull().default("sent"), // 'queued' | 'sent' | 'failed'
+  read: boolean("read").default(false), // For in-app notifications
   errorMessage: text("error_message"),
   sentAt: timestamp("sent_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -417,6 +420,8 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   campaignId: true,
   applicationId: true,
   type: true,
+  title: true,
+  message: true,
   channel: true,
 });
 
