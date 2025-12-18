@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Notification } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -35,6 +35,7 @@ function getNotificationIcon(type: string) {
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const { data: unreadData } = useQuery<{ count: number }>({
     queryKey: ["/api/notifications/unread-count"],
@@ -68,11 +69,12 @@ export function NotificationBell() {
 
   const unreadCount = unreadData?.count || 0;
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
-    setOpen(false);
+    // Don't close - just mark as read
   };
 
   return (
@@ -124,7 +126,7 @@ export function NotificationBell() {
                     "flex gap-3 px-4 py-3 hover-elevate cursor-pointer transition-colors",
                     !notification.read && "bg-primary/5"
                   )}
-                  onClick={() => handleNotificationClick(notification)}
+                  onClick={(e) => handleNotificationClick(notification, e)}
                   data-testid={`notification-item-${notification.id}`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
@@ -149,9 +151,13 @@ export function NotificationBell() {
                     </p>
                   </div>
                   {!notification.read && (
-                    <div className="flex-shrink-0">
+                    <button
+                      onClick={(e) => handleNotificationClick(notification, e)}
+                      className="flex-shrink-0 hover:scale-110 transition-transform"
+                      aria-label="Mark as read"
+                    >
                       <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
+                    </button>
                   )}
                 </div>
               ))}
@@ -165,17 +171,18 @@ export function NotificationBell() {
         </ScrollArea>
         {notifications && notifications.length > 0 && (
           <div className="border-t px-4 py-2">
-            <Link href="/dashboard">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs"
-                onClick={() => setOpen(false)}
-                data-testid="button-view-all-notifications"
-              >
-                View Dashboard
-              </Button>
-            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => {
+                setOpen(false);
+                setLocation("/dashboard");
+              }}
+              data-testid="button-view-all-notifications"
+            >
+              View Dashboard
+            </Button>
           </div>
         )}
       </PopoverContent>
