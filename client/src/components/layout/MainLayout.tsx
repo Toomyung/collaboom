@@ -47,13 +47,11 @@ export function MainLayout({ children }: MainLayoutProps) {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
-            <Link href="/">
-              <a className="flex items-center gap-2 font-bold text-xl" data-testid="link-home">
-                <Sparkles className="h-6 w-6 text-primary" />
-                <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                  Collaboom
-                </span>
-              </a>
+            <Link href="/" className="flex items-center gap-2 font-bold text-xl" data-testid="link-home">
+              <Sparkles className="h-6 w-6 text-primary" />
+              <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                Collaboom
+              </span>
             </Link>
 
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

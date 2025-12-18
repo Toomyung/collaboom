@@ -1527,9 +1527,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "This campaign is not a Link in Bio campaign" });
       }
 
+      // Validate application status - can only verify if product has been delivered or video uploaded
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "Bio link can only be verified after product delivery" });
+      }
+
       // Check if bio link was submitted
       if (!application.bioLinkUrl) {
         return res.status(400).json({ message: "No bio link has been submitted" });
+      }
+
+      // Check if already verified
+      if (application.bioLinkVerifiedAt) {
+        return res.status(400).json({ message: "Bio link has already been verified" });
       }
 
       // Mark bio link as verified
