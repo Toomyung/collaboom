@@ -1197,6 +1197,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Amazon Video Upload: Submit Amazon Storefront URL (influencer)
+  app.post("/api/applications/:id/submit-amazon-storefront", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if campaign is amazon_video_upload
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "amazon_video_upload") {
+        return res.status(400).json({ message: "This campaign does not require Amazon Storefront submission" });
+      }
+
+      // Check if application is in valid status for submission
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "You can submit your Amazon Storefront link after receiving the product" });
+      }
+
+      // Check if already submitted (immutable once submitted)
+      if (application.amazonStorefrontUrl) {
+        return res.status(400).json({ message: "Amazon Storefront link has already been submitted and cannot be changed" });
+      }
+
+      const { amazonStorefrontUrl } = req.body;
+      if (!amazonStorefrontUrl) {
+        return res.status(400).json({ message: "Amazon Storefront URL is required" });
+      }
+
+      // Basic URL validation
+      try {
+        const url = new URL(amazonStorefrontUrl);
+        // Must be an Amazon URL
+        if (!url.hostname.includes('amazon.')) {
+          return res.status(400).json({ message: "Please enter a valid Amazon Storefront URL" });
+        }
+      } catch {
+        return res.status(400).json({ message: "Please enter a valid URL" });
+      }
+
+      // Update application with Amazon Storefront link
+      await storage.updateApplication(application.id, {
+        amazonStorefrontUrl: amazonStorefrontUrl.trim(),
+        amazonStorefrontSubmittedAt: new Date(),
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Submit video for Link in Bio campaign (after bio link verified)
   app.post("/api/applications/:id/submit-video", requireAuth("influencer"), async (req, res) => {
     try {
@@ -1788,6 +1844,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         channel: "both",
         title: "Bio Link Verified!",
         message: `Your bio link for ${campaign.name} has been verified. Now upload your TikTok video to complete the campaign!`,
+      });
+      emitNotificationCreated(application.influencerId);
+
+      // Emit real-time event
+      emitApplicationUpdated(application.campaignId, application.id, "delivered");
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Amazon Video Upload: Verify Amazon Storefront link
+  app.post("/api/admin/applications/:id/verify-amazon-storefront", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Check if campaign is amazon_video_upload
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "amazon_video_upload") {
+        return res.status(400).json({ message: "This campaign is not an Amazon Video Upload campaign" });
+      }
+
+      // Validate application status - can only verify if product has been delivered or video uploaded
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "Amazon Storefront link can only be verified after product delivery" });
+      }
+
+      // Check if Amazon Storefront link was submitted
+      if (!application.amazonStorefrontUrl) {
+        return res.status(400).json({ message: "No Amazon Storefront link has been submitted" });
+      }
+
+      // Check if already verified
+      if (application.amazonStorefrontVerifiedAt) {
+        return res.status(400).json({ message: "Amazon Storefront link has already been verified" });
+      }
+
+      // Mark Amazon Storefront link as verified
+      await storage.updateApplication(application.id, {
+        amazonStorefrontVerifiedAt: new Date(),
+        amazonStorefrontVerifiedByAdminId: (req.session as any)?.user?.id || null,
+      });
+
+      // Create notification for Amazon Storefront verification
+      await storage.createNotification({
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        type: "amazon_storefront_verified",
+        channel: "both",
+        title: "Amazon Storefront Verified!",
+        message: `Your Amazon Storefront link for ${campaign.name} has been verified. Now upload your TikTok video to complete the campaign!`,
       });
       emitNotificationCreated(application.influencerId);
 
