@@ -791,7 +791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (campaign.campaignType === "link_in_bio") {
         if (!influencer.bioLinkProfileUrl) {
           return res.status(400).json({ 
-            message: "This campaign requires a bio link service (like Linktree or Beacons) to add the product link. Please set up your bio link URL in your profile first.",
+            message: "This campaign requires a bio link service (like Linktree, Beacons, or similar) to add the product link. Please set up your bio link URL in your profile first.",
             requiresBioLink: true
           });
         }
@@ -803,15 +803,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bioLinkUrl.includes('/register') || 
           bioLinkUrl.includes('/signin') || 
           bioLinkUrl.includes('/signup') ||
-          bioLinkUrl.includes('universal-login') ||
-          bioLinkUrl === 'https://linktr.ee' ||
-          bioLinkUrl === 'https://linktr.ee/' ||
-          bioLinkUrl === 'https://beacons.ai' ||
-          bioLinkUrl === 'https://beacons.ai/';
+          bioLinkUrl.includes('universal-login');
         
         if (isInvalidBioLink) {
           return res.status(400).json({ 
-            message: "Please enter your actual Linktree or Beacons profile URL (e.g., linktr.ee/yourname), not a login page. Update your profile with your correct bio link URL.",
+            message: "Please enter your actual bio link profile URL, not a login page. Update your profile with your correct bio link URL.",
             requiresBioLink: true
           });
         }

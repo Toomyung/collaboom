@@ -122,16 +122,9 @@ export const updateProfileSchema = z.object({
     .url("Please enter a valid URL (e.g., https://linktr.ee/yourname)")
     .refine(url => {
       if (!url) return true;
-      const lowerUrl = url.toLowerCase();
-      return lowerUrl.includes('linktr.ee') || 
-             lowerUrl.includes('beacons.ai') || 
-             lowerUrl.includes('linkin.bio') ||
-             lowerUrl.includes('bio.link') ||
-             lowerUrl.includes('tap.bio') ||
-             lowerUrl.includes('linkpop.com') ||
-             lowerUrl.includes('solo.to') ||
-             url.startsWith('https://');
-    }, "Please enter a valid bio link URL (Linktree, Beacons, etc.)")
+      // Accept any https URL (Linktree, Beacons, or similar services)
+      return url.startsWith('https://');
+    }, "Please enter a valid https URL for your bio link")
     .refine(url => {
       if (!url) return true;
       const lowerUrl = url.toLowerCase();
@@ -141,13 +134,9 @@ export const updateProfileSchema = z.object({
         lowerUrl.includes('/register') || 
         lowerUrl.includes('/signin') || 
         lowerUrl.includes('/signup') ||
-        lowerUrl.includes('universal-login') ||
-        lowerUrl === 'https://linktr.ee' ||
-        lowerUrl === 'https://linktr.ee/' ||
-        lowerUrl === 'https://beacons.ai' ||
-        lowerUrl === 'https://beacons.ai/';
+        lowerUrl.includes('universal-login');
       return !isInvalidPage;
-    }, "Please enter your actual profile URL (e.g., linktr.ee/yourname), not a login page")
+    }, "Please enter your actual profile URL, not a login page")
     .optional()
     .or(z.literal("")),
   amazonStorefrontUrl: z.string()
