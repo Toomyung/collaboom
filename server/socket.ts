@@ -34,6 +34,7 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
 
     if (session?.userId) {
       socket.join(`user:${session.userId}`);
+      console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
       
       if (session.userType === "admin") {
         socket.join("admin");
@@ -116,5 +117,6 @@ export function emitScoreUpdated(influencerId: string, newScore: number, tier: s
 }
 
 export function emitNotificationCreated(influencerId: string): void {
-  emitEvent("notification:created", { influencerId }, ["public"]);
+  // Emit to the specific user's room for privacy and efficiency
+  emitEvent("notification:created", { influencerId }, [`user:${influencerId}`]);
 }

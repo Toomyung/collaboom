@@ -36,6 +36,7 @@ import {
   emitApplicationUpdated,
   emitInfluencerUpdated,
   emitScoreUpdated,
+  emitNotificationCreated,
 } from "./socket";
 
 // Session types
@@ -869,12 +870,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.updateApplication(application.id, {
               emailThreadId: result.messageId,
             });
-            // Create notification
+            // Create notification and emit socket event
             storage.createNotification({
               influencerId: influencer.id,
               campaignId: campaign.id,
               applicationId: application.id,
               type: "approved",
+              channel: "both",
+              title: "Application Approved!",
+              message: `Your application for ${campaign.name} has been approved. Check your address and confirm participation.`,
+            }).then(() => {
+              emitNotificationCreated(influencer.id);
             }).catch(console.error);
           }
         }).catch(console.error);
@@ -1468,13 +1474,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createShipping({ applicationId: application.id });
       }
 
-      // Log notification for approval
+      // Log notification for approval and emit socket event
       await storage.createNotification({
         influencerId: application.influencerId,
         campaignId: application.campaignId,
         applicationId: application.id,
         type: "approved",
+        channel: "both",
+        title: "Application Approved!",
+        message: `Your application for ${campaign.name} has been approved. Confirm your address to proceed.`,
       });
+      emitNotificationCreated(application.influencerId);
 
       // Send approval email and store thread ID for future emails
       const influencer = await storage.getInfluencer(application.influencerId);
@@ -1529,13 +1539,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rejectedAt: new Date(),
       });
 
-      // Log notification for rejection
+      // Log notification for rejection and emit socket event
       await storage.createNotification({
         influencerId: application.influencerId,
         campaignId: application.campaignId,
         applicationId: application.id,
         type: "rejected",
+        channel: "in_app",
+        title: "Application Not Selected",
+        message: `Unfortunately, your application was not selected this time. Keep applying!`,
       });
+      emitNotificationCreated(application.influencerId);
 
       // Emit real-time event
       emitApplicationUpdated(application.campaignId, application.id, "rejected");
@@ -1913,13 +1927,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           deliveredAt,
         });
 
-        // Log shipping notification
+        // Log shipping notification and emit socket event
+        const campaign = await storage.getCampaign(req.params.id);
         await storage.createNotification({
           influencerId: influencer.id,
           campaignId: req.params.id,
           applicationId: application.id,
           type: deliveredAt ? "shipping_delivered" : "shipping_shipped",
+          channel: "both",
+          title: deliveredAt ? "Package Delivered!" : "Your Product Has Shipped!",
+          message: deliveredAt 
+            ? `Your package for ${campaign?.name || "campaign"} has been delivered. Time to create amazing content!`
+            : `Your product for ${campaign?.name || "campaign"} is on the way!`,
         });
+        emitNotificationCreated(influencer.id);
       }
 
       return res.json({ success: true });
@@ -1963,17 +1984,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         shippedAt,
       });
 
-      // Log shipping notification
+      // Log shipping notification and emit socket event
+      const campaign = await storage.getCampaign(application.campaignId);
       await storage.createNotification({
         influencerId: application.influencerId,
         campaignId: application.campaignId,
         applicationId: application.id,
         type: "shipping_shipped",
+        channel: "both",
+        title: "Your Product Has Shipped!",
+        message: `Your product for ${campaign?.name || "campaign"} is on the way! Track: ${trackingNumber}`,
       });
+      emitNotificationCreated(application.influencerId);
 
       // Send shipping notification email (threaded with approval email)
       const influencer = await storage.getInfluencer(application.influencerId);
-      const campaign = await storage.getCampaign(application.campaignId);
       if (influencer?.email && campaign) {
         sendShippingNotificationEmail(
           influencer.email,
@@ -2236,12 +2261,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             application.emailThreadId
           ).then((result) => {
             if (result.success) {
-              // Log notification to database
+              // Log notification to database and emit socket event
               storage.createNotification({
                 influencerId: influencer.id,
                 campaignId: campaign.id,
                 applicationId: application.id,
                 type: "upload_verified",
+                channel: "both",
+                title: "Upload Verified!",
+                message: `Your video for ${campaign.name} has been verified. You earned ${points} points!`,
+              }).then(() => {
+                emitNotificationCreated(influencer.id);
               }).catch(console.error);
             }
           }).catch(console.error);
@@ -2298,13 +2328,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reason: isFirstTimeGhosting ? "first_ghosting" : "deadline_missed",
         });
 
-        // Log notification for tracking
+        // Log notification for tracking and emit socket event
         await storage.createNotification({
           influencerId: influencer.id,
           campaignId: application.campaignId,
           applicationId: application.id,
           type: "deadline_missed",
+          channel: "in_app",
+          title: "Deadline Missed",
+          message: `You missed the content deadline. A penalty of ${penaltyAmount} points has been applied.`,
         });
+        emitNotificationCreated(influencer.id);
       }
 
       return res.json({ success: true });
