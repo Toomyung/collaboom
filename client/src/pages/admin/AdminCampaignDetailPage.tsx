@@ -73,6 +73,7 @@ import {
   MessageSquare,
   Link2,
   Video,
+  Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversationSheet } from "@/components/ConversationSheet";
@@ -523,6 +524,20 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
+  // Amazon Video Upload: Verify Amazon Storefront link
+  const verifyAmazonStorefrontMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/verify-amazon-storefront`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Amazon Storefront link verified" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to verify Amazon Storefront link", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Legacy: Verify purchase (kept for backward compatibility)
   const verifyPurchaseMutation = useMutation({
     mutationFn: async (applicationId: string) => {
@@ -701,12 +716,21 @@ export default function AdminCampaignDetailPage() {
     a.status === "delivered" && !a.bioLinkVerifiedAt
   ) || [];
   
+  // For Amazon Video Upload campaigns: amazon tab shows delivered apps awaiting storefront verification
+  const amazonStorefrontAwaitingApplications = applications?.filter((a) => 
+    a.status === "delivered" && !a.amazonStorefrontVerifiedAt
+  ) || [];
+  
   // For Link in Bio campaigns: uploads tab shows only apps with verified bio link
+  // For Amazon Video Upload campaigns: uploads tab shows only apps with verified storefront link
   // For other campaigns: show all delivered apps
   const deliveredApplications = applications?.filter((a) => {
     if (a.status !== "delivered") return false;
     if (campaign?.campaignType === "link_in_bio") {
       return !!a.bioLinkVerifiedAt;
+    }
+    if (campaign?.campaignType === "amazon_video_upload") {
+      return !!a.amazonStorefrontVerifiedAt;
     }
     return true;
   }) || [];
@@ -869,6 +893,17 @@ export default function AdminCampaignDetailPage() {
                 {bioLinkAwaitingApplications.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
                     {bioLinkAwaitingApplications.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )}
+            {campaign.campaignType === "amazon_video_upload" && (
+              <TabsTrigger value="amazon" data-testid="tab-amazon">
+                <Store className="h-4 w-4 mr-2" />
+                Amazon
+                {amazonStorefrontAwaitingApplications.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {amazonStorefrontAwaitingApplications.length}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -1756,6 +1791,113 @@ export default function AdminCampaignDetailPage() {
                       <ExternalLink className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p>No bio links awaiting verification</p>
                       <p className="text-sm mt-1">Influencers will submit their bio links after receiving their products</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Amazon Tab - Amazon Storefront verification (only for amazon_video_upload campaigns) */}
+          {campaign.campaignType === "amazon_video_upload" && (
+            <TabsContent value="amazon" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Store className="h-5 w-5" />
+                    Amazon Storefront Verification
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {amazonStorefrontAwaitingApplications.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-14">ID</TableHead>
+                          <TableHead>Influencer</TableHead>
+                          <TableHead>TikTok</TableHead>
+                          <TableHead>Amazon Storefront URL</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {amazonStorefrontAwaitingApplications.map((app) => (
+                          <TableRow key={app.id}>
+                            <TableCell className="font-mono text-sm text-muted-foreground">
+                              {String(app.sequenceNumber || 0).padStart(3, "0")}
+                            </TableCell>
+                            <TableCell>
+                              <button
+                                className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
+                                onClick={() => {
+                                  if (app.influencer) {
+                                    setSelectedInfluencerId(app.influencer?.id || null);
+                                  }
+                                }}
+                                data-testid={`link-influencer-amazon-${app.id}`}
+                              >
+                                {getInfluencerDisplayName(app.influencer)}
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              {app.influencer?.tiktokHandle && (
+                                <a
+                                  href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-muted-foreground hover:text-primary flex items-center gap-1"
+                                >
+                                  <SiTiktok className="h-3 w-3" />
+                                  @{app.influencer.tiktokHandle}
+                                </a>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {app.amazonStorefrontUrl ? (
+                                <a
+                                  href={app.amazonStorefrontUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline flex items-center gap-1"
+                                  data-testid={`link-amazon-url-${app.id}`}
+                                >
+                                  <Store className="h-3 w-3" />
+                                  <span className="truncate max-w-[200px]">{app.amazonStorefrontUrl}</span>
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">Not submitted yet</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {app.amazonStorefrontSubmittedAt 
+                                ? format(new Date(app.amazonStorefrontSubmittedAt), "MMM d, h:mm a")
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {app.amazonStorefrontUrl ? (
+                                <Button
+                                  size="sm"
+                                  onClick={() => verifyAmazonStorefrontMutation.mutate(app.id)}
+                                  disabled={verifyAmazonStorefrontMutation.isPending}
+                                  data-testid={`button-verify-amazon-${app.id}`}
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Verify
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">Awaiting submission</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Store className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No Amazon Storefront links awaiting verification</p>
+                      <p className="text-sm mt-1">Influencers will submit their Storefront links after receiving their products</p>
                     </div>
                   )}
                 </CardContent>

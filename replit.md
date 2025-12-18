@@ -59,14 +59,23 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 - **Platform:** TikTok
 - **Requirements:** Linktree, Beacons, or similar bio link service
 - **Schema Fields:** `bioLinkUrl` (influencer submission), `bioLinkVerifiedAt` (admin verification timestamp), `bioLinkVerifiedByAdminId` (admin ID)
-- **Admin Workflow:** Single "Bio Link" column in Uploads tab shows verification status; admin can verify link after product delivery
+- **Admin Workflow:** "Bio" tab between Shipping and Uploads tabs shows bio link verification status; admin can verify link after product delivery
+- **Notification:** Sends "Bio Link Verified!" notification when admin verifies the bio link
 
-### 3. Amazon Video Upload Campaign (Planned)
+### 3. Amazon Video Upload Campaign (Implemented)
 - **Reward:** $50 cash + product
-- **Process:** Apply → Receive product → Create video → Post on BOTH TikTok AND Amazon Storefront → Get $50
+- **Process:**
+  1. Apply to campaign
+  2. Receive free product at address
+  3. Upload product video to Amazon Influencer Storefront
+  4. Submit Amazon Storefront URL for admin verification
+  5. Create and upload TikTok video
+  6. Receive $50 reward upon both storefront and video verification
 - **Platform:** TikTok + Amazon Storefront
 - **Requirements:** Must have active Amazon Influencer Storefront
-- **Description:** Similar to Gifting but with dual-platform posting requirement and higher reward.
+- **Schema Fields:** `amazonStorefrontUrl` (influencer submission), `amazonStorefrontVerifiedAt` (admin verification timestamp), `amazonStorefrontVerifiedByAdminId` (admin ID)
+- **Admin Workflow:** "Amazon" tab between Shipping and Uploads tabs shows storefront verification status; admin can verify link after product delivery
+- **Notification:** Sends "Amazon Storefront Verified!" notification when admin verifies the storefront link
 
 ### Bonus: Usage of Rights
 - **Reward:** Additional $50

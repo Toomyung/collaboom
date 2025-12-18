@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Link2,
   DollarSign,
+  Store,
 } from "lucide-react";
 import { SiLinktree } from "react-icons/si";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,8 @@ interface ApplicationCardProps {
   onDismiss?: () => void;
   onSubmitBioLink?: (bioLinkUrl: string) => void;
   isSubmittingBioLink?: boolean;
+  onSubmitAmazonStorefront?: (amazonStorefrontUrl: string) => void;
+  isSubmittingAmazonStorefront?: boolean;
 }
 
 const statusConfig: Record<
@@ -99,11 +102,14 @@ export function ApplicationCard({
   onDismiss,
   onSubmitBioLink,
   isSubmittingBioLink,
+  onSubmitAmazonStorefront,
+  isSubmittingAmazonStorefront,
 }: ApplicationCardProps) {
   const campaign = application.campaign;
   const status = statusConfig[application.status] || statusConfig.pending;
   const StatusIcon = status.icon;
   const [bioLinkInput, setBioLinkInput] = useState("");
+  const [amazonStorefrontInput, setAmazonStorefrontInput] = useState("");
 
   const deadline = new Date(campaign.deadline);
   const isDeadlineSoon =
@@ -114,6 +120,13 @@ export function ApplicationCard({
     if (bioLinkInput.trim() && onSubmitBioLink) {
       onSubmitBioLink(bioLinkInput.trim());
       setBioLinkInput("");
+    }
+  };
+
+  const handleSubmitAmazonStorefront = () => {
+    if (amazonStorefrontInput.trim() && onSubmitAmazonStorefront) {
+      onSubmitAmazonStorefront(amazonStorefrontInput.trim());
+      setAmazonStorefrontInput("");
     }
   };
 
@@ -364,6 +377,170 @@ export function ApplicationCard({
                       <div className="flex items-center gap-2 text-emerald-600">
                         <DollarSign className="h-4 w-4" />
                         <span className="font-medium">$30 Reward Earned!</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your reward will be sent to your PayPal account
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Amazon Video Upload Campaign Progress */}
+            {(campaign as any).campaignType === "amazon_video_upload" && 
+             ["delivered", "uploaded"].includes(application.status) && (
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Store className="h-4 w-4 text-amber-600" />
+                  <span className="font-medium text-amber-600">Amazon Video Upload Campaign</span>
+                </div>
+                
+                <div className="space-y-2">
+                  {/* Step 1: Amazon Storefront Submission */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      application.amazonStorefrontUrl 
+                        ? "bg-amber-500 text-white" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {application.amazonStorefrontUrl ? <CheckCircle className="h-3.5 w-3.5" /> : "1"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          application.amazonStorefrontUrl ? "text-amber-600" : "text-foreground"
+                        )}>
+                          Add video to your Amazon Storefront
+                        </span>
+                        {application.amazonStorefrontUrl ? (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
+                            Submitted
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
+                      {!application.amazonStorefrontUrl && onSubmitAmazonStorefront && (
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            type="url"
+                            placeholder="https://www.amazon.com/shop/yourname"
+                            value={amazonStorefrontInput}
+                            onChange={(e) => setAmazonStorefrontInput(e.target.value)}
+                            className="h-8 text-sm flex-1"
+                            data-testid={`input-amazon-storefront-${application.id}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSubmitAmazonStorefront}
+                            disabled={!amazonStorefrontInput.trim() || isSubmittingAmazonStorefront}
+                            className="h-8"
+                            data-testid={`button-submit-amazon-storefront-${application.id}`}
+                          >
+                            {isSubmittingAmazonStorefront ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Submit"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      {application.amazonStorefrontUrl && (
+                        <a
+                          href={application.amazonStorefrontUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View submitted link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step 2: Admin Verification */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      application.amazonStorefrontVerifiedAt 
+                        ? "bg-amber-500 text-white" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {application.amazonStorefrontVerifiedAt ? <CheckCircle className="h-3.5 w-3.5" /> : "2"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          application.amazonStorefrontVerifiedAt ? "text-amber-600" : "text-foreground"
+                        )}>
+                          Amazon Storefront verification
+                        </span>
+                        {application.amazonStorefrontVerifiedAt ? (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
+                            Verified
+                          </Badge>
+                        ) : application.amazonStorefrontUrl ? (
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
+                            Under Review
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Waiting
+                          </Badge>
+                        )}
+                      </div>
+                      {!application.amazonStorefrontVerifiedAt && application.amazonStorefrontUrl && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Our team is reviewing your Amazon Storefront link
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step 3: Video Upload */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      application.status === "uploaded" 
+                        ? "bg-amber-500 text-white" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {application.status === "uploaded" ? <CheckCircle className="h-3.5 w-3.5" /> : "3"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          application.status === "uploaded" ? "text-amber-600" : "text-foreground"
+                        )}>
+                          Upload TikTok video
+                        </span>
+                        {application.status === "uploaded" ? (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
+                            Completed
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reward Status */}
+                  {application.status === "uploaded" && application.amazonStorefrontVerifiedAt && (
+                    <div className="mt-3 pt-3 border-t border-amber-500/20">
+                      <div className="flex items-center gap-2 text-amber-600">
+                        <DollarSign className="h-4 w-4" />
+                        <span className="font-medium">$50 Reward Earned!</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Your reward will be sent to your PayPal account
