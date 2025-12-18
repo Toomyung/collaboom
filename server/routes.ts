@@ -1179,6 +1179,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Submit video for Link in Bio campaign (after bio link verified)
+  app.post("/api/applications/:id/submit-video", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if campaign is link_in_bio
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
+        return res.status(400).json({ message: "This endpoint is only for Link in Bio campaigns" });
+      }
+
+      // Check if application status is delivered
+      if (application.status !== "delivered") {
+        return res.status(400).json({ message: "Invalid application status for video submission" });
+      }
+
+      // Check if bio link has been verified
+      if (!application.bioLinkVerifiedAt) {
+        return res.status(400).json({ message: "Your bio link must be verified before submitting a video" });
+      }
+
+      const { videoUrl } = req.body;
+      if (!videoUrl || typeof videoUrl !== 'string') {
+        return res.status(400).json({ message: "Video URL is required" });
+      }
+
+      // Update application with video URL and set uploadedAt timestamp
+      // Note: Status remains "delivered" until admin verifies the video
+      await storage.updateApplication(application.id, {
+        contentUrl: videoUrl,
+        uploadedAt: new Date(),
+      });
+
+      return res.json({ success: true, message: "Video submitted successfully. Awaiting admin verification." });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // =====================
   // ADMIN ROUTES
   // =====================

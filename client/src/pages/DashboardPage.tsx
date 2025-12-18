@@ -149,6 +149,15 @@ const progressSteps = [
   { label: "Uploaded", icon: Upload },
 ];
 
+const linkInBioProgressSteps = [
+  { label: "Applied", icon: Clock },
+  { label: "Approved", icon: CheckCircle },
+  { label: "Shipped", icon: Truck },
+  { label: "Delivered", icon: Package },
+  { label: "Bio Link", icon: ExternalLink },
+  { label: "Video", icon: Upload },
+];
+
 interface ScoreEventWithCampaign extends ScoreEvent {
   campaign?: {
     id: string;
@@ -438,6 +447,29 @@ export default function DashboardPage() {
     },
   });
 
+  // Link in Bio: Submit video URL (after bio link verified)
+  const [videoUrlForms, setVideoUrlForms] = useState<Record<string, string>>({});
+  
+  const submitVideoMutation = useMutation({
+    mutationFn: async ({ applicationId, videoUrl }: { applicationId: string; videoUrl: string }) => {
+      await apiRequest("POST", `/api/applications/${applicationId}/submit-video`, { videoUrl });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      toast({
+        title: "Video submitted",
+        description: "We'll verify your video shortly.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to submit",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   useEffect(() => {
     if (applications) {
       const unviewedRejections = applications.filter(
@@ -554,16 +586,44 @@ export default function DashboardPage() {
     });
   };
 
-  const renderProgressBar = (status: string) => {
-    const currentStep = statusConfig[status]?.step || 0;
+  const renderProgressBar = (application: ApplicationWithDetails) => {
+    const status = application.status;
+    const campaign = application.campaign;
+    const isLinkInBio = campaign.campaignType === "link_in_bio";
+    const steps = isLinkInBio ? linkInBioProgressSteps : progressSteps;
+    
     if (status === "rejected" || status === "deadline_missed") return null;
+
+    // Calculate current step for Link in Bio campaigns
+    let currentStep = statusConfig[status]?.step || 0;
+    
+    if (isLinkInBio) {
+      // For Link in Bio: 1=Applied, 2=Approved, 3=Shipped, 4=Delivered, 5=Bio Link, 6=Video
+      if (status === "pending") currentStep = 1;
+      else if (status === "approved") currentStep = 2;
+      else if (status === "shipped") currentStep = 3;
+      else if (status === "delivered") {
+        // Check progression: bio link → video
+        if (application.contentUrl) {
+          currentStep = 6; // Video uploaded (waiting for admin verification)
+        } else if ((application as any).bioLinkVerifiedAt) {
+          currentStep = 5; // Bio Link verified, ready for video upload
+        } else if ((application as any).bioLinkUrl) {
+          currentStep = 4.5; // Bio Link submitted but not verified
+        } else {
+          currentStep = 4; // Delivered, waiting for bio link
+        }
+      } else if (status === "uploaded" || status === "completed") {
+        currentStep = 6; // Video verified/completed
+      }
+    }
 
     return (
       <div className="flex items-center gap-1 w-full mt-4">
-        {progressSteps.map((step, index) => {
+        {steps.map((step, index) => {
           const stepNum = index + 1;
           const isComplete = stepNum <= currentStep;
-          const isCurrent = stepNum === currentStep;
+          const isCurrent = stepNum === Math.ceil(currentStep);
           return (
             <div key={step.label} className="flex-1 flex flex-col items-center">
               <div className="flex items-center w-full">
@@ -608,7 +668,7 @@ export default function DashboardPage() {
 
     return (
       <div className="space-y-4 pt-4">
-        {renderProgressBar(application.status)}
+        {renderProgressBar(application)}
 
         <div className={cn("rounded-lg p-4 mt-4", status.bgColor)}>
           <p className={cn("text-sm", status.textColor)}>
@@ -744,6 +804,70 @@ export default function DashboardPage() {
                 <Clock className="h-4 w-4" />
                 <span>Bio link not yet submitted - submit after product delivery</span>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Link in Bio: Video Upload Section (only after bio link verified) */}
+        {campaign.campaignType === "link_in_bio" && 
+         application.status === "delivered" && 
+         (application as any).bioLinkVerifiedAt && (
+          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Upload className="h-4 w-4 text-purple-600" />
+              <span className="font-medium text-purple-600">Video Upload</span>
+            </div>
+            
+            {application.contentUrl ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-green-600">Video submitted - awaiting verification</span>
+                </div>
+                <a 
+                  href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View Your Video
+                </a>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Your bio link has been verified. Now you can upload your TikTok video link.
+                </p>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Your TikTok video URL"
+                    value={videoUrlForms[application.id] || ""}
+                    onChange={(e) => setVideoUrlForms(prev => ({
+                      ...prev,
+                      [application.id]: e.target.value
+                    }))}
+                    className="text-sm"
+                    data-testid={`input-video-url-${application.id}`}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const videoUrl = videoUrlForms[application.id];
+                      if (videoUrl) {
+                        submitVideoMutation.mutate({
+                          applicationId: application.id,
+                          videoUrl: videoUrl
+                        });
+                      }
+                    }}
+                    disabled={!videoUrlForms[application.id] || submitVideoMutation.isPending}
+                    data-testid={`button-submit-video-${application.id}`}
+                  >
+                    {submitVideoMutation.isPending ? "Submitting..." : "Submit Video"}
+                  </Button>
+                </div>
+              </>
             )}
           </div>
         )}
