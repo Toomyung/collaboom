@@ -1779,6 +1779,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bioLinkVerifiedByAdminId: (req.session as any)?.user?.id || null,
       });
 
+      // Create notification for bio link verification
+      await storage.createNotification({
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        type: "bio_link_verified",
+        channel: "both",
+        title: "Bio Link Verified!",
+        message: `Your bio link for ${campaign.name} has been verified. Now upload your TikTok video to complete the campaign!`,
+      });
+      emitNotificationCreated(application.influencerId);
+
+      // Emit real-time event
+      emitApplicationUpdated(application.campaignId, application.id, "delivered");
+
       return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
