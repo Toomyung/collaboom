@@ -960,6 +960,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Link in Bio: Submit bio link URL (influencer)
+  app.post("/api/applications/:id/submit-bio-link", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if campaign is link_in_bio
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
+        return res.status(400).json({ message: "This campaign is not a Link in Bio campaign" });
+      }
+
+      // Check if application status is delivered or later
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "You can only submit your bio link after receiving the product" });
+      }
+
+      // Check if bio link already submitted
+      if (application.bioLinkUrl) {
+        return res.status(400).json({ message: "Bio link has already been submitted" });
+      }
+
+      const { bioLinkUrl } = req.body;
+      if (!bioLinkUrl || typeof bioLinkUrl !== 'string') {
+        return res.status(400).json({ message: "Bio link URL is required" });
+      }
+
+      // Basic URL validation
+      try {
+        new URL(bioLinkUrl);
+      } catch {
+        return res.status(400).json({ message: "Please enter a valid URL" });
+      }
+
+      // Update application with bio link
+      await storage.updateApplication(application.id, {
+        bioLinkUrl: bioLinkUrl.trim(),
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Product Cost Covered: Submit purchase proof (influencer)
   app.post("/api/applications/:id/submit-purchase", requireAuth("influencer"), async (req, res) => {
     try {

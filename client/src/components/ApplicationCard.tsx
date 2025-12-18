@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { ApplicationWithDetails, ShippingIssue } from "@shared/schema";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 import {
   Clock,
   Package,
@@ -15,7 +18,10 @@ import {
   Eye,
   Star,
   MessageSquare,
+  Link2,
+  DollarSign,
 } from "lucide-react";
+import { SiLinktree } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Link } from "wouter";
@@ -27,6 +33,8 @@ interface ApplicationCardProps {
   onCancelApplication?: () => void;
   onReportIssue?: () => void;
   onDismiss?: () => void;
+  onSubmitBioLink?: (bioLinkUrl: string) => void;
+  isSubmittingBioLink?: boolean;
 }
 
 const statusConfig: Record<
@@ -89,15 +97,25 @@ export function ApplicationCard({
   onCancelApplication,
   onReportIssue,
   onDismiss,
+  onSubmitBioLink,
+  isSubmittingBioLink,
 }: ApplicationCardProps) {
   const campaign = application.campaign;
   const status = statusConfig[application.status] || statusConfig.pending;
   const StatusIcon = status.icon;
+  const [bioLinkInput, setBioLinkInput] = useState("");
 
   const deadline = new Date(campaign.deadline);
   const isDeadlineSoon =
     application.status === "delivered" &&
     deadline.getTime() - Date.now() < 48 * 60 * 60 * 1000;
+  
+  const handleSubmitBioLink = () => {
+    if (bioLinkInput.trim() && onSubmitBioLink) {
+      onSubmitBioLink(bioLinkInput.trim());
+      setBioLinkInput("");
+    }
+  };
 
   return (
     <Card
@@ -189,6 +207,170 @@ export function ApplicationCard({
                     Track Your Package
                   </a>
                 )}
+              </div>
+            )}
+
+            {/* Link in Bio Campaign Progress */}
+            {(campaign as any).campaignType === "link_in_bio" && 
+             ["delivered", "uploaded"].includes(application.status) && (
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <SiLinktree className="h-4 w-4 text-emerald-600" />
+                  <span className="font-medium text-emerald-600">Link in Bio Campaign</span>
+                </div>
+                
+                <div className="space-y-2">
+                  {/* Step 1: Bio Link Submission */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      application.bioLinkUrl 
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {application.bioLinkUrl ? <CheckCircle className="h-3.5 w-3.5" /> : "1"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          application.bioLinkUrl ? "text-emerald-600" : "text-foreground"
+                        )}>
+                          Add product link to your bio
+                        </span>
+                        {application.bioLinkUrl ? (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
+                            Submitted
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
+                      {!application.bioLinkUrl && onSubmitBioLink && (
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            type="url"
+                            placeholder="https://linktr.ee/yourname"
+                            value={bioLinkInput}
+                            onChange={(e) => setBioLinkInput(e.target.value)}
+                            className="h-8 text-sm flex-1"
+                            data-testid={`input-biolink-${application.id}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSubmitBioLink}
+                            disabled={!bioLinkInput.trim() || isSubmittingBioLink}
+                            className="h-8"
+                            data-testid={`button-submit-biolink-${application.id}`}
+                          >
+                            {isSubmittingBioLink ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Submit"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      {application.bioLinkUrl && (
+                        <a
+                          href={application.bioLinkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View submitted link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step 2: Admin Verification */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      application.bioLinkVerifiedAt 
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {application.bioLinkVerifiedAt ? <CheckCircle className="h-3.5 w-3.5" /> : "2"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          application.bioLinkVerifiedAt ? "text-emerald-600" : "text-foreground"
+                        )}>
+                          Bio link verification
+                        </span>
+                        {application.bioLinkVerifiedAt ? (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
+                            Verified
+                          </Badge>
+                        ) : application.bioLinkUrl ? (
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
+                            Under Review
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Waiting
+                          </Badge>
+                        )}
+                      </div>
+                      {!application.bioLinkVerifiedAt && application.bioLinkUrl && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Our team is reviewing your bio link
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step 3: Video Upload */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      application.status === "uploaded" 
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {application.status === "uploaded" ? <CheckCircle className="h-3.5 w-3.5" /> : "3"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          application.status === "uploaded" ? "text-emerald-600" : "text-foreground"
+                        )}>
+                          Upload TikTok video
+                        </span>
+                        {application.status === "uploaded" ? (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
+                            Completed
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reward Status */}
+                  {application.status === "uploaded" && application.bioLinkVerifiedAt && (
+                    <div className="mt-3 pt-3 border-t border-emerald-500/20">
+                      <div className="flex items-center gap-2 text-emerald-600">
+                        <DollarSign className="h-4 w-4" />
+                        <span className="font-medium">$30 Reward Earned!</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your reward will be sent to your PayPal account
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
