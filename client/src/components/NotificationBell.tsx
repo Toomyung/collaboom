@@ -42,9 +42,9 @@ function getNotificationRoute(notification: Notification): string {
     case "shipping_delivered":
     case "upload_verified":
     case "deadline_missed":
-      // Navigate to the specific campaign if available
-      if (notification.campaignId) {
-        return `/campaigns/${notification.campaignId}`;
+      // Navigate to dashboard with anchor to the specific application
+      if (notification.applicationId) {
+        return `/dashboard#application-${notification.applicationId}`;
       }
       return "/dashboard";
     case "rejected":
@@ -55,9 +55,9 @@ function getNotificationRoute(notification: Notification): string {
       // Score/Tier related - go to score page
       return "/score-tier";
     case "comment_reply":
-      // Comment - go to the campaign
-      if (notification.campaignId) {
-        return `/campaigns/${notification.campaignId}`;
+      // Comment - go to dashboard with anchor
+      if (notification.applicationId) {
+        return `/dashboard#application-${notification.applicationId}`;
       }
       return "/dashboard";
     default:

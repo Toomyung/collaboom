@@ -34,6 +34,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const steps = [
   {
@@ -109,11 +110,15 @@ export default function LandingPage() {
               </span>
             </Link>
 
-            {/* Unified menu for all screen sizes - Profile picture or hamburger */}
-            {isLoading ? (
-              <div className="h-11 w-11 bg-muted animate-pulse rounded-full" />
-            ) : (
-              <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            {/* Unified menu for all screen sizes - Notification bell + Profile picture or hamburger */}
+            <div className="flex items-center gap-2">
+              {/* NotificationBell for authenticated influencers */}
+              {isInfluencer && <NotificationBell />}
+              
+              {isLoading ? (
+                <div className="h-11 w-11 bg-muted animate-pulse rounded-full" />
+              ) : (
+                <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                 <SheetTrigger asChild>
                   {isAuthenticated && influencer?.profileImageUrl ? (
                     <button
@@ -287,7 +292,8 @@ export default function LandingPage() {
                   </nav>
                 </SheetContent>
               </Sheet>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>

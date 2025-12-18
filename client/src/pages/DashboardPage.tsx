@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApplicationWithDetails, ShippingIssue, ScoreEvent, SupportTicket } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
-import { Link, Redirect } from "wouter";
+import { Link, Redirect, useLocation } from "wouter";
 import {
   Star,
   AlertTriangle,
@@ -210,6 +210,33 @@ export default function DashboardPage() {
   const [supportMessage, setSupportMessage] = useState("");
   const [showTierUpgradeDialog, setShowTierUpgradeDialog] = useState(false);
   const [pendingTierUpgrade, setPendingTierUpgrade] = useState<string | null>(null);
+  const [location] = useLocation();
+
+  // Scroll to application when navigating from notifications with hash anchor
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#application-')) {
+      const applicationId = hash.replace('#application-', '');
+      // Expand the accordion item first
+      setExpandedItems(prev => 
+        prev.includes(applicationId) ? prev : [...prev, applicationId]
+      );
+      // Wait a bit for the element to be rendered, then scroll
+      setTimeout(() => {
+        const element = document.getElementById(`application-${applicationId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add a brief highlight effect
+          element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+          }, 2000);
+        }
+        // Clear the hash from URL after scrolling
+        window.history.replaceState(null, '', window.location.pathname);
+      }, 300);
+    }
+  }, [location]);
 
   const { data: applications, isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/applications/detailed"],
@@ -1138,6 +1165,7 @@ export default function DashboardPage() {
                   <AccordionItem
                     key={application.id}
                     value={application.id}
+                    id={`application-${application.id}`}
                     className="border rounded-xl overflow-hidden bg-card"
                     data-testid={`card-application-${application.id}`}
                   >
