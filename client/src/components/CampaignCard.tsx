@@ -2,7 +2,7 @@ import { Campaign, MinimalCampaign } from "@shared/schema";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, Gift, ShoppingCart, Store } from "lucide-react";
+import { Clock, Users, Gift, ExternalLink, Store } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
@@ -10,11 +10,11 @@ import type { MouseEvent } from "react";
 
 const getCampaignTypeInfo = (campaignType: string | undefined) => {
   switch (campaignType) {
-    case "product_cost_covered":
+    case "link_in_bio":
       return {
-        label: "#ProductCostCovered",
-        anchor: "#product-cost-covered",
-        icon: ShoppingCart,
+        label: "#LinkInBio",
+        anchor: "#link-in-bio",
+        icon: ExternalLink,
         color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
       };
     case "amazon_video_upload":
@@ -73,12 +73,12 @@ export function CampaignCard({
     const typeInfo = getCampaignTypeInfo(campaignType);
     const TypeIcon = typeInfo.icon;
     
-    // Product Cost Covered
-    if (campaignType === "product_cost_covered") {
+    // Link in Bio
+    if (campaignType === "link_in_bio") {
       return (
         <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white">
           <TypeIcon className="h-3 w-3 mr-1" />
-          Product Cost Covered
+          Link in Bio
         </Badge>
       );
     }

@@ -22,7 +22,6 @@ import {
   Info,
   Globe,
   Link as LinkIcon,
-  ShoppingCart,
   Store,
 } from "lucide-react";
 
@@ -48,11 +47,11 @@ import { Video } from "lucide-react";
 
 const getCampaignTypeInfo = (campaignType: string | undefined) => {
   switch (campaignType) {
-    case "product_cost_covered":
+    case "link_in_bio":
       return {
-        label: "#ProductCostCovered",
-        anchor: "#product-cost-covered",
-        icon: ShoppingCart,
+        label: "#LinkInBio",
+        anchor: "#link-in-bio",
+        icon: ExternalLink,
         color: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0",
       };
     case "amazon_video_upload":
@@ -267,8 +266,8 @@ export default function CampaignDetailPage() {
   const getRewardDisplay = () => {
     const campaignType = (campaign as any).campaignType || 'gifting';
     
-    // Product Cost Covered - $30 reward
-    if (campaignType === "product_cost_covered") {
+    // Link in Bio - $30 reward
+    if (campaignType === "link_in_bio") {
       return { label: "Free Product + $30", icon: DollarSign, color: "from-emerald-500 to-teal-500" };
     }
     
@@ -762,7 +761,7 @@ export default function CampaignDetailPage() {
                 </p>
               </div>
 
-              {((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail && (
+              {((campaign as any).campaignType === "link_in_bio" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                   <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
                     This is a paid campaign that requires a PayPal account to receive your reward.
@@ -807,7 +806,7 @@ export default function CampaignDetailPage() {
                 !agreementChecked || 
                 applyMutation.isPending || 
                 !influencer?.tiktokHandle ||
-                (((campaign as any).campaignType === "product_cost_covered" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail)
+                (((campaign as any).campaignType === "link_in_bio" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail)
               }
               data-testid="button-confirm-apply"
             >

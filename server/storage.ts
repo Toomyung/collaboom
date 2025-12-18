@@ -250,7 +250,7 @@ export class MemStorage implements IStorage {
         name: 'Cozy Home Candle Set',
         brandName: 'CozyLife Home',
         category: 'lifestyle',
-        campaignType: 'product_cost_covered' as const,
+        campaignType: 'link_in_bio' as const,
         inventory: 30,
         approvedCount: 28,
         imageUrl: 'https://images.unsplash.com/photo-1602607403925-3d0b3c3b3b3d?w=600&h=400&fit=crop',

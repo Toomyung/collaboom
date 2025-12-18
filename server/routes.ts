@@ -721,7 +721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check PayPal requirement for paid campaigns
-      const isPaidCampaign = campaign.campaignType === "product_cost_covered" || campaign.campaignType === "amazon_video";
+      const isPaidCampaign = campaign.campaignType === "link_in_bio" || campaign.campaignType === "amazon_video";
       if (isPaidCampaign && !influencer.paypalEmail) {
         return res.status(400).json({ 
           message: "PayPal email required for paid campaigns. Please add your PayPal email in your profile to apply for this campaign.",
@@ -972,9 +972,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      // Check if campaign is product_cost_covered
+      // Check if campaign is link_in_bio
       const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "product_cost_covered") {
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
         return res.status(400).json({ message: "This campaign does not require purchase proof" });
       }
 
@@ -993,6 +993,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purchaseScreenshotUrl: screenshotUrl,
         purchaseSubmittedAt: new Date(),
         amazonOrderId: amazonOrderId || null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Link in Bio: Submit bio link (influencer)
+  app.post("/api/applications/:id/submit-bio-link", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if campaign is link_in_bio
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
+        return res.status(400).json({ message: "This campaign does not require bio link submission" });
+      }
+
+      // Check if application is in valid status for bio link submission
+      // Allow submission/update for delivered and uploaded statuses (but not completed)
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "You can submit your bio link after receiving the product" });
+      }
+
+      const { bioLinkUrl } = req.body;
+      if (!bioLinkUrl) {
+        return res.status(400).json({ message: "Bio link URL is required" });
+      }
+
+      // Update application with bio link
+      await storage.updateApplication(application.id, {
+        bioLinkUrl: bioLinkUrl,
+        bioLinkSubmittedAt: new Date(),
       });
 
       return res.json({ success: true });
@@ -1252,7 +1293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For Product Cost Covered campaigns, we need PayPal payment info
       const { productCostPaypalTransactionId, productCostAmount } = req.body || {};
-      const isProductCostCovered = (campaign as any).campaignType === "product_cost_covered";
+      const isProductCostCovered = (campaign as any).campaignType === "link_in_bio";
       
       // Build update data
       const updateData: any = {
@@ -1480,9 +1521,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
-      // Check if campaign is product_cost_covered
+      // Check if campaign is link_in_bio
       const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "product_cost_covered") {
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
         return res.status(400).json({ message: "This campaign is not a Product Cost Covered campaign" });
       }
 
@@ -1511,9 +1552,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
-      // Check if campaign is product_cost_covered
+      // Check if campaign is link_in_bio
       const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "product_cost_covered") {
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
         return res.status(400).json({ message: "This campaign is not a Product Cost Covered campaign" });
       }
 
@@ -1551,7 +1592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if campaign is a paid campaign
       const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || (campaign.campaignType !== "product_cost_covered" && campaign.campaignType !== "amazon_video")) {
+      if (!campaign || (campaign.campaignType !== "link_in_bio" && campaign.campaignType !== "amazon_video")) {
         return res.status(400).json({ message: "This campaign does not have a cash reward" });
       }
 
@@ -2181,7 +2222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       // Calculate cash earned based on campaign type
       const cashEarned = completedApps.reduce((sum, a) => {
-        if (a.campaign?.campaignType === "product_cost_covered") return sum + 30;
+        if (a.campaign?.campaignType === "link_in_bio") return sum + 30;
         if (a.campaign?.campaignType === "amazon_video_upload") return sum + 50;
         return sum;
       }, 0);

@@ -121,7 +121,7 @@ export type Influencer = typeof influencers.$inferSelect;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 
 // Campaign Types
-export const campaignTypeEnum = ['gifting', 'product_cost_covered', 'amazon_video_upload'] as const;
+export const campaignTypeEnum = ['gifting', 'link_in_bio', 'amazon_video_upload'] as const;
 export type CampaignType = typeof campaignTypeEnum[number];
 
 // Campaigns
@@ -157,7 +157,7 @@ export const campaigns = pgTable("campaigns", {
   applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
   deadline: timestamp("deadline").notNull(), // Upload deadline (content submission deadline)
   campaignTimeline: text("campaign_timeline"), // Free-form campaign timeline description
-  productCost: integer("product_cost"), // Product cost in cents for product_cost_covered campaigns (e.g., 2000 = $20)
+  productCost: integer("product_cost"), // Legacy field - no longer used (was for product_cost_covered campaigns)
   status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'
   createdByAdminId: varchar("created_by_admin_id"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -216,24 +216,29 @@ export const applications = pgTable("applications", {
   shippingState: text("shipping_state"),
   shippingZipCode: text("shipping_zip_code"),
   shippingCountry: text("shipping_country"),
-  // Product Cost Covered campaign fields - NEW WORKFLOW: PayPal payment sent on approval, then influencer purchases product
-  productCostSentAt: timestamp("product_cost_sent_at"), // When admin sent product cost on approval (new workflow)
+  // Link in Bio campaign fields - Influencer submits their Linktree/Beacons link with product purchase link
+  bioLinkUrl: text("bio_link_url"), // The Linktree/Beacons link URL containing product purchase link
+  bioLinkSubmittedAt: timestamp("bio_link_submitted_at"), // When influencer submitted the bio link
+  bioLinkVerifiedAt: timestamp("bio_link_verified_at"), // When admin verified the bio link
+  bioLinkVerifiedByAdminId: varchar("bio_link_verified_by_admin_id"),
+  // Legacy product cost covered fields (kept for backward compatibility)
+  productCostSentAt: timestamp("product_cost_sent_at"),
   productCostSentByAdminId: varchar("product_cost_sent_by_admin_id"),
-  productCostAmount: integer("product_cost_amount"), // Amount sent for product purchase (in cents)
-  productCostPaypalTransactionId: text("product_cost_paypal_transaction_id"), // PayPal transaction ID for product cost
-  purchaseScreenshotUrl: text("purchase_screenshot_url"), // URL of Amazon purchase screenshot
-  purchaseSubmittedAt: timestamp("purchase_submitted_at"), // When influencer submitted purchase proof
-  purchaseVerifiedAt: timestamp("purchase_verified_at"), // When admin verified the purchase
+  productCostAmount: integer("product_cost_amount"),
+  productCostPaypalTransactionId: text("product_cost_paypal_transaction_id"),
+  purchaseScreenshotUrl: text("purchase_screenshot_url"),
+  purchaseSubmittedAt: timestamp("purchase_submitted_at"),
+  purchaseVerifiedAt: timestamp("purchase_verified_at"),
   purchaseVerifiedByAdminId: varchar("purchase_verified_by_admin_id"),
-  amazonOrderId: text("amazon_order_id"), // Optional Amazon order ID for reference
-  // Legacy reimbursement fields (kept for backward compatibility, no longer used in new workflow)
-  reimbursementSentAt: timestamp("reimbursement_sent_at"), // When admin sent reimbursement
+  amazonOrderId: text("amazon_order_id"),
+  reimbursementSentAt: timestamp("reimbursement_sent_at"),
   reimbursementSentByAdminId: varchar("reimbursement_sent_by_admin_id"),
-  reimbursementAmount: integer("reimbursement_amount"), // Amount reimbursed (typically product cost)
-  reimbursementPaypalTransactionId: text("reimbursement_paypal_transaction_id"), // PayPal transaction ID
+  reimbursementAmount: integer("reimbursement_amount"),
+  reimbursementPaypalTransactionId: text("reimbursement_paypal_transaction_id"),
+  // Cash reward fields - Used for link_in_bio ($30) and amazon_video_upload ($50)
   cashRewardSentAt: timestamp("cash_reward_sent_at"), // When admin sent the $30/$50 cash reward
   cashRewardSentByAdminId: varchar("cash_reward_sent_by_admin_id"),
-  cashRewardAmount: integer("cash_reward_amount"), // Cash reward amount ($30 for product_cost_covered, $50 for amazon_video_upload)
+  cashRewardAmount: integer("cash_reward_amount"), // Cash reward amount ($30 for link_in_bio, $50 for amazon_video_upload)
   cashRewardPaypalTransactionId: text("cash_reward_paypal_transaction_id"), // PayPal transaction ID for cash reward
   // Email threading - stores the first email's Message-ID for threading subsequent emails
   emailThreadId: text("email_thread_id"),

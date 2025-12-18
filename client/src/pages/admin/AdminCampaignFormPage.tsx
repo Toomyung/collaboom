@@ -100,7 +100,7 @@ const formSchema = insertCampaignSchema.extend({
   }),
   // Timeline
   campaignTimeline: z.string().optional(),
-  // Product Cost for Product Cost Covered campaigns (stored in cents)
+  // Legacy: Product Cost field (not used for Link in Bio campaigns)
   productCost: z.number().optional(),
   // Video Guidelines
   videoEssentialCuts: z.string().optional(),
@@ -596,12 +596,12 @@ export default function AdminCampaignFormPage() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="gifting">Gifting (Free Product Only)</SelectItem>
-                          <SelectItem value="product_cost_covered">Product Cost Covered (+$30 Reward)</SelectItem>
+                          <SelectItem value="link_in_bio">Link in Bio (+$30 Reward)</SelectItem>
                           <SelectItem value="amazon_video_upload">Amazon Video Upload (+$50 Reward)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        {field.value === "product_cost_covered" && "Influencer receives product cost upfront via PayPal, purchases on Amazon, submits proof, then creates TikTok content for $30 reward."}
+                        {field.value === "link_in_bio" && "Influencer receives product, adds purchase link to TikTok bio (Linktree/Beacons), and creates TikTok content for $30 reward."}
                         {field.value === "amazon_video_upload" && "Influencer receives product and posts on both TikTok AND Amazon Storefront for $50 reward. Requires Amazon Storefront."}
                         {(!field.value || field.value === "gifting") && "Influencer receives free product and creates TikTok content."}
                       </FormDescription>
@@ -610,40 +610,6 @@ export default function AdminCampaignFormPage() {
                   )}
                 />
 
-                {/* Product Cost - Only shown for Product Cost Covered campaigns */}
-                {form.watch("campaignType") === "product_cost_covered" && (
-                  <FormField
-                    control={form.control}
-                    name="productCost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Product Cost (USD) *</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                            <Input
-                              type="number"
-                              min="1"
-                              step="0.01"
-                              placeholder="20.00"
-                              className="pl-7"
-                              value={field.value ? (field.value / 100).toFixed(2) : ""}
-                              onChange={(e) => {
-                                const dollars = parseFloat(e.target.value);
-                                field.onChange(isNaN(dollars) ? undefined : Math.round(dollars * 100));
-                              }}
-                              data-testid="input-product-cost"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Amount to send to influencer via PayPal when approved (for Amazon purchase)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
 
                 <FormField
                   control={form.control}

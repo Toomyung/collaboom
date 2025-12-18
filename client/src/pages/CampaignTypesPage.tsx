@@ -123,10 +123,10 @@ export default function CampaignTypesPage() {
           <button 
             onClick={() => document.getElementById('section-cost-covered')?.scrollIntoView({ behavior: 'smooth' })}
             className="text-center p-6 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 hover-elevate cursor-pointer transition-all"
-            data-testid="button-nav-cost-covered"
+            data-testid="button-nav-link-in-bio"
           >
-            <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
-            <p className="font-bold text-emerald-700 dark:text-emerald-300">Cost Covered</p>
+            <ExternalLink className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
+            <p className="font-bold text-emerald-700 dark:text-emerald-300">Link in Bio</p>
             <Badge className="bg-emerald-500 text-white mt-1">+$30</Badge>
           </button>
           <button 
@@ -209,21 +209,21 @@ export default function CampaignTypesPage() {
           </Card>
         </section>
 
-        {/* Campaign Type 2: Product Cost Covered */}
+        {/* Campaign Type 2: Link in Bio */}
         <section id="section-cost-covered" className="mb-10 scroll-mt-20">
-          <Card className="border-2 border-emerald-300 dark:border-emerald-700 overflow-hidden" data-testid="card-campaign-cost-covered">
+          <Card className="border-2 border-emerald-300 dark:border-emerald-700 overflow-hidden" data-testid="card-campaign-link-in-bio">
             <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="p-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white w-fit">
-                  <ShoppingCart className="h-8 w-8" />
+                  <ExternalLink className="h-8 w-8" />
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <CardTitle className="text-2xl text-emerald-700 dark:text-emerald-300">Product Cost Covered</CardTitle>
+                    <CardTitle className="text-2xl text-emerald-700 dark:text-emerald-300">Link in Bio</CardTitle>
                     <Badge className="bg-emerald-500 text-white">Paid Campaign</Badge>
                   </div>
                   <CardDescription className="text-base">
-                    Get paid upfront to buy on Amazon, then earn $30 reward
+                    Add a purchase link to your bio + create TikTok content for $30
                   </CardDescription>
                 </div>
                 <div className="text-right">
@@ -238,48 +238,36 @@ export default function CampaignTypesPage() {
                   <Zap className="h-4 w-4 text-emerald-500" />
                   Step-by-Step Process
                 </h4>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-7 gap-3">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center mb-2">
-                      <CreditCard className="h-5 w-5 text-white" />
+                      <CheckCircle className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">1. Get Paid</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
-                      <SiAmazon className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <span className="text-xs font-medium">2. Buy on Amazon</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
-                      <FileImage className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <span className="text-xs font-medium">3. Screenshot Order</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
-                      <Upload className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <span className="text-xs font-medium">4. Submit Proof</span>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">1. Apply</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
                       <Package className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs font-medium">5. Receive Product</span>
+                    <span className="text-xs font-medium">2. Receive Product</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
+                      <ExternalLink className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <span className="text-xs font-medium">3. Add Link to Bio</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
                       <Video className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <span className="text-xs font-medium">6. Create & Upload</span>
+                    <span className="text-xs font-medium">4. Create & Upload Video</span>
                   </div>
                   <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50">
                     <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center mb-2">
                       <DollarSign className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">7. Earn $30</span>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">5. Earn $30</span>
                   </div>
                 </div>
               </div>
@@ -293,15 +281,15 @@ export default function CampaignTypesPage() {
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>Get product cost upfront via PayPal</span>
+                      <span>Free product from brand</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>Keep the product + earn $30 reward</span>
+                      <span>Earn $30 cash reward</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>No out-of-pocket expense</span>
+                      <span>Help your followers find the product</span>
                     </li>
                   </ul>
                 </div>
@@ -313,15 +301,15 @@ export default function CampaignTypesPage() {
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
-                      <span>Amazon account required</span>
+                      <span>Add product purchase link to your TikTok bio (Linktree, Beacons, etc.)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
-                      <span>Clear purchase screenshot</span>
+                      <span>Submit your bio link for verification</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
-                      <span>TikTok video upload</span>
+                      <span>Upload TikTok video with required hashtags</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CreditCard className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />

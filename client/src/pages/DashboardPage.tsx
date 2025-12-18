@@ -365,7 +365,7 @@ export default function DashboardPage() {
     },
   });
 
-  // Product Cost Covered: Submit purchase proof
+  // Legacy: Purchase proof (no longer used for new campaigns)
   const [purchaseProofForms, setPurchaseProofForms] = useState<Record<string, { screenshotUrl: string; amazonOrderId: string }>>({});
   
   const submitPurchaseProofMutation = useMutation({
@@ -377,6 +377,29 @@ export default function DashboardPage() {
       toast({
         title: "Purchase proof submitted",
         description: "We'll verify your purchase and send the reimbursement soon.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to submit",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Link in Bio: Submit bio link
+  const [bioLinkForms, setBioLinkForms] = useState<Record<string, string>>({});
+  
+  const submitBioLinkMutation = useMutation({
+    mutationFn: async ({ applicationId, bioLinkUrl }: { applicationId: string; bioLinkUrl: string }) => {
+      await apiRequest("POST", `/api/applications/${applicationId}/submit-bio-link`, { bioLinkUrl });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      toast({
+        title: "Bio link submitted",
+        description: "We'll verify your bio link shortly.",
       });
     },
     onError: (error: Error) => {
@@ -577,115 +600,129 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Product Cost Covered: Payment & Purchase Status - NEW WORKFLOW */}
-        {campaign.campaignType === "product_cost_covered" && ["approved", "shipped", "delivered", "uploaded", "completed"].includes(application.status) && (
+        {/* Link in Bio: Bio Link Submission Status */}
+        {campaign.campaignType === "link_in_bio" && ["delivered", "uploaded", "completed"].includes(application.status) && (
           <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-emerald-600" />
-              <span className="font-medium text-emerald-600">Product Cost Payment</span>
+              <ExternalLink className="h-4 w-4 text-emerald-600" />
+              <span className="font-medium text-emerald-600">Link in Bio</span>
             </div>
             
-            {/* Step 1: Show product cost payment status */}
-            {(application as any).productCostSentAt ? (
-              <div className="flex items-center gap-2 text-sm bg-emerald-500/10 rounded-lg p-2">
-                <CheckCircle className="h-4 w-4 text-emerald-500" />
-                <span className="text-emerald-600">
-                  ${((application as any).productCostAmount || 0) / 100} sent to your PayPal for product purchase
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-amber-600">
-                <Clock className="h-4 w-4" />
-                <span>Product cost will be sent to your PayPal shortly</span>
-              </div>
-            )}
-
-            {/* Step 2: Purchase proof submission */}
-            {application.purchaseScreenshotUrl ? (
+            {/* Bio link verified - read-only display */}
+            {(application as any).bioLinkVerifiedAt ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600">Purchase proof submitted</span>
+                  <span className="text-green-600">Bio link verified</span>
                 </div>
-                
-                {application.purchaseVerifiedAt ? (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-green-600">Purchase verified - awaiting product delivery</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm text-amber-600">
-                    <Clock className="h-4 w-4" />
-                    <span>Verification pending - we'll review your purchase proof shortly</span>
-                  </div>
+                <a 
+                  href={(application as any).bioLinkUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  {(application as any).bioLinkUrl}
+                </a>
+              </div>
+            ) : (application as any).bioLinkUrl ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-green-600">Bio link submitted - awaiting verification</span>
+                </div>
+                <a 
+                  href={(application as any).bioLinkUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  {(application as any).bioLinkUrl}
+                </a>
+                {/* Only show resubmission form if status allows updates */}
+                {["delivered", "uploaded"].includes(application.status) && (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Need to update? Re-submit below:
+                    </p>
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
+                        value={bioLinkForms[application.id] ?? (application as any).bioLinkUrl ?? ""}
+                        onChange={(e) => setBioLinkForms(prev => ({
+                          ...prev,
+                          [application.id]: e.target.value
+                        }))}
+                        className="text-sm"
+                        data-testid={`input-bio-link-${application.id}`}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const bioLink = bioLinkForms[application.id] ?? (application as any).bioLinkUrl;
+                          if (bioLink) {
+                            submitBioLinkMutation.mutate({
+                              applicationId: application.id,
+                              bioLinkUrl: bioLink
+                            });
+                          }
+                        }}
+                        disabled={submitBioLinkMutation.isPending}
+                        data-testid={`button-submit-bio-link-${application.id}`}
+                      >
+                        {submitBioLinkMutation.isPending ? "Updating..." : "Update Bio Link"}
+                      </Button>
+                    </div>
+                  </>
                 )}
               </div>
-            ) : application.status === "approved" ? (
+            ) : application.status === "delivered" ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  {(application as any).productCostSentAt 
-                    ? "You've received the product cost! Now please purchase the product on Amazon and submit a screenshot of your order confirmation."
-                    : "Please purchase the product on Amazon and submit a screenshot of your order confirmation. Product cost payment will be sent to your PayPal."}
+                  Add the product purchase link to your TikTok bio using Linktree, Beacons, or similar service, then submit your bio link URL below.
                 </p>
                 <div className="space-y-2">
                   <Input
-                    placeholder="Screenshot URL (e.g., Imgur, Google Drive link)"
-                    value={purchaseProofForms[application.id]?.screenshotUrl || ""}
-                    onChange={(e) => setPurchaseProofForms(prev => ({
+                    placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
+                    value={bioLinkForms[application.id] || ""}
+                    onChange={(e) => setBioLinkForms(prev => ({
                       ...prev,
-                      [application.id]: {
-                        ...prev[application.id],
-                        screenshotUrl: e.target.value,
-                        amazonOrderId: prev[application.id]?.amazonOrderId || ""
-                      }
+                      [application.id]: e.target.value
                     }))}
                     className="text-sm"
-                    data-testid={`input-screenshot-url-${application.id}`}
-                  />
-                  <Input
-                    placeholder="Amazon Order ID (optional)"
-                    value={purchaseProofForms[application.id]?.amazonOrderId || ""}
-                    onChange={(e) => setPurchaseProofForms(prev => ({
-                      ...prev,
-                      [application.id]: {
-                        ...prev[application.id],
-                        screenshotUrl: prev[application.id]?.screenshotUrl || "",
-                        amazonOrderId: e.target.value
-                      }
-                    }))}
-                    className="text-sm"
-                    data-testid={`input-amazon-order-id-${application.id}`}
+                    data-testid={`input-bio-link-${application.id}`}
                   />
                   <Button
                     size="sm"
                     onClick={() => {
-                      const form = purchaseProofForms[application.id];
-                      if (form?.screenshotUrl) {
-                        submitPurchaseProofMutation.mutate({
+                      const bioLink = bioLinkForms[application.id];
+                      if (bioLink) {
+                        submitBioLinkMutation.mutate({
                           applicationId: application.id,
-                          screenshotUrl: form.screenshotUrl,
-                          amazonOrderId: form.amazonOrderId || undefined
+                          bioLinkUrl: bioLink
                         });
                       }
                     }}
-                    disabled={!purchaseProofForms[application.id]?.screenshotUrl || submitPurchaseProofMutation.isPending}
-                    data-testid={`button-submit-purchase-proof-${application.id}`}
+                    disabled={!bioLinkForms[application.id] || submitBioLinkMutation.isPending}
+                    data-testid={`button-submit-bio-link-${application.id}`}
                   >
-                    {submitPurchaseProofMutation.isPending ? "Submitting..." : "Submit Purchase Proof"}
+                    {submitBioLinkMutation.isPending ? "Submitting..." : "Submit Bio Link"}
                   </Button>
                 </div>
               </div>
-            ) : !application.purchaseScreenshotUrl ? (
+            ) : (
               <div className="flex items-center gap-2 text-sm text-amber-600">
                 <Clock className="h-4 w-4" />
-                <span>Purchase proof not yet submitted</span>
+                <span>Bio link not yet submitted - submit after product delivery</span>
               </div>
-            ) : null}
+            )}
           </div>
         )}
 
-        {/* Product Cost Covered: Cash Reward Status */}
-        {campaign.campaignType === "product_cost_covered" && application.status === "completed" && (
+        {/* Link in Bio: Cash Reward Status */}
+        {campaign.campaignType === "link_in_bio" && application.status === "completed" && (
           <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-2">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-green-600" />
@@ -1062,9 +1099,9 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold">
                   ${allApplications?.filter(a => 
                     (a.status === "uploaded" || a.status === "completed") && 
-                    (a.campaign.campaignType === "product_cost_covered" || a.campaign.campaignType === "amazon_video_upload")
+                    (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
                   ).reduce((sum, a) => {
-                    if (a.campaign.campaignType === "product_cost_covered") return sum + 30;
+                    if (a.campaign.campaignType === "link_in_bio") return sum + 30;
                     if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
                     return sum;
                   }, 0) || 0}
@@ -1628,9 +1665,9 @@ export default function DashboardPage() {
               Total earned: <span className="font-bold text-foreground">
                 ${allApplications?.filter(a => 
                   (a.status === "uploaded" || a.status === "completed") && 
-                  (a.campaign.campaignType === "product_cost_covered" || a.campaign.campaignType === "amazon_video_upload")
+                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
                 ).reduce((sum, a) => {
-                  if (a.campaign.campaignType === "product_cost_covered") return sum + 30;
+                  if (a.campaign.campaignType === "link_in_bio") return sum + 30;
                   if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
                   return sum;
                 }, 0) || 0}
@@ -1641,7 +1678,7 @@ export default function DashboardPage() {
             {(() => {
               const paidCampaigns = allApplications?.filter(a => 
                 (a.status === "uploaded" || a.status === "completed") && 
-                (a.campaign.campaignType === "product_cost_covered" || a.campaign.campaignType === "amazon_video_upload")
+                (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
               ) || [];
               return paidCampaigns.length > 0 ? (
                 <div className="space-y-3">
@@ -1668,7 +1705,7 @@ export default function DashboardPage() {
                         <p className="text-xs text-muted-foreground">{app.campaign.brandName}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
-                            ${app.campaign.campaignType === "product_cost_covered" ? 30 : app.campaign.campaignType === "amazon_video_upload" ? 50 : 0}
+                            ${app.campaign.campaignType === "link_in_bio" ? 30 : app.campaign.campaignType === "amazon_video_upload" ? 50 : 0}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {app.uploadedAt ? format(new Date(app.uploadedAt), "MMM d, yyyy") : ""}

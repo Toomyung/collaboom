@@ -892,7 +892,7 @@ export default function AdminCampaignDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Reward</p>
                     <p className="font-medium">
-                      {(campaign as any).campaignType === "product_cost_covered"
+                      {(campaign as any).campaignType === "link_in_bio"
                         ? "Gift + $30 Reward"
                         : (campaign as any).campaignType === "amazon_video_upload"
                         ? "Gift + $50 Reward"
@@ -1115,7 +1115,7 @@ export default function AdminCampaignDetailPage() {
                                     <Button
                                       size="sm"
                                       onClick={() => {
-                                        const isProductCostCovered = (campaign as any)?.campaignType === "product_cost_covered";
+                                        const isProductCostCovered = (campaign as any)?.campaignType === "link_in_bio";
                                         if (isProductCostCovered) {
                                           setApproveWithPaymentDialog({
                                             applicationId: app.id,
@@ -1199,7 +1199,7 @@ export default function AdminCampaignDetailPage() {
                         <TableRow className="bg-muted/50">
                           <TableHead className="w-14 text-center text-xs">ID</TableHead>
                           <TableHead className="min-w-[160px] sticky left-[56px] bg-muted/50 z-10 text-xs">Influencer</TableHead>
-                          {campaign.campaignType === "product_cost_covered" && (
+                          {campaign.campaignType === "link_in_bio" && (
                             <>
                               <TableHead className="min-w-[120px] text-xs">Purchase Proof</TableHead>
                               <TableHead className="min-w-[140px] text-xs">Reimbursement</TableHead>
@@ -1264,7 +1264,7 @@ export default function AdminCampaignDetailPage() {
                                   <div className="text-xs text-muted-foreground truncate">{app.influencer?.email}</div>
                                 </div>
                               </TableCell>
-                              {campaign.campaignType === "product_cost_covered" && (
+                              {campaign.campaignType === "link_in_bio" && (
                                 <>
                                   <TableCell className="p-2">
                                     {app.purchaseScreenshotUrl ? (
