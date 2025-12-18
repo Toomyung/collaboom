@@ -109,7 +109,16 @@ export function NotificationBell() {
     // Navigate to the relevant page
     const route = getNotificationRoute(notification);
     setOpen(false);
-    setLocation(route);
+    
+    // Check if we're already on the dashboard and navigating to a dashboard anchor
+    const currentPath = window.location.pathname;
+    if (currentPath === '/dashboard' && route.startsWith('/dashboard#')) {
+      // Manually set the hash and trigger hashchange event
+      const hash = route.replace('/dashboard', '');
+      window.location.hash = hash;
+    } else {
+      setLocation(route);
+    }
   };
 
   const handleMarkAsReadOnly = (notification: Notification, e: React.MouseEvent) => {
