@@ -140,20 +140,39 @@ export function useAuth() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (onRetry?: (attempt: number) => void) => {
     const supabase = await getSupabase();
     if (!supabase) {
       throw new Error("Authentication service unavailable");
     }
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) {
-      throw error;
-    }
+    
+    // Add a small delay to ensure session/cookies are properly initialized
+    // This helps prevent the intermittent "malformed request" error from Google
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const attemptOAuth = async (attempt: number): Promise<void> => {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+        if (error) {
+          throw error;
+        }
+      } catch (error) {
+        // Retry up to 2 times with increasing delay
+        if (attempt < 2) {
+          onRetry?.(attempt + 1);
+          await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+          return attemptOAuth(attempt + 1);
+        }
+        throw error;
+      }
+    };
+    
+    await attemptOAuth(0);
   };
 
   const adminLoginMutation = useMutation({

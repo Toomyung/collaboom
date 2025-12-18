@@ -10,6 +10,7 @@ import { SiGoogle } from "react-icons/si";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Connecting to Google...");
   const { signInWithGoogle, isAuthenticated, supabaseReady, supabaseError, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -30,8 +31,12 @@ export default function LoginPage() {
     }
     
     setIsLoading(true);
+    setLoadingMessage("Connecting to Google...");
+    
     try {
-      await signInWithGoogle();
+      await signInWithGoogle((attempt) => {
+        setLoadingMessage(`Retrying connection... (${attempt}/2)`);
+      });
     } catch (error) {
       toast({
         title: "Sign in failed",
@@ -39,6 +44,7 @@ export default function LoginPage() {
         variant: "destructive",
       });
       setIsLoading(false);
+      setLoadingMessage("Connecting to Google...");
     }
   };
 
@@ -100,7 +106,7 @@ export default function LoginPage() {
               {isLoading || authLoading ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Connecting...
+                  {loadingMessage}
                 </>
               ) : (
                 <>
