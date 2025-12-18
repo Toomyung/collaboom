@@ -506,7 +506,21 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  // Product Cost Covered: Verify purchase
+  // Link in Bio: Verify bio link
+  const verifyBioLinkMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/admin/applications/${applicationId}/verify-bio-link`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
+      toast({ title: "Bio link verified" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to verify bio link", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Legacy: Verify purchase (kept for backward compatibility)
   const verifyPurchaseMutation = useMutation({
     mutationFn: async (applicationId: string) => {
       await apiRequest("POST", `/api/admin/applications/${applicationId}/verify-purchase`);
@@ -520,7 +534,7 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  // Product Cost Covered: Send reimbursement
+  // Legacy: Send reimbursement (kept for backward compatibility)
   const sendReimbursementMutation = useMutation({
     mutationFn: async ({ applicationId, amount, paypalTransactionId }: { applicationId: string; amount: number; paypalTransactionId?: string }) => {
       await apiRequest("POST", `/api/admin/applications/${applicationId}/send-reimbursement`, { amount, paypalTransactionId });
@@ -1115,17 +1129,7 @@ export default function AdminCampaignDetailPage() {
                                     <Button
                                       size="sm"
                                       onClick={() => {
-                                        const isProductCostCovered = (campaign as any)?.campaignType === "link_in_bio";
-                                        if (isProductCostCovered) {
-                                          setApproveWithPaymentDialog({
-                                            applicationId: app.id,
-                                            influencerName: getInfluencerDisplayName(inf),
-                                            paypalEmail: inf?.paypalEmail || "",
-                                            productCost: (campaign as any)?.productCost || 0,
-                                          });
-                                        } else {
-                                          approveMutation.mutate({ applicationId: app.id });
-                                        }
+                                        approveMutation.mutate({ applicationId: app.id });
                                       }}
                                       disabled={approveMutation.isPending}
                                       data-testid={`approve-${app.id}`}
@@ -1200,10 +1204,7 @@ export default function AdminCampaignDetailPage() {
                           <TableHead className="w-14 text-center text-xs">ID</TableHead>
                           <TableHead className="min-w-[160px] sticky left-[56px] bg-muted/50 z-10 text-xs">Influencer</TableHead>
                           {campaign.campaignType === "link_in_bio" && (
-                            <>
-                              <TableHead className="min-w-[120px] text-xs">Purchase Proof</TableHead>
-                              <TableHead className="min-w-[140px] text-xs">Reimbursement</TableHead>
-                            </>
+                            <TableHead className="min-w-[150px] text-xs">Bio Link</TableHead>
                           )}
                           <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
                           <TableHead className="min-w-[90px] text-xs">TikTok</TableHead>
@@ -1265,94 +1266,41 @@ export default function AdminCampaignDetailPage() {
                                 </div>
                               </TableCell>
                               {campaign.campaignType === "link_in_bio" && (
-                                <>
-                                  <TableCell className="p-2">
-                                    {app.purchaseScreenshotUrl ? (
-                                      <div className="space-y-1">
-                                        <a
-                                          href={app.purchaseScreenshotUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-primary hover:underline text-xs flex items-center gap-1"
-                                          data-testid={`link-purchase-proof-${app.id}`}
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                          View
-                                        </a>
-                                        {app.purchaseVerifiedAt ? (
-                                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
-                                            Verified
-                                          </Badge>
-                                        ) : (
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-6 text-xs"
-                                            onClick={() => verifyPurchaseMutation.mutate(app.id)}
-                                            disabled={verifyPurchaseMutation.isPending}
-                                            data-testid={`button-verify-purchase-${app.id}`}
-                                          >
-                                            <CheckCircle className="h-3 w-3 mr-1" />
-                                            Verify
-                                          </Button>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <span className="text-muted-foreground text-xs">Not submitted</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="p-2">
-                                    {app.reimbursementSentAt ? (
-                                      <div className="space-y-1">
+                                <TableCell className="p-2">
+                                  {app.bioLinkUrl ? (
+                                    <div className="space-y-1">
+                                      <a
+                                        href={app.bioLinkUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline text-xs flex items-center gap-1"
+                                        data-testid={`link-bio-link-${app.id}`}
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        View Link
+                                      </a>
+                                      {app.bioLinkVerifiedAt ? (
                                         <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
-                                          ${app.reimbursementAmount || 0} sent
+                                          Verified
                                         </Badge>
-                                        {app.reimbursementPaypalTransactionId && (
-                                          <div className="text-xs text-muted-foreground truncate max-w-[100px]" title={app.reimbursementPaypalTransactionId}>
-                                            {app.reimbursementPaypalTransactionId}
-                                          </div>
-                                        )}
-                                      </div>
-                                    ) : app.purchaseVerifiedAt ? (
-                                      <div className="space-y-1">
-                                        <div className="flex items-center gap-1">
-                                          <Input
-                                            type="number"
-                                            min={0}
-                                            placeholder="$"
-                                            value={reimbursementForms[app.id]?.amount || ""}
-                                            onChange={(e) => setReimbursementForms(prev => ({
-                                              ...prev,
-                                              [app.id]: {
-                                                ...prev[app.id],
-                                                amount: parseInt(e.target.value) || 0,
-                                                paypalTransactionId: prev[app.id]?.paypalTransactionId || ""
-                                              }
-                                            }))}
-                                            className="h-6 text-xs w-16"
-                                            data-testid={`input-reimbursement-amount-${app.id}`}
-                                          />
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-6 text-xs"
-                                            onClick={() => sendReimbursementMutation.mutate({
-                                              applicationId: app.id,
-                                              amount: reimbursementForms[app.id]?.amount || 0,
-                                              paypalTransactionId: reimbursementForms[app.id]?.paypalTransactionId
-                                            })}
-                                            disabled={sendReimbursementMutation.isPending || !reimbursementForms[app.id]?.amount}
-                                            data-testid={`button-send-reimbursement-${app.id}`}
-                                          >
-                                            Send
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span className="text-muted-foreground text-xs">Pending verification</span>
-                                    )}
-                                  </TableCell>
-                                </>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-6 text-xs"
+                                          onClick={() => verifyBioLinkMutation.mutate(app.id)}
+                                          disabled={verifyBioLinkMutation.isPending}
+                                          data-testid={`button-verify-bio-link-${app.id}`}
+                                        >
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          Verify
+                                        </Button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">Not submitted</span>
+                                  )}
+                                </TableCell>
                               )}
                               <TableCell className="p-1">
                                 <Input

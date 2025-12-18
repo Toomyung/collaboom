@@ -1513,7 +1513,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Product Cost Covered: Verify purchase proof
+  // Link in Bio: Verify bio link
+  app.post("/api/admin/applications/:id/verify-bio-link", requireAuth("admin"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Check if campaign is link_in_bio
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
+        return res.status(400).json({ message: "This campaign is not a Link in Bio campaign" });
+      }
+
+      // Check if bio link was submitted
+      if (!application.bioLinkUrl) {
+        return res.status(400).json({ message: "No bio link has been submitted" });
+      }
+
+      // Mark bio link as verified
+      await storage.updateApplication(application.id, {
+        bioLinkVerifiedAt: new Date(),
+        bioLinkVerifiedByAdminId: (req.session as any)?.user?.id || null,
+      });
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Legacy: Verify purchase proof (kept for backward compatibility)
   app.post("/api/admin/applications/:id/verify-purchase", requireAuth("admin"), async (req, res) => {
     try {
       const application = await storage.getApplication(req.params.id);
