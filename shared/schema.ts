@@ -254,6 +254,11 @@ export const applications = pgTable("applications", {
   bioLinkSubmittedAt: timestamp("bio_link_submitted_at"), // When influencer submitted the bio link
   bioLinkVerifiedAt: timestamp("bio_link_verified_at"), // When admin verified the bio link
   bioLinkVerifiedByAdminId: varchar("bio_link_verified_by_admin_id"),
+  // Amazon Video Upload campaign fields - Influencer submits their Amazon Storefront link
+  amazonStorefrontUrl: text("amazon_storefront_url"), // The Amazon Storefront URL where video is posted
+  amazonStorefrontSubmittedAt: timestamp("amazon_storefront_submitted_at"), // When influencer submitted the storefront link
+  amazonStorefrontVerifiedAt: timestamp("amazon_storefront_verified_at"), // When admin verified the storefront link
+  amazonStorefrontVerifiedByAdminId: varchar("amazon_storefront_verified_by_admin_id"),
   // Legacy product cost covered fields (kept for backward compatibility)
   productCostSentAt: timestamp("product_cost_sent_at"),
   productCostSentByAdminId: varchar("product_cost_sent_by_admin_id"),
