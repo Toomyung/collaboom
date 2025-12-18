@@ -1251,9 +1251,6 @@ export default function AdminCampaignDetailPage() {
                         <TableRow className="bg-muted/50">
                           <TableHead className="w-14 text-center text-xs">ID</TableHead>
                           <TableHead className="min-w-[160px] sticky left-[56px] bg-muted/50 z-10 text-xs">Influencer</TableHead>
-                          {campaign.campaignType === "link_in_bio" && (
-                            <TableHead className="min-w-[150px] text-xs">Bio Link</TableHead>
-                          )}
                           <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
                           <TableHead className="min-w-[90px] text-xs">TikTok</TableHead>
                           <TableHead className="min-w-[180px] text-xs">Address</TableHead>
@@ -1313,43 +1310,6 @@ export default function AdminCampaignDetailPage() {
                                   <div className="text-xs text-muted-foreground truncate">{app.influencer?.email}</div>
                                 </div>
                               </TableCell>
-                              {campaign.campaignType === "link_in_bio" && (
-                                <TableCell className="p-2">
-                                  {app.bioLinkUrl ? (
-                                    <div className="space-y-1">
-                                      <a
-                                        href={app.bioLinkUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:underline text-xs flex items-center gap-1"
-                                        data-testid={`link-bio-link-${app.id}`}
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                        View Link
-                                      </a>
-                                      {app.bioLinkVerifiedAt ? (
-                                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
-                                          Verified
-                                        </Badge>
-                                      ) : (
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="h-6 text-xs"
-                                          onClick={() => verifyBioLinkMutation.mutate(app.id)}
-                                          disabled={verifyBioLinkMutation.isPending}
-                                          data-testid={`button-verify-bio-link-${app.id}`}
-                                        >
-                                          <CheckCircle className="h-3 w-3 mr-1" />
-                                          Verify
-                                        </Button>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-muted-foreground text-xs">Not submitted</span>
-                                  )}
-                                </TableCell>
-                              )}
                               <TableCell className="p-1">
                                 <Input
                                   value={formData.phone}
@@ -1537,9 +1497,6 @@ export default function AdminCampaignDetailPage() {
                         <TableRow className="bg-muted/50">
                           <TableHead className="w-14 text-center text-xs">ID</TableHead>
                           <TableHead className="min-w-[140px] text-xs">Influencer</TableHead>
-                          {campaign.campaignType === "link_in_bio" && (
-                            <TableHead className="min-w-[150px] text-xs">Bio Link</TableHead>
-                          )}
                           <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
                           <TableHead className="min-w-[160px] text-xs">Address</TableHead>
                           <TableHead className="min-w-[120px] text-xs">Address 2</TableHead>
@@ -1602,43 +1559,6 @@ export default function AdminCampaignDetailPage() {
                                   <div className="text-xs text-muted-foreground">{app.influencer?.email}</div>
                                 </div>
                               </TableCell>
-                              {campaign.campaignType === "link_in_bio" && (
-                                <TableCell className="p-2">
-                                  {app.bioLinkUrl ? (
-                                    <div className="space-y-1">
-                                      <a
-                                        href={app.bioLinkUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:underline text-xs flex items-center gap-1"
-                                        data-testid={`link-bio-link-shipping-${app.id}`}
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                        View Link
-                                      </a>
-                                      {app.bioLinkVerifiedAt ? (
-                                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 text-xs">
-                                          Verified
-                                        </Badge>
-                                      ) : (
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="h-6 text-xs"
-                                          onClick={() => verifyBioLinkMutation.mutate(app.id)}
-                                          disabled={verifyBioLinkMutation.isPending}
-                                          data-testid={`button-verify-bio-link-shipping-${app.id}`}
-                                        >
-                                          <CheckCircle className="h-3 w-3 mr-1" />
-                                          Verify
-                                        </Button>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-muted-foreground text-xs">Not submitted</span>
-                                  )}
-                                </TableCell>
-                              )}
                               <TableCell className="text-xs text-muted-foreground p-2">
                                 {phone || "-"}
                               </TableCell>
