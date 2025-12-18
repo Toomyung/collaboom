@@ -52,6 +52,8 @@ export const influencers = pgTable("influencers", {
   zipCode: text("zip_code"),
   country: text("country").default("United States"),
   paypalEmail: text("paypal_email"),
+  bioLinkProfileUrl: text("bio_link_profile_url"), // Linktree/Beacons URL for Link in Bio campaigns
+  amazonStorefrontUrl: text("amazon_storefront_url"), // Amazon Storefront URL for Amazon Video campaigns
   profileCompleted: boolean("profile_completed").default(false),
   score: integer("score").default(0),
   penalty: integer("penalty").default(0),
@@ -80,6 +82,8 @@ export const insertInfluencerSchema = createInsertSchema(influencers).pick({
   state: true,
   zipCode: true,
   paypalEmail: true,
+  bioLinkProfileUrl: true,
+  amazonStorefrontUrl: true,
 });
 
 export const updateProfileSchema = z.object({
@@ -114,6 +118,30 @@ export const updateProfileSchema = z.object({
     .min(1, "ZIP code is required")
     .regex(/^[\d\-—]{1,10}$/, "ZIP code must be up to 10 characters (digits and dashes only)"),
   paypalEmail: z.string().email("Valid PayPal email is required").optional().or(z.literal("")),
+  bioLinkProfileUrl: z.string()
+    .url("Please enter a valid URL (e.g., https://linktr.ee/yourname)")
+    .refine(url => {
+      if (!url) return true;
+      const lowerUrl = url.toLowerCase();
+      return lowerUrl.includes('linktr.ee') || 
+             lowerUrl.includes('beacons.ai') || 
+             lowerUrl.includes('linkin.bio') ||
+             lowerUrl.includes('bio.link') ||
+             lowerUrl.includes('tap.bio') ||
+             lowerUrl.includes('linkpop.com') ||
+             lowerUrl.includes('solo.to') ||
+             url.startsWith('https://');
+    }, "Please enter a valid bio link URL (Linktree, Beacons, etc.)")
+    .optional()
+    .or(z.literal("")),
+  amazonStorefrontUrl: z.string()
+    .url("Please enter a valid Amazon Storefront URL")
+    .refine(url => {
+      if (!url) return true;
+      return url.toLowerCase().includes('amazon.com');
+    }, "Please enter a valid Amazon Storefront URL")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type InsertInfluencer = z.infer<typeof insertInfluencerSchema>;
