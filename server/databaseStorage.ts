@@ -1,4 +1,4 @@
-import { eq, and, sql, desc, isNull, inArray } from "drizzle-orm";
+import { eq, and, or, sql, desc, isNull, inArray } from "drizzle-orm";
 import { db } from "./db";
 import * as bcrypt from 'bcryptjs';
 import { deleteImagesFromStorage } from "./supabaseStorage";
@@ -737,20 +737,63 @@ export class DatabaseStorage implements IStorage {
       applicationId: notification.applicationId || null,
       type: notification.type,
       channel: notification.channel || 'email',
+      title: notification.title || null,
+      message: notification.message || null,
       status: 'sent',
     }).returning();
     return newNotification;
   }
 
-  async getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number }): Promise<Notification[]> {
+  async getNotificationsByInfluencer(influencerId: string, options?: { limit?: number; offset?: number; channel?: string }): Promise<Notification[]> {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
+    
+    // Filter by channel - include 'in_app' and 'both' for in-app notifications
+    if (options?.channel === 'in_app') {
+      return await db.select().from(notifications)
+        .where(and(
+          eq(notifications.influencerId, influencerId),
+          or(
+            eq(notifications.channel, 'in_app'),
+            eq(notifications.channel, 'both')
+          )
+        ))
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+    }
     
     return await db.select().from(notifications)
       .where(eq(notifications.influencerId, influencerId))
       .orderBy(desc(notifications.createdAt))
       .limit(limit)
       .offset(offset);
+  }
+
+  async getUnreadNotificationCount(influencerId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.influencerId, influencerId),
+        eq(notifications.read, false),
+        or(
+          eq(notifications.channel, 'in_app'),
+          eq(notifications.channel, 'both')
+        )
+      ));
+    return result[0]?.count ?? 0;
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    await db.update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, notificationId));
+  }
+
+  async markAllNotificationsAsRead(influencerId: string): Promise<void> {
+    await db.update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.influencerId, influencerId));
   }
 
   async createShippingIssue(issue: InsertShippingIssue): Promise<ShippingIssue> {
