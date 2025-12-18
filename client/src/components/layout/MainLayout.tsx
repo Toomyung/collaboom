@@ -6,6 +6,7 @@ import { Sparkles, LayoutDashboard, User, LogOut, LogIn, Menu, Trophy, Layers } 
 import { SuspensionAppealDialog } from "@/components/SuspensionAppealDialog";
 import { BlockedUserDialog } from "@/components/BlockedUserDialog";
 import { PointsAwardPopup } from "@/components/PointsAwardPopup";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useUnseenPoints } from "@/hooks/useUnseenPoints";
 import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 import {
@@ -54,9 +55,12 @@ export function MainLayout({ children }: MainLayoutProps) {
               </span>
             </Link>
 
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger asChild>
-                {isAuthenticated && influencer?.profileImageUrl ? (
+            <div className="flex items-center gap-1">
+              {isInfluencer && <NotificationBell />}
+              
+              <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                <SheetTrigger asChild>
+                  {isAuthenticated && influencer?.profileImageUrl ? (
                   <button
                     className="h-11 w-11 rounded-full overflow-hidden border-2 border-transparent hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     data-testid="button-profile-menu"
@@ -225,6 +229,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </nav>
               </SheetContent>
             </Sheet>
+            </div>
           </div>
         </div>
       </header>

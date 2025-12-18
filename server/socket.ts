@@ -14,6 +14,7 @@ export interface SocketEvents {
   "application:updated": { campaignId: string; applicationId: string; status?: string };
   "influencer:updated": { influencerId: string };
   "score:updated": { influencerId: string; newScore: number; tier: string };
+  "notification:created": { influencerId: string };
 }
 
 export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any): SocketIOServer {
@@ -112,4 +113,8 @@ export function emitInfluencerUpdated(influencerId: string): void {
 
 export function emitScoreUpdated(influencerId: string, newScore: number, tier: string): void {
   emitEvent("score:updated", { influencerId, newScore, tier }, ["public", "admin"]);
+}
+
+export function emitNotificationCreated(influencerId: string): void {
+  emitEvent("notification:created", { influencerId }, ["public"]);
 }

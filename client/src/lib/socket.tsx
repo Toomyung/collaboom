@@ -99,6 +99,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
     });
 
+    socketInstance.on("notification:created", (data: { influencerId: string }) => {
+      console.log("[Socket] Notification created:", data.influencerId);
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+    });
+
     setSocket(socketInstance);
 
     return () => {
