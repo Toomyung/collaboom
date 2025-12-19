@@ -86,6 +86,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId, "applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
     });
 
     socketInstance.on("influencer:updated", (data: { influencerId: string }) => {
