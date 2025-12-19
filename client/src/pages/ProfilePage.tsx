@@ -55,7 +55,6 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { SiTiktok, SiInstagram, SiPaypal, SiAmazon, SiLinktree } from "react-icons/si";
-import { PointsAwardPopup } from "@/components/PointsAwardPopup";
 
 const US_STATES = [
   { value: "AL", label: "AL - Alabama" },
@@ -115,7 +114,6 @@ export default function ProfilePage() {
   const { isAuthenticated, influencer, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [pointsPopup, setPointsPopup] = useState<{ points: number; reason: string } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showEditConfirmDialog, setShowEditConfirmDialog] = useState(false);
   
@@ -168,17 +166,15 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       setIsEditing(false);
       
-      if (data.pointsAwarded && data.pointsAwarded > 0) {
-        setPointsPopup({ points: data.pointsAwarded, reason: "address_completion" });
-      } else {
-        toast({
-          title: "Profile updated",
-          description: "Your profile has been saved successfully. Redirecting...",
-        });
-        setTimeout(() => {
-          setLocation("/dashboard");
-        }, 1500);
-      }
+      toast({
+        title: "Profile updated",
+        description: data.pointsAwarded && data.pointsAwarded > 0 
+          ? "Your profile has been saved. You earned points!" 
+          : "Your profile has been saved successfully.",
+      });
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
@@ -201,17 +197,6 @@ export default function ProfilePage() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     form.reset();
-  };
-
-  const handlePointsPopupClose = () => {
-    setPointsPopup(null);
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been saved successfully. Redirecting...",
-    });
-    setTimeout(() => {
-      setLocation("/dashboard");
-    }, 1500);
   };
 
   if (authLoading) {
@@ -865,13 +850,6 @@ export default function ProfilePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <PointsAwardPopup
-        points={pointsPopup?.points || 0}
-        reason={pointsPopup?.reason || ""}
-        open={pointsPopup !== null}
-        onClose={handlePointsPopupClose}
-      />
     </MainLayout>
   );
 }
