@@ -76,13 +76,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Session middleware with secure configuration
-  // In Replit's embedded preview (dev mode), cookies need sameSite: "none" and secure: true
-  // to work in the cross-origin iframe context
-  const isReplitEnv = !!process.env.REPL_SLUG;
-  const isDevMode = isReplitEnv && !isProduction;
-  
-  // In dev mode, use sameSite: "none" to allow cross-site cookies (both iframe and new tab)
-  // This works because modern browsers still allow SameSite=None with Secure=true
+  // Use sameSite: "lax" for reliable first-party cookie behavior in new tab
+  // Note: Preview iframe won't work due to third-party cookie restrictions (this is expected per Replit docs)
   const sessionMiddleware = session({
     secret: sessionSecret || "dev-only-secret-key-not-for-production",
     resave: false,
@@ -91,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       secure: true, // Always use secure in Replit (HTTPS)
       httpOnly: true, // Prevent XSS access to cookie
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: isDevMode ? "none" : "lax", // Allow cross-site in Replit dev
+      sameSite: "lax", // Standard setting for first-party cookies
     },
   });
   app.use(sessionMiddleware);
