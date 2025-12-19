@@ -929,28 +929,6 @@ export default function AdminCampaignDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
-            {campaign.campaignType === "link_in_bio" && (
-              <TabsTrigger value="bio" data-testid="tab-bio">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Bio
-                {bioLinkAwaitingApplications.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {bioLinkAwaitingApplications.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            )}
-            {campaign.campaignType === "amazon_video_upload" && (
-              <TabsTrigger value="amazon" data-testid="tab-amazon">
-                <Store className="h-4 w-4 mr-2" />
-                Amazon
-                {amazonStorefrontAwaitingApplications.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {amazonStorefrontAwaitingApplications.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            )}
             <TabsTrigger value="uploads" data-testid="tab-uploads">
               <Upload className="h-4 w-4 mr-2" />
               Uploads
@@ -1756,239 +1734,12 @@ export default function AdminCampaignDetailPage() {
             </Card>
           </TabsContent>
 
-          {/* Bio Tab - Link in Bio verification (only for link_in_bio campaigns) */}
-          {campaign.campaignType === "link_in_bio" && (
-            <TabsContent value="bio" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ExternalLink className="h-5 w-5" />
-                    Bio Link Verification
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {bioLinkAwaitingApplications.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-14">ID</TableHead>
-                          <TableHead>Influencer</TableHead>
-                          <TableHead>TikTok</TableHead>
-                          <TableHead>Bio Link URL</TableHead>
-                          <TableHead>Submitted</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {bioLinkAwaitingApplications.map((app) => (
-                          <TableRow key={app.id}>
-                            <TableCell className="font-mono text-sm text-muted-foreground">
-                              {String(app.sequenceNumber || 0).padStart(3, "0")}
-                            </TableCell>
-                            <TableCell>
-                              <button
-                                className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
-                                onClick={() => {
-                                  if (app.influencer) {
-                                    setSelectedInfluencerId(app.influencer?.id || null);
-                                  }
-                                }}
-                                data-testid={`link-influencer-bio-${app.id}`}
-                              >
-                                {getInfluencerDisplayName(app.influencer)}
-                              </button>
-                            </TableCell>
-                            <TableCell>
-                              {app.influencer?.tiktokHandle && (
-                                <a
-                                  href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-muted-foreground hover:text-primary flex items-center gap-1"
-                                >
-                                  <SiTiktok className="h-3 w-3" />
-                                  @{app.influencer.tiktokHandle}
-                                </a>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {app.bioLinkUrl ? (
-                                <a
-                                  href={app.bioLinkUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline flex items-center gap-1"
-                                  data-testid={`link-bio-url-${app.id}`}
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  <span className="truncate max-w-[200px]">{app.bioLinkUrl}</span>
-                                </a>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">Not submitted yet</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {app.bioLinkSubmittedAt 
-                                ? format(new Date(app.bioLinkSubmittedAt), "MMM d, h:mm a")
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {app.bioLinkUrl ? (
-                                <Button
-                                  size="sm"
-                                  onClick={() => verifyBioLinkMutation.mutate(app.id)}
-                                  disabled={verifyBioLinkMutation.isPending}
-                                  data-testid={`button-verify-bio-${app.id}`}
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Verify
-                                </Button>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">Awaiting submission</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <ExternalLink className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>No bio links awaiting verification</p>
-                      <p className="text-sm mt-1">Influencers will submit their bio links after receiving their products</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
-
-          {/* Amazon Tab - Amazon Storefront verification (only for amazon_video_upload campaigns) */}
-          {campaign.campaignType === "amazon_video_upload" && (
-            <TabsContent value="amazon" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Store className="h-5 w-5" />
-                    Amazon Storefront Verification
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {amazonStorefrontAwaitingApplications.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-14">ID</TableHead>
-                          <TableHead>Influencer</TableHead>
-                          <TableHead>TikTok</TableHead>
-                          <TableHead>Amazon Storefront URL</TableHead>
-                          <TableHead>Submitted</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {amazonStorefrontAwaitingApplications.map((app) => (
-                          <TableRow key={app.id}>
-                            <TableCell className="font-mono text-sm text-muted-foreground">
-                              {String(app.sequenceNumber || 0).padStart(3, "0")}
-                            </TableCell>
-                            <TableCell>
-                              <button
-                                className="p-0 h-auto font-medium text-foreground hover:text-primary hover:underline bg-transparent border-none cursor-pointer"
-                                onClick={() => {
-                                  if (app.influencer) {
-                                    setSelectedInfluencerId(app.influencer?.id || null);
-                                  }
-                                }}
-                                data-testid={`link-influencer-amazon-${app.id}`}
-                              >
-                                {getInfluencerDisplayName(app.influencer)}
-                              </button>
-                            </TableCell>
-                            <TableCell>
-                              {app.influencer?.tiktokHandle && (
-                                <a
-                                  href={`https://tiktok.com/@${app.influencer.tiktokHandle}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-muted-foreground hover:text-primary flex items-center gap-1"
-                                >
-                                  <SiTiktok className="h-3 w-3" />
-                                  @{app.influencer.tiktokHandle}
-                                </a>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {app.amazonStorefrontUrl ? (
-                                <a
-                                  href={app.amazonStorefrontUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline flex items-center gap-1"
-                                  data-testid={`link-amazon-url-${app.id}`}
-                                >
-                                  <Store className="h-3 w-3" />
-                                  <span className="truncate max-w-[200px]">{app.amazonStorefrontUrl}</span>
-                                </a>
-                              ) : app.influencer?.amazonStorefrontUrl ? (
-                                <div className="space-y-1">
-                                  <a
-                                    href={app.influencer.amazonStorefrontUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-amber-600 hover:underline flex items-center gap-1"
-                                    data-testid={`link-amazon-profile-url-${app.id}`}
-                                  >
-                                    <Store className="h-3 w-3" />
-                                    <span className="truncate max-w-[200px]">{app.influencer.amazonStorefrontUrl}</span>
-                                  </a>
-                                  <span className="text-xs text-muted-foreground block">(from profile)</span>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">Not submitted yet</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {app.amazonStorefrontSubmittedAt 
-                                ? format(new Date(app.amazonStorefrontSubmittedAt), "MMM d, h:mm a")
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {app.amazonStorefrontUrl ? (
-                                <Button
-                                  size="sm"
-                                  onClick={() => verifyAmazonStorefrontMutation.mutate(app.id)}
-                                  disabled={verifyAmazonStorefrontMutation.isPending}
-                                  data-testid={`button-verify-amazon-${app.id}`}
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Verify
-                                </Button>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">Awaiting submission</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Store className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>No Amazon Storefront links awaiting verification</p>
-                      <p className="text-sm mt-1">Influencers will submit their Storefront links after receiving their products</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
 
           {/* Uploads Tab */}
           <TabsContent value="uploads" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Video Verification</CardTitle>
+                <CardTitle>Submission Verification</CardTitle>
               </CardHeader>
               <CardContent>
                 {deliveredApplications.length > 0 ? (
@@ -1998,7 +1749,13 @@ export default function AdminCampaignDetailPage() {
                         <TableHead className="w-14">ID</TableHead>
                         <TableHead>Influencer</TableHead>
                         <TableHead>TikTok</TableHead>
-                        <TableHead>Submitted Video</TableHead>
+                        {campaign.campaignType === "link_in_bio" && (
+                          <TableHead>Bio Link</TableHead>
+                        )}
+                        {campaign.campaignType === "amazon_video_upload" && (
+                          <TableHead>Amazon Storefront</TableHead>
+                        )}
+                        <TableHead>Video</TableHead>
                         <TableHead className="w-20">Points</TableHead>
                         <TableHead>Deadline</TableHead>
                         <TableHead>Actions</TableHead>
@@ -2061,6 +1818,44 @@ export default function AdminCampaignDetailPage() {
                                 </a>
                               )}
                             </TableCell>
+                            {campaign.campaignType === "link_in_bio" && (
+                              <TableCell>
+                                {app.bioLinkUrl ? (
+                                  <a
+                                    href={app.bioLinkUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-muted-foreground bg-muted px-2 py-1.5 rounded truncate max-w-[180px] hover:text-primary flex items-center gap-1"
+                                    title={app.bioLinkUrl}
+                                    data-testid={`link-bio-url-${app.id}`}
+                                  >
+                                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                    <span className="truncate">{app.bioLinkUrl}</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Not submitted</span>
+                                )}
+                              </TableCell>
+                            )}
+                            {campaign.campaignType === "amazon_video_upload" && (
+                              <TableCell>
+                                {app.amazonStorefrontUrl ? (
+                                  <a
+                                    href={app.amazonStorefrontUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-muted-foreground bg-muted px-2 py-1.5 rounded truncate max-w-[180px] hover:text-primary flex items-center gap-1"
+                                    title={app.amazonStorefrontUrl}
+                                    data-testid={`link-storefront-url-${app.id}`}
+                                  >
+                                    <Store className="h-3 w-3 flex-shrink-0" />
+                                    <span className="truncate">{app.amazonStorefrontUrl}</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Not submitted</span>
+                                )}
+                              </TableCell>
+                            )}
                             <TableCell>
                               {app.contentUrl ? (
                                 <div className="flex items-center gap-2">

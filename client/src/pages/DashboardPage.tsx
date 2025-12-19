@@ -1275,72 +1275,65 @@ export default function DashboardPage() {
         {/* Gifting Campaign - Video Submission */}
         {application.campaign.campaignType === "gifting" && 
          application.status === "delivered" && (
-          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 space-y-3">
+          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-purple-600" />
-              <span className="font-medium text-purple-600">Submit Your TikTok Video</span>
+              <span className="font-medium text-purple-600">Submission</span>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {application.contentUrl ? "Video submitted" : "Submit your TikTok video link"}
-                </span>
-                {application.contentUrl ? (
-                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
-                    Under Review
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">
-                    Ready to Submit
-                  </Badge>
-                )}
+            {/* Already submitted - show status */}
+            {application.contentUrl ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Video className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">TikTok Video</span>
+                  <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
+                </div>
+                <a 
+                  href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  {application.contentUrl}
+                </a>
               </div>
-              
-              {!application.contentUrl && (
-                <div className="flex gap-2">
+            ) : (
+              /* Not submitted - show form */
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">TikTok Video URL</label>
                   <Input
                     type="url"
                     placeholder="https://www.tiktok.com/@yourname/video/..."
                     value={videoUrlForms[application.id] || ""}
                     onChange={(e) => setVideoUrlForms(prev => ({ ...prev, [application.id]: e.target.value }))}
-                    className="flex-1"
+                    className="w-full"
                     data-testid={`input-video-gifting-${application.id}`}
                   />
-                  <Button
-                    onClick={() => {
-                      const videoUrl = videoUrlForms[application.id];
-                      if (videoUrl) {
-                        submitVideoMutation.mutate({
-                          applicationId: application.id,
-                          videoUrl: videoUrl
-                        });
-                      }
-                    }}
-                    disabled={!videoUrlForms[application.id] || submitVideoMutation.isPending}
-                    data-testid={`button-submit-video-gifting-${application.id}`}
-                  >
-                    {submitVideoMutation.isPending ? "Submitting..." : "Submit Video"}
-                  </Button>
                 </div>
-              )}
-              
-              {application.contentUrl && (
-                <a
-                  href={application.contentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                <Button
+                  onClick={() => {
+                    const videoUrl = videoUrlForms[application.id];
+                    if (videoUrl) {
+                      submitVideoMutation.mutate({
+                        applicationId: application.id,
+                        videoUrl: videoUrl
+                      });
+                    }
+                  }}
+                  disabled={!videoUrlForms[application.id] || submitVideoMutation.isPending}
+                  className="w-full"
+                  data-testid={`button-submit-video-gifting-${application.id}`}
                 >
-                  <ExternalLink className="h-3 w-3" />
-                  View submitted video
-                </a>
-              )}
-            </div>
-            
-            <p className="text-xs text-muted-foreground">
-              Once submitted, our team will review your video and mark it as verified.
-            </p>
+                  {submitVideoMutation.isPending ? "Submitting..." : "Submit"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Once submitted, our team will review and verify your video.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
