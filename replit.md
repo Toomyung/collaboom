@@ -112,6 +112,24 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 - **Notifications:** Influencer receives "payoutRequestUpdated" Socket.IO event when admin updates status
 - **Sidebar Badge:** Shows count of pending + processing requests
 
+## Admin Video Verification
+
+### Uploads Tab Workflow
+- **Purpose:** Shows videos submitted by influencers awaiting admin verification
+- **Process:** Influencer submits video URL → Appears in Uploads tab → Admin clicks "Verify" → Video is verified
+- **Filter Logic:** Shows applications where:
+  - Status is "delivered" or "uploaded"
+  - contentUrl exists (video submitted by influencer)
+  - pointsAwarded is not set (not yet verified)
+- **Display:** Read-only video link with submission date, Points input, Verify/Missed buttons
+- **Note:** Admins no longer manually enter video URLs - influencers submit them via their dashboard
+
+### Overdue Applications
+- **Filter:** Also shows applications past deadline without contentUrl
+- **Display:** Shows "Not submitted" for video link, "Verify" button disabled
+- **Actions:** Admin can only click "Missed Deadline" for overdue applications without video
+- **Tooltip:** "Video not submitted yet" shown when hovering disabled Verify button
+
 ## UI Design System
 
 ### Campaign Type Color Scheme

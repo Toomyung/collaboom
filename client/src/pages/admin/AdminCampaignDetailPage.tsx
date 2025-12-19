@@ -756,18 +756,26 @@ export default function AdminCampaignDetailPage() {
     a.status === "delivered" && !a.amazonStorefrontVerifiedAt
   ) || [];
   
-  // For Link in Bio campaigns: uploads tab shows only apps with verified bio link
-  // For Amazon Video Upload campaigns: uploads tab shows only apps with verified storefront link
-  // For other campaigns: show all delivered apps
+  // Uploads tab: show applications awaiting admin verification or overdue
+  // - Status is "delivered" or "uploaded" (combined submission sets status to "uploaded")
+  // - Either: contentUrl exists (video submitted, awaiting verification)
+  // - Or: deadline passed and no contentUrl (can be marked as missed)
+  // - pointsAwarded is not set (not yet verified by admin)
   const deliveredApplications = applications?.filter((a) => {
-    if (a.status !== "delivered") return false;
-    if (campaign?.campaignType === "link_in_bio") {
-      return !!a.bioLinkVerifiedAt;
+    if (!["delivered", "uploaded"].includes(a.status)) return false;
+    // Must not be verified yet
+    if (a.pointsAwarded && a.pointsAwarded > 0) return false;
+    
+    // Include if video submitted (awaiting verification)
+    if (a.contentUrl) return true;
+    
+    // Include if deadline passed (can be marked as missed)
+    if (campaign?.deadline) {
+      const deadline = new Date(campaign.deadline);
+      if (deadline < new Date()) return true;
     }
-    if (campaign?.campaignType === "amazon_video_upload") {
-      return !!a.amazonStorefrontVerifiedAt;
-    }
-    return true;
+    
+    return false;
   }) || [];
   const uploadedApplications = applications?.filter((a) => 
     ["uploaded", "completed"].includes(a.status)
@@ -1980,7 +1988,7 @@ export default function AdminCampaignDetailPage() {
           <TabsContent value="uploads" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Upload Verification</CardTitle>
+                <CardTitle>Video Verification</CardTitle>
               </CardHeader>
               <CardContent>
                 {deliveredApplications.length > 0 ? (
@@ -1990,7 +1998,7 @@ export default function AdminCampaignDetailPage() {
                         <TableHead className="w-14">ID</TableHead>
                         <TableHead>Influencer</TableHead>
                         <TableHead>TikTok</TableHead>
-                        <TableHead>Video Link</TableHead>
+                        <TableHead>Submitted Video</TableHead>
                         <TableHead className="w-20">Points</TableHead>
                         <TableHead>Deadline</TableHead>
                         <TableHead>Actions</TableHead>
@@ -2000,7 +2008,6 @@ export default function AdminCampaignDetailPage() {
                       {deliveredApplications.map((app) => {
                         const deadline = new Date(campaign.deadline);
                         const isOverdue = deadline < new Date();
-                        const currentContentUrl = contentUrlForms[app.id] ?? app.contentUrl ?? "";
                         return (
                           <TableRow key={app.id}>
                             <TableCell className="font-mono text-sm text-muted-foreground">
@@ -2055,95 +2062,29 @@ export default function AdminCampaignDetailPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                {app.contentUrl && !editingContentUrl.has(app.id) ? (
-                                  <>
-                                    <a
-                                      href={app.contentUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-xs text-muted-foreground bg-muted px-2 py-1.5 rounded truncate max-w-[180px] hover:text-primary"
-                                      title={app.contentUrl}
-                                      data-testid={`link-content-url-${app.id}`}
-                                    >
-                                      {app.contentUrl}
-                                    </a>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                      onClick={() => {
-                                        setEditingContentUrl(prev => new Set(prev).add(app.id));
-                                        setContentUrlForms(prev => ({
-                                          ...prev,
-                                          [app.id]: app.contentUrl || ""
-                                        }));
-                                      }}
-                                      data-testid={`button-edit-url-${app.id}`}
-                                    >
-                                      Edit
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Input
-                                      placeholder="Paste TikTok video URL"
-                                      value={currentContentUrl}
-                                      onChange={(e) => setContentUrlForms(prev => ({
-                                        ...prev,
-                                        [app.id]: e.target.value
-                                      }))}
-                                      className="h-8 text-xs w-48"
-                                      data-testid={`input-content-url-${app.id}`}
-                                    />
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-8"
-                                      onClick={() => {
-                                        saveContentUrlMutation.mutate({
-                                          applicationId: app.id,
-                                          contentUrl: currentContentUrl
-                                        }, {
-                                          onSuccess: () => {
-                                            setEditingContentUrl(prev => {
-                                              const next = new Set(prev);
-                                              next.delete(app.id);
-                                              return next;
-                                            });
-                                          }
-                                        });
-                                      }}
-                                      disabled={!currentContentUrl.trim() || saveContentUrlMutation.isPending}
-                                      data-testid={`button-save-url-${app.id}`}
-                                    >
-                                      Save
-                                    </Button>
-                                    {editingContentUrl.has(app.id) && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 text-xs"
-                                        onClick={() => {
-                                          setEditingContentUrl(prev => {
-                                            const next = new Set(prev);
-                                            next.delete(app.id);
-                                            return next;
-                                          });
-                                          setContentUrlForms(prev => {
-                                            const next = { ...prev };
-                                            delete next[app.id];
-                                            return next;
-                                          });
-                                        }}
-                                        data-testid={`button-cancel-url-${app.id}`}
-                                      >
-                                        Cancel
-                                      </Button>
-                                    )}
-                                  </>
-                                )}
-                              </div>
+                              {app.contentUrl ? (
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={app.contentUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-muted-foreground bg-muted px-2 py-1.5 rounded truncate max-w-[200px] hover:text-primary"
+                                    title={app.contentUrl}
+                                    data-testid={`link-content-url-${app.id}`}
+                                  >
+                                    {app.contentUrl}
+                                  </a>
+                                  {app.contentSubmittedAt && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {format(new Date(app.contentSubmittedAt), "MMM d")}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  Not submitted
+                                </span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <Input
@@ -2179,11 +2120,11 @@ export default function AdminCampaignDetailPage() {
                                     points: pointsForms[app.id] ?? 5 
                                   })}
                                   disabled={markUploadedMutation.isPending || !app.contentUrl}
-                                  title={!app.contentUrl ? "Video link required" : undefined}
+                                  title={!app.contentUrl ? "Video not submitted yet" : undefined}
                                   data-testid={`mark-uploaded-${app.id}`}
                                 >
                                   <CheckCircle className="h-4 w-4 mr-1" />
-                                  Verified
+                                  Verify
                                 </Button>
                                 <Button
                                   size="sm"
@@ -2206,7 +2147,8 @@ export default function AdminCampaignDetailPage() {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No deliveries awaiting verification</p>
+                    <p>No videos awaiting verification</p>
+                    <p className="text-sm mt-1">Videos submitted by influencers will appear here</p>
                   </div>
                 )}
               </CardContent>
