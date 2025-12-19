@@ -3,12 +3,14 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 export class ApiError extends Error {
   public status: number;
   public details: Record<string, unknown>;
+  public rawResponse: string;
 
-  constructor(status: number, message: string, details: Record<string, unknown> = {}) {
+  constructor(status: number, message: string, details: Record<string, unknown> = {}, rawResponse: string = "") {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.details = details;
+    this.rawResponse = rawResponse;
   }
 }
 
@@ -47,23 +49,45 @@ export function formatApiError(error: unknown): string {
   return "An unexpected error occurred. Please try again.";
 }
 
-async function throwIfResNotOk(res: Response) {
+export function logApiError(error: unknown, context?: string): void {
+  const prefix = context ? `[API Error - ${context}]` : "[API Error]";
+  
+  if (error instanceof ApiError) {
+    console.error(prefix, {
+      status: error.status,
+      message: error.message,
+      details: error.details,
+      rawResponse: error.rawResponse,
+    });
+  } else if (error instanceof Error) {
+    console.error(prefix, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
+  } else {
+    console.error(prefix, error);
+  }
+}
+
+async function throwIfResNotOk(res: Response, url?: string) {
   if (!res.ok) {
     let errorMessage = "";
     let details: Record<string, unknown> = {};
+    let rawResponse = "";
     
     try {
-      const text = await res.text();
-      if (text) {
+      rawResponse = await res.text();
+      if (rawResponse) {
         try {
-          const json = JSON.parse(text);
+          const json = JSON.parse(rawResponse);
           if (json.message) {
             errorMessage = json.message;
           }
           details = json;
         } catch {
-          if (text && !text.startsWith('<')) {
-            errorMessage = text;
+          if (rawResponse && !rawResponse.startsWith('<')) {
+            errorMessage = rawResponse;
           }
         }
       }
@@ -85,7 +109,18 @@ async function throwIfResNotOk(res: Response) {
       }
     }
     
-    throw new ApiError(res.status, errorMessage, details);
+    const apiError = new ApiError(res.status, errorMessage, details, rawResponse);
+    
+    console.error("[API Error]", {
+      url: url || res.url,
+      status: res.status,
+      statusText: res.statusText,
+      userMessage: errorMessage,
+      details,
+      rawResponse,
+    });
+    
+    throw apiError;
   }
 }
 
@@ -101,7 +136,7 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
+  await throwIfResNotOk(res, url);
   return res;
 }
 
@@ -111,7 +146,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    const res = await fetch(url, {
       credentials: "include",
     });
 
@@ -119,7 +155,7 @@ export const getQueryFn: <T>(options: {
       return null;
     }
 
-    await throwIfResNotOk(res);
+    await throwIfResNotOk(res, url);
     return await res.json();
   };
 

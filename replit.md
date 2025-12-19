@@ -104,3 +104,29 @@ Consistent color gradients used across the platform for campaign types:
 - **Resend API:** Used for sending transactional emails.
 - **Supabase Storage:** Hosts campaign images in the `collaboom-campaign` bucket, requiring specific RLS policies for anonymous access and deletion.
 - **Third-Party UI Libraries:** Radix UI, shadcn/ui, Tailwind CSS, Google Fonts (Inter).
+
+## Error Handling Pattern
+
+### User-Facing Errors
+- **Display:** All user-facing errors appear as AlertDialog popups that require clicking "Confirm" to dismiss (not toast notifications)
+- **Message Format:** Clean, user-friendly messages without technical details (e.g., "PayPal email required for paid campaigns. Please add your PayPal email in your profile to apply.")
+- **Implementation:** Use `formatApiError()` from `@/lib/queryClient` to extract clean messages from API errors
+
+### Developer Debugging
+- **Console Logging:** Full error details are automatically logged to browser console for debugging:
+  - URL, HTTP status code, status text
+  - User-friendly message shown to user
+  - Full API response details and raw response body
+- **ApiError Class:** Custom error class with `status`, `message`, `details`, and `rawResponse` properties
+- **Location:** All API error handling centralized in `client/src/lib/queryClient.ts`
+
+### Pattern for New Error Handlers
+```typescript
+import { formatApiError } from "@/lib/queryClient";
+
+// In mutation onError:
+onError: (error: Error) => {
+  setErrorMessage(formatApiError(error));
+  setShowErrorDialog(true);
+}
+```
