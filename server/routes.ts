@@ -1,6 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { Pool } from "@neondatabase/serverless";
 import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
@@ -75,10 +77,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     throw new Error("SESSION_SECRET environment variable is required in production");
   }
 
-  // Session middleware with secure configuration
+  // Session middleware with secure configuration using PostgreSQL store
   // Use sameSite: "lax" for reliable first-party cookie behavior in new tab
   // Note: Preview iframe won't work due to third-party cookie restrictions (this is expected per Replit docs)
+  const PgSession = connectPgSimple(session);
+  const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL });
+  
   const sessionMiddleware = session({
+    store: new PgSession({
+      pool: sessionPool as any,
+      tableName: 'session',
+      createTableIfMissing: true,
+    }),
     secret: sessionSecret || "dev-only-secret-key-not-for-production",
     resave: false,
     saveUninitialized: false,
