@@ -60,6 +60,12 @@ function getNotificationRoute(notification: Notification): string {
         return `/dashboard#application-${notification.applicationId}`;
       }
       return "/dashboard";
+    case "payout_requested":
+    case "payout_processing":
+    case "payout_completed":
+    case "payout_rejected":
+      // Payout related - open Cash Earned sheet
+      return "/dashboard#cash-earned";
     default:
       return "/dashboard";
   }

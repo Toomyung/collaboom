@@ -257,12 +257,15 @@ export default function DashboardPage() {
     }, 300);
   };
 
-  // Scroll to application when navigating from notifications with hash anchor
+  // Handle hash anchors from notifications (application or cash-earned)
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#application-')) {
       const applicationId = hash.replace('#application-', '');
       scrollToApplication(applicationId);
+    } else if (hash === '#cash-earned') {
+      setShowCashSheet(true);
+      window.history.replaceState(null, '', window.location.pathname);
     }
   }, [location]);
 
@@ -273,6 +276,9 @@ export default function DashboardPage() {
       if (hash && hash.startsWith('#application-')) {
         const applicationId = hash.replace('#application-', '');
         scrollToApplication(applicationId);
+      } else if (hash === '#cash-earned') {
+        setShowCashSheet(true);
+        window.history.replaceState(null, '', window.location.pathname);
       }
     };
 
@@ -2148,28 +2154,40 @@ export default function DashboardPage() {
                       {payoutRequests.map((request) => (
                         <div 
                           key={request.id} 
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
+                          className="p-3 rounded-lg bg-muted/50 border space-y-2"
                         >
-                          <div>
-                            <p className="font-medium text-sm">${request.amount}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {request.createdAt ? format(new Date(request.createdAt), "MMM d, yyyy") : ""}
-                            </p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">${request.amount}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Requested: {request.createdAt ? format(new Date(request.createdAt), "MMM d, yyyy") : ""}
+                              </p>
+                              {request.status === "completed" && request.processedAt && (
+                                <p className="text-xs text-emerald-600">
+                                  Paid: {format(new Date(request.processedAt), "MMM d, yyyy")}
+                                </p>
+                              )}
+                            </div>
+                            <Badge 
+                              variant="secondary" 
+                              className={cn(
+                                "text-xs",
+                                request.status === "pending" && "bg-yellow-500/10 text-yellow-600",
+                                request.status === "processing" && "bg-blue-500/10 text-blue-600",
+                                request.status === "completed" && "bg-emerald-500/10 text-emerald-600",
+                                request.status === "rejected" && "bg-red-500/10 text-red-600",
+                              )}
+                            >
+                              {request.status === "pending" ? "Pending" : 
+                               request.status === "processing" ? "Processing" : 
+                               request.status === "completed" ? "Completed" : "Rejected"}
+                            </Badge>
                           </div>
-                          <Badge 
-                            variant="secondary" 
-                            className={cn(
-                              "text-xs",
-                              request.status === "pending" && "bg-yellow-500/10 text-yellow-600",
-                              request.status === "processing" && "bg-blue-500/10 text-blue-600",
-                              request.status === "completed" && "bg-emerald-500/10 text-emerald-600",
-                              request.status === "rejected" && "bg-red-500/10 text-red-600",
-                            )}
-                          >
-                            {request.status === "pending" ? "Pending" : 
-                             request.status === "processing" ? "Processing" : 
-                             request.status === "completed" ? "Completed" : "Rejected"}
-                          </Badge>
+                          {request.status === "completed" && (
+                            <p className="text-xs text-emerald-600 font-medium">
+                              Check your PayPal account
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
