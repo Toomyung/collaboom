@@ -1144,9 +1144,16 @@ export default function DashboardPage() {
             ) : ["delivered", "uploaded"].includes(application.status) ? (
               /* Submission form - both fields required */
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Submit both your Amazon Storefront URL (where you uploaded the product video) and your TikTok video URL together.
-                </p>
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 space-y-2">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Amazon Storefront Requirements:
+                  </p>
+                  <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1 list-disc list-inside">
+                    <li>You must have an active Amazon Influencer Storefront</li>
+                    <li>Upload the product video to your Amazon Storefront following the campaign guidelines</li>
+                    <li>Submit your Storefront URL where the product video is visible</li>
+                  </ul>
+                </div>
                 {influencer?.amazonStorefrontUrl && !amazonCombinedForms[application.id]?.storefrontUrl && (
                   <p className="text-xs text-amber-600">
                     We've pre-filled your storefront URL from your profile.
