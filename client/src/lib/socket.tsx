@@ -151,8 +151,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   const joinUserRoom = useCallback(() => {
     if (socket) {
-      socket.emit("join:user");
-      console.log("[Socket] Requested to join user room");
+      // Disconnect and reconnect to get fresh session cookie
+      console.log("[Socket] Reconnecting to refresh session...");
+      socket.disconnect();
+      socket.connect();
     }
   }, [socket]);
 
