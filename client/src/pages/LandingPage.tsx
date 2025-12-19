@@ -20,63 +20,22 @@ import {
   Package,
   Camera,
   Verified,
+  TrendingUp,
+  Clock,
+  Eye,
+  Bell,
+  FileCheck,
+  Truck,
 } from "lucide-react";
-import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
-import { motion, AnimatePresence } from "framer-motion";
-
-const liveActivities = [
-  { name: "Sarah K.", action: "just received", item: "K-Beauty Serum", time: "2m ago" },
-  { name: "Mike T.", action: "earned", item: "$50 reward", time: "5m ago" },
-  { name: "Jessica L.", action: "joined", item: "VIP tier", time: "12m ago" },
-  { name: "Alex R.", action: "completed", item: "3rd campaign", time: "18m ago" },
-];
+import { motion } from "framer-motion";
 
 export default function LandingPage() {
   const { user } = useAuth();
-  const [currentActivity, setCurrentActivity] = useState(0);
-  const [showActivity, setShowActivity] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowActivity(false);
-      setTimeout(() => {
-        setCurrentActivity((prev) => (prev + 1) % liveActivities.length);
-        setShowActivity(true);
-      }, 300);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background" data-testid="landing-page-container">
-      {/* Floating Live Activity - Social Proof */}
-      <AnimatePresence>
-        {showActivity && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, x: 20 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed bottom-6 left-6 z-50 hidden md:block"
-          >
-            <div className="bg-card/80 backdrop-blur-xl border rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                {liveActivities[currentActivity].name.charAt(0)}
-              </div>
-              <div>
-                <p className="text-sm font-medium">
-                  <span className="text-foreground">{liveActivities[currentActivity].name}</span>{" "}
-                  <span className="text-muted-foreground">{liveActivities[currentActivity].action}</span>{" "}
-                  <span className="text-primary font-semibold">{liveActivities[currentActivity].item}</span>
-                </p>
-                <p className="text-xs text-muted-foreground">{liveActivities[currentActivity].time}</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -144,7 +103,7 @@ export default function LandingPage() {
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
-                Join 500+ TikTok creators earning free products and up to $50 per campaign from top brands.
+                Join 500+ TikTok creators earning free products and up to $30 per campaign from top brands.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3">
@@ -210,8 +169,8 @@ export default function LandingPage() {
                     <DollarSign className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-4xl font-black text-emerald-600">$50</p>
-                    <p className="text-sm text-muted-foreground">Max per campaign</p>
+                    <p className="text-4xl font-black text-emerald-600">$30</p>
+                    <p className="text-sm text-muted-foreground">Cash per campaign</p>
                     <div className="mt-3 space-y-1">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <CheckCircle className="h-3 w-3 text-emerald-500" />
@@ -219,7 +178,7 @@ export default function LandingPage() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <CheckCircle className="h-3 w-3 text-emerald-500" />
-                        <span>Amazon Video: $50</span>
+                        <span>Amazon Video: $30</span>
                       </div>
                     </div>
                   </div>
@@ -295,7 +254,7 @@ export default function LandingPage() {
             <Badge className="mb-3 bg-primary/10 text-primary border-primary/20">
               3 Ways to Earn
             </Badge>
-            <h2 className="text-4xl font-bold">Choose Your Path</h2>
+            <h2 className="text-4xl font-bold">Campaign Types</h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
@@ -382,18 +341,140 @@ export default function LandingPage() {
                       <Play className="h-7 w-7 text-white" />
                     </div>
                     <Badge className="bg-amber-500 text-white border-0">
-                      $50 + Gift
+                      $30 + Gift
                     </Badge>
                   </div>
                   <h3 className="text-2xl font-bold mb-2">Amazon Video</h3>
                   <p className="text-muted-foreground text-sm mb-4">
-                    Upload to Amazon Storefront for maximum rewards
+                    Upload to Amazon Storefront for cash rewards
                   </p>
                   <div className="space-y-2">
-                    {["Apply & get approved", "Upload to Storefront", "Create TikTok video", "Get verified & earn $50"].map((step, i) => (
+                    {["Apply & get approved", "Upload to Storefront", "Create TikTok video", "Get verified & earn $30"].map((step, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-amber-500" />
                         <span>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Track Your Campaign - Dashboard Preview */}
+      <section className="py-16 bg-muted/30" data-testid="section-dashboard-preview">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* Left - Text Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+                <Eye className="h-3 w-3 mr-1" />
+                Your Personal Hub
+              </Badge>
+              <h2 className="text-4xl font-bold mb-4">
+                Track Your Campaigns
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Everything you need in one place. See your active campaigns, track shipments, upload content, and watch your earnings grow.
+              </p>
+              
+              <div className="space-y-4">
+                {[
+                  { icon: Bell, title: "Real-time Notifications", desc: "Get instant updates on approvals and shipments" },
+                  { icon: Truck, title: "Shipment Tracking", desc: "Know exactly when your products will arrive" },
+                  { icon: TrendingUp, title: "Score Progress", desc: "Watch your reputation grow with each campaign" },
+                  { icon: FileCheck, title: "Easy Submissions", desc: "Upload your TikTok links with one click" },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.title}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-start gap-3"
+                  >
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="mt-8">
+                <Link href="/signup" data-testid="link-dashboard-cta">
+                  <Button size="lg" className="h-12 px-6" data-testid="button-dashboard-cta">
+                    Create Your Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Right - Dashboard Mockup */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-3xl blur-3xl" />
+              <Card className="relative overflow-hidden border-2">
+                <div className="bg-gradient-to-r from-primary/5 to-purple-500/5 px-4 py-3 border-b flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-red-400" />
+                    <div className="h-3 w-3 rounded-full bg-yellow-400" />
+                    <div className="h-3 w-3 rounded-full bg-green-400" />
+                  </div>
+                  <span className="text-xs text-muted-foreground ml-2">collaboom.app/dashboard</span>
+                </div>
+                <CardContent className="p-4 space-y-4">
+                  {/* Mock Stats Row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-primary">3</p>
+                      <p className="text-xs text-muted-foreground">Active</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-emerald-600">$90</p>
+                      <p className="text-xs text-muted-foreground">Earned</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-amber-600">72</p>
+                      <p className="text-xs text-muted-foreground">Score</p>
+                    </div>
+                  </div>
+                  
+                  {/* Mock Campaign Cards */}
+                  <div className="space-y-2">
+                    {[
+                      { name: "K-Beauty Serum", status: "Shipped", color: "bg-blue-500" },
+                      { name: "Organic Snacks", status: "Awaiting Upload", color: "bg-amber-500" },
+                      { name: "Lifestyle Brand", status: "Approved", color: "bg-emerald-500" },
+                    ].map((campaign, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-card border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
+                            <Gift className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{campaign.name}</p>
+                            <div className="flex items-center gap-1">
+                              <div className={cn("h-2 w-2 rounded-full", campaign.color)} />
+                              <p className="text-xs text-muted-foreground">{campaign.status}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
                       </div>
                     ))}
                   </div>
