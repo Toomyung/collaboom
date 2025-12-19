@@ -26,6 +26,7 @@ const AdminCampaignFormPage = lazy(() => import("@/pages/admin/AdminCampaignForm
 const AdminInfluencersPage = lazy(() => import("@/pages/admin/AdminInfluencersPage"));
 const AdminIssuesPage = lazy(() => import("@/pages/admin/AdminIssuesPage"));
 const AdminSupportTicketsPage = lazy(() => import("@/pages/admin/AdminSupportTicketsPage"));
+const AdminPayoutsPage = lazy(() => import("@/pages/admin/AdminPayoutsPage"));
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -68,6 +69,7 @@ function Router() {
         <Route path="/admin/influencers/:id" component={AdminInfluencersPage} />
         <Route path="/admin/issues" component={AdminIssuesPage} />
         <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
+        <Route path="/admin/payouts" component={AdminPayoutsPage} />
         
         {/* Fallback */}
         <Route component={NotFound} />
