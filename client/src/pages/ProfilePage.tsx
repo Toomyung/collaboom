@@ -635,8 +635,11 @@ export default function ProfilePage() {
                       <span className="font-medium text-foreground">Bio Link (for Link in Bio Campaigns)</span>
                     </div>
                     <p className="text-xs leading-relaxed mb-2">
-                      To participate in Link in Bio campaigns (earn $30 + free product), you'll need a bio link service like Linktree or Beacons. 
-                      This link goes in your TikTok bio and includes the product purchase link for the brand.
+                      Enter the Linktree, Beacons, or similar bio link URL that's <strong>already in your TikTok bio</strong>. 
+                      This is your personal bio link page where you'll add product purchase links for campaigns.
+                    </p>
+                    <p className="text-xs leading-relaxed mb-2 text-emerald-700 dark:text-emerald-400">
+                      <strong>How campaigns work:</strong> When participating in a Link in Bio campaign, you'll add the product's purchase link (e.g., Amazon link) to your bio link page, then submit the same URL for verification.
                     </p>
                     <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-2">
                       Don't have one yet? It's free and takes just 2 minutes to set up!
@@ -686,7 +689,7 @@ export default function ProfilePage() {
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          Your Linktree, Beacons, or similar bio link URL
+                          The URL to your bio link page (this should already be linked in your TikTok bio)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -702,8 +705,11 @@ export default function ProfilePage() {
                       <span className="font-medium text-foreground">Amazon Storefront (for Amazon Video Campaigns)</span>
                     </div>
                     <p className="text-xs leading-relaxed mb-2">
-                      Amazon Video Upload campaigns (earn $50 + free product) require you to post videos on both TikTok AND your Amazon Influencer Storefront. 
-                      This gives brands extra visibility on Amazon.
+                      Enter your <strong>Amazon Influencer Storefront URL</strong> where you upload product review videos. 
+                      This is your personal storefront page on Amazon.
+                    </p>
+                    <p className="text-xs leading-relaxed mb-2 text-amber-700 dark:text-amber-400">
+                      <strong>How campaigns work:</strong> When participating, you'll upload a product video to your Amazon Storefront, then submit the same URL for verification.
                     </p>
                     <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">
                       Don't have an Amazon Storefront? You can apply through the Amazon Influencer Program.
@@ -743,7 +749,7 @@ export default function ProfilePage() {
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          Your Amazon Influencer Storefront URL
+                          Your personal storefront page on Amazon (where you upload product videos)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

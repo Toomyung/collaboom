@@ -543,6 +543,35 @@ export default function DashboardPage() {
     }
   }, [applications]);
 
+  // Pre-fill bio link and Amazon storefront forms with profile URLs
+  useEffect(() => {
+    if (applications && influencer) {
+      const newBioLinkForms: Record<string, string> = {};
+      const newAmazonForms: Record<string, string> = {};
+      
+      applications.forEach((app) => {
+        // Only pre-fill if the form is empty and the profile URL exists
+        if (app.status === "delivered" && !(app as any).bioLinkUrl && influencer.bioLinkProfileUrl) {
+          if (!bioLinkForms[app.id]) {
+            newBioLinkForms[app.id] = influencer.bioLinkProfileUrl;
+          }
+        }
+        if (app.status === "delivered" && !(app as any).amazonStorefrontUrl && influencer.amazonStorefrontUrl) {
+          if (!amazonStorefrontForms[app.id]) {
+            newAmazonForms[app.id] = influencer.amazonStorefrontUrl;
+          }
+        }
+      });
+      
+      if (Object.keys(newBioLinkForms).length > 0) {
+        setBioLinkForms(prev => ({ ...prev, ...newBioLinkForms }));
+      }
+      if (Object.keys(newAmazonForms).length > 0) {
+        setAmazonStorefrontForms(prev => ({ ...prev, ...newAmazonForms }));
+      }
+    }
+  }, [applications, influencer]);
+
   // Check for pending tier upgrade and show celebration popup
   useEffect(() => {
     if (influencer?.pendingTierUpgrade) {
@@ -821,9 +850,14 @@ export default function DashboardPage() {
             ) : application.status === "delivered" ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Step 1:</strong> Add the campaign's product purchase link (e.g., Amazon link) to your Linktree, Beacons, or similar bio link service.<br />
-                  <strong>Step 2:</strong> Submit the URL to your bio link page below so we can verify the product link is visible.
+                  <strong>Step 1:</strong> Add the product's purchase link (provided by the brand) to your Linktree/Beacons page.<br />
+                  <strong>Step 2:</strong> Submit your bio link URL below so we can verify the product link is visible.
                 </p>
+                {influencer?.bioLinkProfileUrl && (
+                  <p className="text-xs text-emerald-600">
+                    We've pre-filled your bio link URL from your profile. Just make sure you've added the product link to it!
+                  </p>
+                )}
                 <div className="space-y-2">
                   <Input
                     placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
@@ -999,9 +1033,14 @@ export default function DashboardPage() {
             ) : application.status === "delivered" ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Step 1:</strong> Upload the product video to your Amazon Influencer Storefront.<br />
-                  <strong>Step 2:</strong> Submit the URL to your storefront page below so we can verify the video is visible.
+                  <strong>Step 1:</strong> Upload the product review video to your Amazon Influencer Storefront.<br />
+                  <strong>Step 2:</strong> Submit your storefront URL below so we can verify the video is visible.
                 </p>
+                {influencer?.amazonStorefrontUrl && (
+                  <p className="text-xs text-amber-600">
+                    We've pre-filled your storefront URL from your profile. Just make sure you've uploaded the product video!
+                  </p>
+                )}
                 <div className="space-y-2">
                   <Input
                     placeholder="Your Amazon Storefront URL (e.g., amazon.com/shop/yourname)"
