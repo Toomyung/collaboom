@@ -211,7 +211,7 @@ function getTierInfo(score: number, completedCampaigns: number) {
 }
 
 export default function DashboardPage() {
-  const { isAuthenticated, influencer, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, influencer, isAdmin, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
   const [showIssueDialog, setShowIssueDialog] = useState(false);
@@ -661,6 +661,11 @@ export default function DashboardPage() {
 
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
+  }
+
+  // Redirect admin users to admin dashboard
+  if (isAdmin) {
+    return <Redirect to="/admin" />;
   }
 
   const visibleApplications = applications?.filter((app) => {
