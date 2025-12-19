@@ -39,48 +39,37 @@ Preferred communication style: Simple, everyday language.
 
 ## Campaign Types
 
-Collaboom offers three types of campaigns, plus a bonus earning opportunity:
+Collaboom offers three types of campaigns, plus a bonus earning opportunity. All campaigns follow a unified submission workflow where influencers submit all requirements together, and admins verify everything in a single Uploads tab.
 
-### 1. Gifting Campaign (Implemented)
+### Unified Workflow (All Campaign Types)
+1. Apply to campaign
+2. Receive product at address (status: delivered)
+3. Submit all requirements together via dashboard:
+   - **Gifting:** TikTok video URL only
+   - **Link in Bio:** Bio link URL + TikTok video URL
+   - **Amazon Video Upload:** Amazon Storefront URL + TikTok video URL
+4. Admin verifies all requirements together in Uploads tab
+5. Campaign completed, points/rewards awarded
+
+### 1. Gifting Campaign
 - **Reward:** Free product (no cash)
-- **Process:** Apply → Receive product at address → Create TikTok video → Submit video link → Admin verifies
 - **Platform:** TikTok only
+- **Submission Requirements:** TikTok video URL
 - **Description:** Brands send free products to influencers in exchange for UGC content.
-- **Video Submission:** Influencers manually submit their TikTok video URL via the dashboard after product delivery.
 
-### 2. Link in Bio Campaign (Implemented)
+### 2. Link in Bio Campaign
 - **Reward:** $30 cash + free product
-- **Process:**
-  1. Apply to campaign
-  2. Receive free product at address
-  3. Add product purchase link to TikTok bio via Linktree/Beacons AND create TikTok video
-  4. Submit BOTH bio link URL and TikTok video URL together (combined submission)
-  5. Admin verifies both bio link and video
-  6. Receive $30 reward upon verification
 - **Platform:** TikTok
+- **Submission Requirements:** Bio link URL (Linktree/Beacons) + TikTok video URL
 - **Requirements:** Linktree, Beacons, or similar bio link service
-- **Schema Fields:** `bioLinkUrl` (influencer submission), `bioLinkVerifiedAt` (admin verification timestamp), `bioLinkVerifiedByAdminId` (admin ID), `contentSubmittedAt` (video submission timestamp)
-- **Admin Workflow:** "Bio" tab between Shipping and Uploads tabs shows bio link verification status; admin can verify link after product delivery
-- **Notification:** Sends "Bio Link Verified!" notification when admin verifies the bio link
-- **Combined Submission:** Influencer must submit both bio link URL and TikTok video URL at the same time. Submit button is disabled until both fields are filled. Tab is labeled "Submission" in the dashboard.
-- **Backward Compatibility:** If an influencer previously submitted only the bio link URL (legacy flow), they can still submit just the video URL to complete their submission.
+- **Schema Fields:** `bioLinkUrl`, `contentUrl` (video), `contentSubmittedAt`
 
-### 3. Amazon Video Upload Campaign (Implemented)
+### 3. Amazon Video Upload Campaign
 - **Reward:** $50 cash + product
-- **Process:**
-  1. Apply to campaign
-  2. Receive free product at address
-  3. Upload product video to Amazon Influencer Storefront AND create TikTok video
-  4. Submit BOTH Amazon Storefront URL and TikTok video URL together (combined submission)
-  5. Admin verifies both storefront and video
-  6. Receive $50 reward upon verification
 - **Platform:** TikTok + Amazon Storefront
+- **Submission Requirements:** Amazon Storefront URL + TikTok video URL
 - **Requirements:** Must have active Amazon Influencer Storefront
-- **Schema Fields:** `amazonStorefrontUrl` (influencer submission), `amazonStorefrontVerifiedAt` (admin verification timestamp), `amazonStorefrontVerifiedByAdminId` (admin ID), `contentSubmittedAt` (video submission timestamp)
-- **Admin Workflow:** "Amazon" tab between Shipping and Uploads tabs shows storefront verification status; admin can verify link after product delivery
-- **Notification:** Sends "Amazon Storefront Verified!" notification when admin verifies the storefront link
-- **Combined Submission:** Influencer must submit both Amazon Storefront URL and TikTok video URL at the same time. Submit button is disabled until both fields are filled. Tab is labeled "Submission" in the dashboard.
-- **Backward Compatibility:** If an influencer previously submitted only the storefront URL (legacy flow), they can still submit just the video URL to complete their submission.
+- **Schema Fields:** `amazonStorefrontUrl`, `contentUrl` (video), `contentSubmittedAt`
 
 ### Bonus: Usage of Rights
 - **Reward:** Additional $30
@@ -129,6 +118,12 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 - **Display:** Shows "Not submitted" for video link, "Verify" button disabled
 - **Actions:** Admin can only click "Missed Deadline" for overdue applications without video
 - **Tooltip:** "Video not submitted yet" shown when hovering disabled Verify button
+
+### Campaign-Specific Requirements (Displayed in Uploads Tab)
+- **Gifting:** Video URL only
+- **Link in Bio:** Bio Link URL + Video URL (both displayed, both verified together)
+- **Amazon Video Upload:** Storefront URL + Video URL (both displayed, both verified together)
+- **Verification:** Single "Verify" button verifies all requirements at once
 
 ## UI Design System
 
