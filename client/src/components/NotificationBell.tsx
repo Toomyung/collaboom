@@ -27,6 +27,7 @@ function getNotificationIcon(type: string) {
     case "tier_upgraded":
       return <Trophy className="h-4 w-4 text-amber-500" />;
     case "comment_reply":
+    case "admin_reply":
       return <MessageCircle className="h-4 w-4 text-purple-500" />;
     case "upload_verified":
       return <Star className="h-4 w-4 text-amber-500" />;
@@ -55,7 +56,8 @@ function getNotificationRoute(notification: Notification): string {
       // Score/Tier related - go to score page
       return "/score-tier";
     case "comment_reply":
-      // Comment - go to dashboard with anchor
+    case "admin_reply":
+      // Comment/Admin reply - go to dashboard with anchor to the application
       if (notification.applicationId) {
         return `/dashboard#application-${notification.applicationId}`;
       }
