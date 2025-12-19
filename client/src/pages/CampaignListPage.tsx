@@ -106,6 +106,8 @@ export default function CampaignListPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications/my-ids"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/all-history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", { minimal: true }] });
       toast({
         title: "Application submitted!",
