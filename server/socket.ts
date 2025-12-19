@@ -120,3 +120,15 @@ export function emitNotificationCreated(influencerId: string): void {
   // Emit to the specific user's room for privacy and efficiency
   emitEvent("notification:created", { influencerId }, [`user:${influencerId}`]);
 }
+
+// Generic emit to a specific user
+export function emitToUser(userId: string, event: string, data: any): void {
+  if (!io) return;
+  io.to(`user:${userId}`).emit(event, data);
+}
+
+// Generic emit to all admins
+export function emitToAdmins(event: string, data: any): void {
+  if (!io) return;
+  io.to("admin").emit(event, data);
+}

@@ -37,6 +37,8 @@ import {
   emitInfluencerUpdated,
   emitScoreUpdated,
   emitNotificationCreated,
+  emitToUser,
+  emitToAdmins,
 } from "./socket";
 
 // Session types
@@ -3508,6 +3510,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orphanFiles: orphanFiles,
       });
     } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ============================================
+  // PAYOUT REQUESTS ENDPOINTS
+  // ============================================
+
+  // Get influencer's payout requests and balance info
+  app.get("/api/payout-requests", requireAuth("influencer"), async (req, res) => {
+    try {
+      const influencerId = req.session.userId!;
+      const requests = await storage.getPayoutRequestsByInfluencer(influencerId);
+      const totalPayoutsRequested = await storage.getTotalPayoutsByInfluencer(influencerId);
+      
+      return res.json({
+        requests,
+        totalPayoutsRequested,
+      });
+    } catch (error: any) {
+      console.error('[Payout Requests] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Create a new payout request
+  app.post("/api/payout-requests", requireAuth("influencer"), async (req, res) => {
+    try {
+      const influencerId = req.session.userId!;
+      const { amount } = req.body;
+
+      // Get influencer's paypal email
+      const influencer = await storage.getInfluencer(influencerId);
+      if (!influencer) {
+        return res.status(404).json({ message: "Influencer not found" });
+      }
+
+      if (!influencer.paypalEmail) {
+        return res.status(400).json({ message: "Please add your PayPal email in your profile before requesting a payout." });
+      }
+
+      // Calculate available balance
+      const applications = await storage.getApplicationsWithDetails(influencerId);
+      const totalEarned = applications
+        .filter(a => 
+          (a.status === "uploaded" || a.status === "completed") && 
+          (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+        )
+        .reduce((sum, a) => {
+          if (a.campaign.campaignType === "link_in_bio") return sum + 30;
+          if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+          return sum;
+        }, 0);
+
+      const totalPayoutsRequested = await storage.getTotalPayoutsByInfluencer(influencerId);
+      const availableBalance = totalEarned - totalPayoutsRequested;
+
+      if (amount <= 0) {
+        return res.status(400).json({ message: "Amount must be greater than 0" });
+      }
+
+      if (amount > availableBalance) {
+        return res.status(400).json({ message: `Insufficient balance. Available: $${availableBalance}` });
+      }
+
+      // Create payout request
+      const request = await storage.createPayoutRequest({
+        influencerId,
+        amount,
+        paypalEmail: influencer.paypalEmail,
+      });
+
+      // Create notification for the influencer
+      await storage.createNotification({
+        influencerId,
+        type: "payout_requested",
+        title: "Payout Request Submitted",
+        message: `Your payout request for $${amount} has been submitted and is pending admin review.`,
+        channel: "in_app",
+      });
+
+      // Emit socket event to admins
+      emitToAdmins("newPayoutRequest", {
+        id: request.id,
+        amount: request.amount,
+        influencerName: `${influencer.firstName || ''} ${influencer.lastName || ''}`.trim() || influencer.name || influencer.email,
+        paypalEmail: request.paypalEmail,
+        createdAt: request.createdAt,
+      });
+
+      return res.json(request);
+    } catch (error: any) {
+      console.error('[Create Payout Request] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin: Get all payout requests
+  app.get("/api/admin/payout-requests", requireAuth("admin"), async (req, res) => {
+    try {
+      const { status } = req.query;
+      let requests;
+      
+      if (status === "pending") {
+        requests = await storage.getPendingPayoutRequests();
+      } else {
+        requests = await storage.getAllPayoutRequests();
+      }
+
+      return res.json(requests);
+    } catch (error: any) {
+      console.error('[Admin Payout Requests] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin: Update payout request status
+  app.patch("/api/admin/payout-requests/:id", requireAuth("admin"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNote, paypalTransactionId } = req.body;
+      const adminId = req.session.userId!;
+
+      const request = await storage.getPayoutRequest(id);
+      if (!request) {
+        return res.status(404).json({ message: "Payout request not found" });
+      }
+
+      const updateData: any = {
+        status,
+        processedByAdminId: adminId,
+        processedAt: new Date(),
+      };
+
+      if (adminNote) {
+        updateData.adminNote = adminNote;
+      }
+
+      if (paypalTransactionId) {
+        updateData.paypalTransactionId = paypalTransactionId;
+      }
+
+      const updated = await storage.updatePayoutRequest(id, updateData);
+
+      // Notify influencer
+      if (updated) {
+        const notificationMessage = status === "completed" 
+          ? `Your payout request for $${request.amount} has been completed! Check your PayPal account.`
+          : status === "rejected"
+          ? `Your payout request for $${request.amount} was not approved.${adminNote ? ` Reason: ${adminNote}` : ''}`
+          : `Your payout request for $${request.amount} is being processed.`;
+
+        await storage.createNotification({
+          influencerId: request.influencerId,
+          type: status === "completed" ? "payout_completed" : status === "rejected" ? "payout_rejected" : "payout_processing",
+          title: status === "completed" ? "Payout Completed!" : status === "rejected" ? "Payout Request Update" : "Payout Processing",
+          message: notificationMessage,
+          channel: "in_app",
+        });
+
+        // Emit socket event to the influencer
+        emitToUser(request.influencerId, "payoutRequestUpdated", {
+          id: updated.id,
+          status: updated.status,
+          amount: updated.amount,
+        });
+      }
+
+      return res.json(updated);
+    } catch (error: any) {
+      console.error('[Update Payout Request] Error:', error);
       return res.status(500).json({ message: error.message });
     }
   });
