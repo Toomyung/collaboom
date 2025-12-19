@@ -1314,6 +1314,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Link in Bio: Combined submission (bio link + video URL together)
+  app.post("/api/applications/:id/submit-bio-combined", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if campaign is link_in_bio
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "link_in_bio") {
+        return res.status(400).json({ message: "This campaign does not require bio link submission" });
+      }
+
+      // Check if application is in valid status for submission (allow delivered and uploaded)
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "You can submit after receiving the product" });
+      }
+
+      // Check if BOTH are already submitted (fully complete - cannot change)
+      if (application.bioLinkUrl && application.contentUrl) {
+        return res.status(400).json({ message: "Submission has already been made and cannot be changed" });
+      }
+
+      const { bioLinkUrl, videoUrl } = req.body;
+      
+      // Use provided bioLinkUrl or fall back to existing application bioLinkUrl for legacy cases
+      const effectiveBioLinkUrl = bioLinkUrl || application.bioLinkUrl;
+      
+      // Bio link is required (either from request or already stored)
+      if (!effectiveBioLinkUrl) {
+        return res.status(400).json({ message: "Bio link URL is required" });
+      }
+      if (!videoUrl) {
+        return res.status(400).json({ message: "TikTok video URL is required" });
+      }
+
+      // Validate bio link URL (only if it's a NEW submission - skip validation for existing bio links)
+      if (!application.bioLinkUrl && bioLinkUrl) {
+        try {
+          const url = new URL(bioLinkUrl);
+          if (url.protocol !== 'https:') {
+            return res.status(400).json({ message: "Please enter a valid HTTPS bio link URL" });
+          }
+        } catch {
+          return res.status(400).json({ message: "Please enter a valid bio link URL" });
+        }
+      }
+
+      // Validate TikTok URL
+      try {
+        const url = new URL(videoUrl);
+        if (!url.hostname.includes('tiktok.')) {
+          return res.status(400).json({ message: "Please enter a valid TikTok video URL" });
+        }
+      } catch {
+        return res.status(400).json({ message: "Please enter a valid TikTok URL" });
+      }
+
+      // Build update object - only update fields that are not already set
+      const updateData: any = {};
+      
+      if (!application.bioLinkUrl) {
+        updateData.bioLinkUrl = bioLinkUrl.trim();
+        updateData.bioLinkSubmittedAt = new Date();
+      }
+      
+      if (!application.contentUrl) {
+        updateData.contentUrl = videoUrl.trim();
+        updateData.contentSubmittedAt = new Date();
+      }
+      
+      // Update status to uploaded if not already
+      if (application.status === "delivered") {
+        updateData.status = "uploaded";
+      }
+
+      // Update application
+      await storage.updateApplication(application.id, updateData);
+
+      // Emit socket event for real-time admin updates
+      emitApplicationUpdated(application.campaignId, application.id, updateData.status || application.status);
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Submit video URL for ALL campaign types (unified endpoint)
   // - Gifting: Can submit after "delivered" status
   // - Link in Bio: Can submit after bio link is verified

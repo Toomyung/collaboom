@@ -513,6 +513,26 @@ export default function DashboardPage() {
     },
   });
 
+  // Link in Bio: Combined submission (bio link + video together)
+  const [bioCombinedForms, setBioCombinedForms] = useState<Record<string, { bioLinkUrl: string; videoUrl: string }>>({});
+  
+  const submitBioCombinedMutation = useMutation({
+    mutationFn: async ({ applicationId, bioLinkUrl, videoUrl }: { applicationId: string; bioLinkUrl: string; videoUrl: string }) => {
+      await apiRequest("POST", `/api/applications/${applicationId}/submit-bio-combined`, { bioLinkUrl, videoUrl });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      toast({
+        title: "Submission completed",
+        description: "We'll verify your bio link and TikTok video shortly.",
+      });
+    },
+    onError: (error: Error) => {
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
+    },
+  });
+
   // Link in Bio: Submit video URL (after bio link verified)
   const [videoUrlForms, setVideoUrlForms] = useState<Record<string, string>>({});
   
@@ -549,12 +569,30 @@ export default function DashboardPage() {
     if (applications && influencer) {
       const newBioLinkForms: Record<string, string> = {};
       const newAmazonCombinedForms: Record<string, { storefrontUrl: string; videoUrl: string }> = {};
+      const newBioCombinedForms: Record<string, { bioLinkUrl: string; videoUrl: string }> = {};
       
       applications.forEach((app) => {
-        // Pre-fill bio link from profile if empty
+        // Pre-fill bio link from profile if empty (legacy single-field form)
         if (app.status === "delivered" && !(app as any).bioLinkUrl && influencer.bioLinkProfileUrl) {
           if (!bioLinkForms[app.id]) {
             newBioLinkForms[app.id] = influencer.bioLinkProfileUrl;
+          }
+        }
+        
+        // Pre-fill Bio combined form
+        // Case 1: New submission - pre-fill bio link URL from profile
+        // Case 2: Legacy flow - bio link already submitted, pre-fill it so user can submit video
+        if (["delivered", "uploaded"].includes(app.status) && !app.contentUrl) {
+          if (!bioCombinedForms[app.id]) {
+            const existingBioLink = (app as any).bioLinkUrl;
+            const profileBioLink = influencer.bioLinkProfileUrl;
+            
+            if (existingBioLink || profileBioLink) {
+              newBioCombinedForms[app.id] = { 
+                bioLinkUrl: existingBioLink || profileBioLink || "", 
+                videoUrl: "" 
+              };
+            }
           }
         }
         
@@ -581,6 +619,9 @@ export default function DashboardPage() {
       }
       if (Object.keys(newAmazonCombinedForms).length > 0) {
         setAmazonCombinedForms(prev => ({ ...prev, ...newAmazonCombinedForms }));
+      }
+      if (Object.keys(newBioCombinedForms).length > 0) {
+        setBioCombinedForms(prev => ({ ...prev, ...newBioCombinedForms }));
       }
     }
   }, [applications, influencer]);
@@ -811,164 +852,174 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Link in Bio: Bio Link Submission Status */}
+        {/* Link in Bio: Combined Submission (Bio Link + Video together) */}
         {campaign.campaignType === "link_in_bio" && ["delivered", "uploaded", "completed"].includes(application.status) && (
           <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4 text-emerald-600" />
-              <span className="font-medium text-emerald-600">Link in Bio</span>
+              <Upload className="h-4 w-4 text-emerald-600" />
+              <span className="font-medium text-emerald-600">Submission</span>
             </div>
             
-            {/* Bio link verified - read-only display */}
-            {(application as any).bioLinkVerifiedAt ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600">Bio link verified</span>
+            {/* Already submitted both - show both links */}
+            {(application as any).bioLinkUrl && application.contentUrl ? (
+              <div className="space-y-4">
+                {/* Bio link status */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Bio Link</span>
+                    {(application as any).bioLinkVerifiedAt ? (
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
+                    )}
+                  </div>
+                  <a 
+                    href={(application as any).bioLinkUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {(application as any).bioLinkUrl}
+                  </a>
                 </div>
-                <a 
-                  href={(application as any).bioLinkUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  {(application as any).bioLinkUrl}
-                </a>
-              </div>
-            ) : (application as any).bioLinkUrl ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600">Bio link submitted - awaiting verification</span>
+                
+                {/* Video status */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">TikTok Video</span>
+                    {(application as any).contentVerifiedAt ? (
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
+                    )}
+                  </div>
+                  <a 
+                    href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Your Video
+                  </a>
                 </div>
-                <a 
-                  href={(application as any).bioLinkUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  {(application as any).bioLinkUrl}
-                </a>
+                
                 <p className="text-xs text-muted-foreground">
-                  Our team will verify that the product purchase link is visible on your bio page.
+                  Our team will verify both your bio link and TikTok video.
                 </p>
-                <div className="bg-purple-500/10 border border-purple-500/20 rounded-md p-2 mt-2">
-                  <p className="text-xs text-purple-600 font-medium">
-                    Next step: Once verified, you'll be able to submit your TikTok video link here.
-                  </p>
-                </div>
               </div>
-            ) : application.status === "delivered" ? (
-              <div className="space-y-3">
+            ) : ["delivered", "uploaded"].includes(application.status) ? (
+              /* Submission form - both fields required */
+              <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Step 1:</strong> Add the product's purchase link (provided by the brand) to your Linktree/Beacons page.<br />
-                  <strong>Step 2:</strong> Submit your bio link URL below so we can verify the product link is visible.
+                  Submit both your bio link URL (with the product's purchase link) and your TikTok video URL together.
                 </p>
-                {influencer?.bioLinkProfileUrl && (
+                {influencer?.bioLinkProfileUrl && !bioCombinedForms[application.id]?.bioLinkUrl && (
                   <p className="text-xs text-emerald-600">
-                    We've pre-filled your bio link URL from your profile. Just make sure you've added the product link to it!
+                    We've pre-filled your bio link URL from your profile.
                   </p>
                 )}
-                <div className="space-y-2">
+                
+                {/* Bio Link URL - show as read-only if already submitted */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    Bio Link URL
+                    {(application as any).bioLinkUrl && (
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Submitted</Badge>
+                    )}
+                  </label>
+                  {(application as any).bioLinkUrl ? (
+                    <div className="text-sm p-2 bg-muted rounded-md">
+                      <a 
+                        href={(application as any).bioLinkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {(application as any).bioLinkUrl}
+                      </a>
+                    </div>
+                  ) : (
+                    <Input
+                      placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
+                      value={bioCombinedForms[application.id]?.bioLinkUrl || ""}
+                      onChange={(e) => setBioCombinedForms(prev => ({
+                        ...prev,
+                        [application.id]: { 
+                          bioLinkUrl: e.target.value, 
+                          videoUrl: prev[application.id]?.videoUrl || "" 
+                        }
+                      }))}
+                      className="text-sm"
+                      data-testid={`input-bio-link-${application.id}`}
+                    />
+                  )}
+                </div>
+                
+                {/* TikTok Video URL */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    TikTok Video URL
+                  </label>
                   <Input
-                    placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
-                    value={bioLinkForms[application.id] || ""}
-                    onChange={(e) => setBioLinkForms(prev => ({
+                    placeholder="https://www.tiktok.com/@yourhandle/video/..."
+                    value={bioCombinedForms[application.id]?.videoUrl || ""}
+                    onChange={(e) => setBioCombinedForms(prev => ({
                       ...prev,
-                      [application.id]: e.target.value
+                      [application.id]: { 
+                        bioLinkUrl: prev[application.id]?.bioLinkUrl || (application as any).bioLinkUrl || "", 
+                        videoUrl: e.target.value 
+                      }
                     }))}
                     className="text-sm"
-                    data-testid={`input-bio-link-${application.id}`}
+                    data-testid={`input-bio-video-url-${application.id}`}
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const bioLink = bioLinkForms[application.id];
-                      if (bioLink) {
-                        submitBioLinkMutation.mutate({
-                          applicationId: application.id,
-                          bioLinkUrl: bioLink
-                        });
-                      }
-                    }}
-                    disabled={!bioLinkForms[application.id] || submitBioLinkMutation.isPending}
-                    data-testid={`button-submit-bio-link-${application.id}`}
-                  >
-                    {submitBioLinkMutation.isPending ? "Submitting..." : "Submit Bio Link"}
-                  </Button>
                 </div>
+                
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const form = bioCombinedForms[application.id];
+                    // Always include existing bioLinkUrl from application if available (for legacy cases)
+                    const bioLinkUrl = (application as any).bioLinkUrl || form?.bioLinkUrl;
+                    const videoUrl = form?.videoUrl;
+                    if (videoUrl) {
+                      submitBioCombinedMutation.mutate({
+                        applicationId: application.id,
+                        bioLinkUrl: bioLinkUrl || "",
+                        videoUrl: videoUrl
+                      });
+                    }
+                  }}
+                  disabled={
+                    (!(application as any).bioLinkUrl && !bioCombinedForms[application.id]?.bioLinkUrl) || 
+                    !bioCombinedForms[application.id]?.videoUrl || 
+                    submitBioCombinedMutation.isPending
+                  }
+                  className="w-full"
+                  data-testid={`button-submit-bio-combined-${application.id}`}
+                >
+                  {submitBioCombinedMutation.isPending ? "Submitting..." : 
+                   (application as any).bioLinkUrl ? "Submit Video" : "Submit Both Links"}
+                </Button>
+                
+                {!(application as any).bioLinkUrl && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Both fields are required to submit
+                  </p>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-amber-600">
                 <Clock className="h-4 w-4" />
-                <span>Bio link not yet submitted - submit after product delivery</span>
+                <span>Submission available after product delivery</span>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Link in Bio: Video Upload Section (only after bio link verified) */}
-        {campaign.campaignType === "link_in_bio" && 
-         application.status === "delivered" && 
-         (application as any).bioLinkVerifiedAt && (
-          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Upload className="h-4 w-4 text-purple-600" />
-              <span className="font-medium text-purple-600">Video Upload</span>
-            </div>
-            
-            {application.contentUrl ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600">Video submitted - awaiting verification</span>
-                </div>
-                <a 
-                  href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  View Your Video
-                </a>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Your bio link has been verified. Now you can upload your TikTok video link.
-                </p>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Your TikTok video URL"
-                    value={videoUrlForms[application.id] || ""}
-                    onChange={(e) => setVideoUrlForms(prev => ({
-                      ...prev,
-                      [application.id]: e.target.value
-                    }))}
-                    className="text-sm"
-                    data-testid={`input-video-url-${application.id}`}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const videoUrl = videoUrlForms[application.id];
-                      if (videoUrl) {
-                        submitVideoMutation.mutate({
-                          applicationId: application.id,
-                          videoUrl: videoUrl
-                        });
-                      }
-                    }}
-                    disabled={!videoUrlForms[application.id] || submitVideoMutation.isPending}
-                    data-testid={`button-submit-video-${application.id}`}
-                  >
-                    {submitVideoMutation.isPending ? "Submitting..." : "Submit Video"}
-                  </Button>
-                </div>
-              </>
             )}
           </div>
         )}

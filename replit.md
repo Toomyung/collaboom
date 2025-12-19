@@ -53,17 +53,17 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 - **Process:**
   1. Apply to campaign
   2. Receive free product at address
-  3. Add product purchase link to TikTok bio via Linktree/Beacons
-  4. Submit bio link URL for admin verification
-  5. Wait for bio link verification (UI shows "Next step" message)
-  6. Submit TikTok video link after bio is verified
-  7. Receive $30 reward upon both bio link and video verification
+  3. Add product purchase link to TikTok bio via Linktree/Beacons AND create TikTok video
+  4. Submit BOTH bio link URL and TikTok video URL together (combined submission)
+  5. Admin verifies both bio link and video
+  6. Receive $30 reward upon verification
 - **Platform:** TikTok
 - **Requirements:** Linktree, Beacons, or similar bio link service
 - **Schema Fields:** `bioLinkUrl` (influencer submission), `bioLinkVerifiedAt` (admin verification timestamp), `bioLinkVerifiedByAdminId` (admin ID), `contentSubmittedAt` (video submission timestamp)
 - **Admin Workflow:** "Bio" tab between Shipping and Uploads tabs shows bio link verification status; admin can verify link after product delivery
 - **Notification:** Sends "Bio Link Verified!" notification when admin verifies the bio link
-- **Video Submission Gating:** Video submission form only appears after bio link is verified
+- **Combined Submission:** Influencer must submit both bio link URL and TikTok video URL at the same time. Submit button is disabled until both fields are filled. Tab is labeled "Submission" in the dashboard.
+- **Backward Compatibility:** If an influencer previously submitted only the bio link URL (legacy flow), they can still submit just the video URL to complete their submission.
 
 ### 3. Amazon Video Upload Campaign (Implemented)
 - **Reward:** $50 cash + product
