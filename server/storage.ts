@@ -11,6 +11,7 @@ import {
   type Notification, type InsertNotification,
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
   type SupportTicket, type InsertSupportTicket, type SupportTicketWithDetails,
+  type PayoutRequest, type InsertPayoutRequest, type PayoutRequestWithDetails,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as bcrypt from 'bcryptjs';
@@ -159,6 +160,15 @@ export interface IStorage {
   addBannedEmail(email: string, supabaseId?: string | null, reason?: string): Promise<void>;
   isBannedEmail(email: string): Promise<boolean>;
   deleteInfluencer(id: string): Promise<void>;
+  
+  // Payout Requests
+  createPayoutRequest(request: InsertPayoutRequest): Promise<PayoutRequest>;
+  getPayoutRequestsByInfluencer(influencerId: string): Promise<PayoutRequest[]>;
+  getAllPayoutRequests(): Promise<PayoutRequestWithDetails[]>;
+  getPendingPayoutRequests(): Promise<PayoutRequestWithDetails[]>;
+  getPayoutRequest(id: string): Promise<PayoutRequest | undefined>;
+  updatePayoutRequest(id: string, data: Partial<PayoutRequest>): Promise<PayoutRequest | undefined>;
+  getTotalPayoutsByInfluencer(influencerId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -1174,6 +1184,70 @@ export class MemStorage implements IStorage {
       this.bannedEmails.add(influencer.email.toLowerCase());
       this.influencers.delete(id);
     }
+  }
+
+  // Payout Requests (stub implementation for MemStorage)
+  private payoutRequests: Map<string, PayoutRequest> = new Map();
+
+  async createPayoutRequest(request: InsertPayoutRequest): Promise<PayoutRequest> {
+    const id = randomUUID();
+    const newRequest: PayoutRequest = {
+      id,
+      influencerId: request.influencerId,
+      amount: request.amount,
+      paypalEmail: request.paypalEmail,
+      status: "pending",
+      processedByAdminId: null,
+      processedAt: null,
+      adminNote: null,
+      paypalTransactionId: null,
+      createdAt: new Date(),
+    };
+    this.payoutRequests.set(id, newRequest);
+    return newRequest;
+  }
+
+  async getPayoutRequestsByInfluencer(influencerId: string): Promise<PayoutRequest[]> {
+    return Array.from(this.payoutRequests.values())
+      .filter(r => r.influencerId === influencerId)
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async getAllPayoutRequests(): Promise<PayoutRequestWithDetails[]> {
+    const requests = Array.from(this.payoutRequests.values())
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return requests.map(r => ({
+      ...r,
+      influencer: this.influencers.get(r.influencerId),
+    }));
+  }
+
+  async getPendingPayoutRequests(): Promise<PayoutRequestWithDetails[]> {
+    const requests = Array.from(this.payoutRequests.values())
+      .filter(r => r.status === "pending")
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return requests.map(r => ({
+      ...r,
+      influencer: this.influencers.get(r.influencerId),
+    }));
+  }
+
+  async getPayoutRequest(id: string): Promise<PayoutRequest | undefined> {
+    return this.payoutRequests.get(id);
+  }
+
+  async updatePayoutRequest(id: string, data: Partial<PayoutRequest>): Promise<PayoutRequest | undefined> {
+    const request = this.payoutRequests.get(id);
+    if (!request) return undefined;
+    const updated = { ...request, ...data };
+    this.payoutRequests.set(id, updated);
+    return updated;
+  }
+
+  async getTotalPayoutsByInfluencer(influencerId: string): Promise<number> {
+    return Array.from(this.payoutRequests.values())
+      .filter(r => r.influencerId === influencerId && r.status !== "rejected")
+      .reduce((sum, r) => sum + r.amount, 0);
   }
 }
 

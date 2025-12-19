@@ -507,3 +507,30 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type SupportTicketWithDetails = SupportTicket & {
   influencer?: Influencer;
 };
+
+// Payout Requests (for cash rewards from paid campaigns)
+export const payoutRequests = pgTable("payout_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull(),
+  amount: integer("amount").notNull(), // Amount in dollars
+  paypalEmail: text("paypal_email").notNull(), // PayPal email for payout
+  status: text("status").notNull().default("pending"), // 'pending' | 'processing' | 'completed' | 'rejected'
+  processedByAdminId: varchar("processed_by_admin_id"),
+  processedAt: timestamp("processed_at"),
+  adminNote: text("admin_note"),
+  paypalTransactionId: text("paypal_transaction_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPayoutRequestSchema = createInsertSchema(payoutRequests).pick({
+  influencerId: true,
+  amount: true,
+  paypalEmail: true,
+});
+
+export type InsertPayoutRequest = z.infer<typeof insertPayoutRequestSchema>;
+export type PayoutRequest = typeof payoutRequests.$inferSelect;
+
+export type PayoutRequestWithDetails = PayoutRequest & {
+  influencer?: Influencer;
+};

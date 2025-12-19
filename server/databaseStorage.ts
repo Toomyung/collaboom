@@ -5,7 +5,7 @@ import { deleteImagesFromStorage } from "./supabaseStorage";
 import {
   admins, influencers, campaigns, applications, shipping, uploads,
   scoreEvents, penaltyEvents, adminNotes, notifications, shippingIssues, supportTickets,
-  bannedEmails,
+  bannedEmails, payoutRequests,
   type Admin, type InsertAdmin,
   type Influencer, type InsertInfluencer,
   type Campaign, type InsertCampaign,
@@ -18,6 +18,7 @@ import {
   type Notification, type InsertNotification,
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
   type SupportTicket, type InsertSupportTicket, type SupportTicketWithDetails,
+  type PayoutRequest, type InsertPayoutRequest, type PayoutRequestWithDetails,
 } from "@shared/schema";
 import { IStorage, GetCampaignsOptions, PaginatedCampaignsResult } from "./storage";
 
@@ -1021,5 +1022,75 @@ export class DatabaseStorage implements IStorage {
 
     // Finally delete the influencer
     await db.delete(influencers).where(eq(influencers.id, id));
+  }
+
+  // Payout Requests
+  async createPayoutRequest(request: InsertPayoutRequest): Promise<PayoutRequest> {
+    const [newRequest] = await db.insert(payoutRequests).values({
+      influencerId: request.influencerId,
+      amount: request.amount,
+      paypalEmail: request.paypalEmail,
+      status: "pending",
+    }).returning();
+    return newRequest;
+  }
+
+  async getPayoutRequestsByInfluencer(influencerId: string): Promise<PayoutRequest[]> {
+    return db.select().from(payoutRequests)
+      .where(eq(payoutRequests.influencerId, influencerId))
+      .orderBy(desc(payoutRequests.createdAt));
+  }
+
+  async getAllPayoutRequests(): Promise<PayoutRequestWithDetails[]> {
+    const requests = await db.select().from(payoutRequests)
+      .orderBy(desc(payoutRequests.createdAt));
+    
+    const result: PayoutRequestWithDetails[] = [];
+    for (const request of requests) {
+      const [influencer] = await db.select().from(influencers)
+        .where(eq(influencers.id, request.influencerId));
+      result.push({ ...request, influencer });
+    }
+    return result;
+  }
+
+  async getPendingPayoutRequests(): Promise<PayoutRequestWithDetails[]> {
+    const requests = await db.select().from(payoutRequests)
+      .where(eq(payoutRequests.status, "pending"))
+      .orderBy(desc(payoutRequests.createdAt));
+    
+    const result: PayoutRequestWithDetails[] = [];
+    for (const request of requests) {
+      const [influencer] = await db.select().from(influencers)
+        .where(eq(influencers.id, request.influencerId));
+      result.push({ ...request, influencer });
+    }
+    return result;
+  }
+
+  async getPayoutRequest(id: string): Promise<PayoutRequest | undefined> {
+    const [request] = await db.select().from(payoutRequests)
+      .where(eq(payoutRequests.id, id));
+    return request;
+  }
+
+  async updatePayoutRequest(id: string, data: Partial<PayoutRequest>): Promise<PayoutRequest | undefined> {
+    const [updated] = await db.update(payoutRequests)
+      .set(data)
+      .where(eq(payoutRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getTotalPayoutsByInfluencer(influencerId: string): Promise<number> {
+    const [result] = await db.select({ 
+      total: sql<number>`COALESCE(SUM(${payoutRequests.amount}), 0)::int` 
+    })
+      .from(payoutRequests)
+      .where(and(
+        eq(payoutRequests.influencerId, influencerId),
+        sql`${payoutRequests.status} != 'rejected'`
+      ));
+    return result?.total ?? 0;
   }
 }
