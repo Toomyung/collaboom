@@ -1,9 +1,91 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+export class ApiError extends Error {
+  public status: number;
+  public details: Record<string, unknown>;
+
+  constructor(status: number, message: string, details: Record<string, unknown> = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
+export function formatApiError(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+  
+  if (error instanceof Error) {
+    const message = error.message;
+    
+    if (message.includes('{"message":')) {
+      try {
+        const jsonStart = message.indexOf('{');
+        const jsonPart = message.slice(jsonStart);
+        const parsed = JSON.parse(jsonPart);
+        if (parsed.message) {
+          return parsed.message;
+        }
+      } catch {
+        // Fall through
+      }
+    }
+    
+    if (/^\d{3}:/.test(message)) {
+      const textAfterCode = message.replace(/^\d{3}:\s*/, '');
+      if (textAfterCode && !textAfterCode.startsWith('{')) {
+        return textAfterCode;
+      }
+      return "Something went wrong. Please try again.";
+    }
+    
+    return message;
+  }
+  
+  return "An unexpected error occurred. Please try again.";
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = "";
+    let details: Record<string, unknown> = {};
+    
+    try {
+      const text = await res.text();
+      if (text) {
+        try {
+          const json = JSON.parse(text);
+          if (json.message) {
+            errorMessage = json.message;
+          }
+          details = json;
+        } catch {
+          if (text && !text.startsWith('<')) {
+            errorMessage = text;
+          }
+        }
+      }
+    } catch {
+      // Use default message
+    }
+    
+    if (!errorMessage) {
+      if (res.status === 401) {
+        errorMessage = "Please log in to continue.";
+      } else if (res.status === 403) {
+        errorMessage = "You don't have permission to do this.";
+      } else if (res.status === 404) {
+        errorMessage = "The requested item was not found.";
+      } else if (res.status >= 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else {
+        errorMessage = "Something went wrong. Please try again.";
+      }
+    }
+    
+    throw new ApiError(res.status, errorMessage, details);
   }
 }
 
