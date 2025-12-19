@@ -1312,7 +1312,7 @@ export default function DashboardPage() {
             <div className="border-t border-green-500/20 pt-3">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-green-600" />
-                <span className="font-semibold text-green-600 text-lg">+$50 Earned</span>
+                <span className="font-semibold text-green-600 text-lg">+$30 Earned</span>
               </div>
               {application.cashRewardSentAt ? (
                 <div className="flex items-center gap-2 text-sm mt-1">

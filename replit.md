@@ -65,7 +65,7 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity. All
 - **Schema Fields:** `bioLinkUrl`, `contentUrl` (video), `contentSubmittedAt`
 
 ### 3. Amazon Video Upload Campaign
-- **Reward:** $50 cash + product
+- **Reward:** $30 cash + product
 - **Platform:** TikTok + Amazon Storefront
 - **Submission Requirements:** Amazon Storefront URL + TikTok video URL
 - **Requirements:** Must have active Amazon Influencer Storefront
