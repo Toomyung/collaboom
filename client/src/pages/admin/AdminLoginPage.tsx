@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { useSocket } from "@/lib/socket";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function AdminLoginPage() {
   const { loginAdmin, adminLoginPending } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { joinUserRoom } = useSocket();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +36,8 @@ export default function AdminLoginPage() {
         title: "Welcome back!",
         description: "You have successfully signed in as admin.",
       });
+      // Join socket room after successful login
+      joinUserRoom();
       // Small delay to ensure auth state is updated before navigation
       setTimeout(() => {
         setLocation("/admin");

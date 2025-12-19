@@ -51,6 +51,41 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
       socket.leave(`campaign:${campaignId}`);
     });
 
+    // Allow clients to rejoin their user room after login
+    socket.on("join:user", () => {
+      const req = socket.request as any;
+      // Reload session from store to get fresh data
+      if (req.session?.reload) {
+        req.session.reload((err: any) => {
+          if (err) {
+            console.error("[Socket.IO] Failed to reload session:", err);
+            return;
+          }
+          const session: SessionData = req.session;
+          if (session?.userId) {
+            socket.join(`user:${session.userId}`);
+            console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
+            
+            if (session.userType === "admin") {
+              socket.join("admin");
+              console.log(`[Socket.IO] Admin ${session.userId} joined admin room`);
+            }
+          }
+        });
+      } else {
+        const session: SessionData = req.session;
+        if (session?.userId) {
+          socket.join(`user:${session.userId}`);
+          console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
+          
+          if (session.userType === "admin") {
+            socket.join("admin");
+            console.log(`[Socket.IO] Admin ${session.userId} joined admin room`);
+          }
+        }
+      }
+    });
+
     socket.on("disconnect", () => {
     });
   });

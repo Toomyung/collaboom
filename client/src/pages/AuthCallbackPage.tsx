@@ -3,12 +3,14 @@ import { useLocation } from "wouter";
 import { getSupabase } from "@/lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { useSocket } from "@/lib/socket";
 
 export default function AuthCallbackPage() {
   const [, setLocation] = useLocation();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Processing your login...");
   const queryClient = useQueryClient();
+  const { joinUserRoom } = useSocket();
 
   useEffect(() => {
     let mounted = true;
@@ -56,6 +58,8 @@ export default function AuthCallbackPage() {
             setMessage("Login successful!");
             console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+            // Join socket room after successful login
+            joinUserRoom();
             setLocation("/dashboard");
           }
           return;
@@ -86,6 +90,8 @@ export default function AuthCallbackPage() {
             setMessage("Login successful!");
             console.log(`[Auth] TOTAL: ${(performance.now() - startTime).toFixed(0)}ms`);
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+            // Join socket room after successful login
+            joinUserRoom();
             setLocation("/dashboard");
           }
           return;
@@ -133,7 +139,7 @@ export default function AuthCallbackPage() {
     return () => {
       mounted = false;
     };
-  }, [setLocation, queryClient]);
+  }, [setLocation, queryClient, joinUserRoom]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">

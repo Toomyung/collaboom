@@ -7,6 +7,7 @@ interface SocketContextType {
   isConnected: boolean;
   joinCampaign: (campaignId: string) => void;
   leaveCampaign: (campaignId: string) => void;
+  joinUserRoom: () => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -14,6 +15,7 @@ const SocketContext = createContext<SocketContextType>({
   isConnected: false,
   joinCampaign: () => {},
   leaveCampaign: () => {},
+  joinUserRoom: () => {},
 });
 
 export function SocketProvider({ children }: { children: ReactNode }) {
@@ -29,6 +31,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketInstance.on("connect", () => {
       setIsConnected(true);
       console.log("[Socket] Connected");
+      // On connect/reconnect, try to join user room if session exists
+      socketInstance.emit("join:user");
     });
 
     socketInstance.on("disconnect", () => {
@@ -145,8 +149,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
   }, [socket]);
 
+  const joinUserRoom = useCallback(() => {
+    if (socket) {
+      socket.emit("join:user");
+      console.log("[Socket] Requested to join user room");
+    }
+  }, [socket]);
+
   return (
-    <SocketContext.Provider value={{ socket, isConnected, joinCampaign, leaveCampaign }}>
+    <SocketContext.Provider value={{ socket, isConnected, joinCampaign, leaveCampaign, joinUserRoom }}>
       {children}
     </SocketContext.Provider>
   );
