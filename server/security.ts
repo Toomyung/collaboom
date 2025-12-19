@@ -76,14 +76,6 @@ export const uploadLimiter = rateLimit({
 });
 
 export function setupSecurityMiddleware(app: Express): void {
-  const isProduction = process.env.NODE_ENV === "production";
-  const isReplitEnv = !!process.env.REPL_SLUG;
-  
-  // In Replit dev environment, allow embedding in Replit's iframe for preview
-  const frameAncestors = isReplitEnv && !isProduction
-    ? ["'self'", "https://*.replit.dev", "https://*.replit.com", "https://replit.com"]
-    : ["'self'"];
-  
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -99,7 +91,7 @@ export function setupSecurityMiddleware(app: Express): void {
         childSrc: ["'self'", "blob:"],
         workerSrc: ["'self'", "blob:"],
         formAction: ["'self'"],
-        frameAncestors: frameAncestors,
+        frameAncestors: ["'self'"],
         baseUri: ["'self'"],
         upgradeInsecureRequests: [],
       },
@@ -119,10 +111,7 @@ export function setupSecurityMiddleware(app: Express): void {
 
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    // In Replit dev, don't set X-Frame-Options to allow iframe embedding
-    if (isProduction || !isReplitEnv) {
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    }
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
     next();
