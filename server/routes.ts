@@ -3329,8 +3329,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Emit socket event to notify influencer of reply
+      // Create notification and emit socket event to notify influencer of reply
       if (issueWithDetails) {
+        // Create notification for the influencer
+        await storage.createNotification({
+          influencerId: issueWithDetails.influencerId,
+          campaignId: issueWithDetails.campaignId,
+          applicationId: issueWithDetails.applicationId,
+          type: "admin_reply",
+          title: "Admin replied to your question",
+          message: response || "Your shipping issue has been resolved.",
+        });
+
+        // Emit notification created event
+        emitNotificationCreated(issueWithDetails.influencerId);
+
+        // Emit comment updated event
         emitToUser(issueWithDetails.influencerId, "comment:updated", {
           campaignId: issueWithDetails.campaignId,
           applicationId: issueWithDetails.applicationId,
@@ -3365,8 +3379,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Issue not found" });
       }
 
-      // Emit socket event to notify influencer
+      // Create notification and emit socket event to notify influencer
       if (issueWithDetails) {
+        // Create notification for the influencer
+        await storage.createNotification({
+          influencerId: issueWithDetails.influencerId,
+          campaignId: issueWithDetails.campaignId,
+          applicationId: issueWithDetails.applicationId,
+          type: "admin_reply",
+          title: "Admin replied to your question",
+          message: response || "Your shipping issue has been reviewed.",
+        });
+
+        // Emit notification created event
+        emitNotificationCreated(issueWithDetails.influencerId);
+
+        // Emit comment updated event
         emitToUser(issueWithDetails.influencerId, "comment:updated", {
           campaignId: issueWithDetails.campaignId,
           applicationId: issueWithDetails.applicationId,
