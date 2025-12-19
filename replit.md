@@ -87,6 +87,31 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 - **Applies to:** Any campaign type
 - **Description:** If a brand wants to purchase rights to use your video content (for landing pages, social media ads, website, etc.), you receive an extra $30 bonus.
 
+## Payout System
+
+### Influencer Payout Requests
+- **Balance Calculation:** Available Balance = Total Earned - Total Payouts Requested
+- **Reward Amounts:** $30 for Link in Bio campaigns, $50 for Amazon Video Upload campaigns
+- **Requirements:** PayPal email must be set in influencer profile before requesting payouts
+- **Request Flow:**
+  1. Influencer opens "Cash Earned" sheet from dashboard
+  2. Views Total Earned and Available Balance
+  3. Clicks "Request Payout" button (entire available balance is requested, no partial payouts)
+  4. Confirms request in dialog showing PayPal email
+  5. Request is submitted with "pending" status
+- **Status Flow:** pending → processing → completed/rejected
+- **Notifications:** Admin receives "newPayoutRequest" Socket.IO event when influencer submits request
+
+### Admin Payout Management
+- **Location:** `/admin/payouts` page accessible from admin sidebar
+- **Features:**
+  - Filter by status (pending, processing, completed, rejected)
+  - Search by influencer name, email, TikTok handle, or PayPal email
+  - View detailed request info including timestamps
+  - Actions: Mark as Processing, Mark as Completed, Reject (with optional reason)
+- **Notifications:** Influencer receives "payoutRequestUpdated" Socket.IO event when admin updates status
+- **Sidebar Badge:** Shows count of pending + processing requests
+
 ## UI Design System
 
 ### Campaign Type Color Scheme
