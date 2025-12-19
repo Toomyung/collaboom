@@ -32,6 +32,7 @@ import {
   User,
   UserPlus,
   Store,
+  Video,
 } from "lucide-react";
 import {
   Sheet,
@@ -492,18 +493,18 @@ export default function DashboardPage() {
     },
   });
 
-  // Amazon Video Upload: Submit Amazon Storefront URL
-  const [amazonStorefrontForms, setAmazonStorefrontForms] = useState<Record<string, string>>({});
+  // Amazon Video Upload: Combined submission (storefront + video together)
+  const [amazonCombinedForms, setAmazonCombinedForms] = useState<Record<string, { storefrontUrl: string; videoUrl: string }>>({});
   
-  const submitAmazonStorefrontMutation = useMutation({
-    mutationFn: async ({ applicationId, amazonStorefrontUrl }: { applicationId: string; amazonStorefrontUrl: string }) => {
-      await apiRequest("POST", `/api/applications/${applicationId}/submit-amazon-storefront`, { amazonStorefrontUrl });
+  const submitAmazonCombinedMutation = useMutation({
+    mutationFn: async ({ applicationId, amazonStorefrontUrl, videoUrl }: { applicationId: string; amazonStorefrontUrl: string; videoUrl: string }) => {
+      await apiRequest("POST", `/api/applications/${applicationId}/submit-amazon-combined`, { amazonStorefrontUrl, videoUrl });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
       toast({
-        title: "Amazon Storefront link submitted",
-        description: "We'll verify your storefront link shortly.",
+        title: "Submission completed",
+        description: "We'll verify your Amazon Storefront and TikTok video shortly.",
       });
     },
     onError: (error: Error) => {
@@ -543,22 +544,34 @@ export default function DashboardPage() {
     }
   }, [applications]);
 
-  // Pre-fill bio link and Amazon storefront forms with profile URLs
+  // Pre-fill bio link and Amazon storefront forms with profile URLs or existing application data
   useEffect(() => {
     if (applications && influencer) {
       const newBioLinkForms: Record<string, string> = {};
-      const newAmazonForms: Record<string, string> = {};
+      const newAmazonCombinedForms: Record<string, { storefrontUrl: string; videoUrl: string }> = {};
       
       applications.forEach((app) => {
-        // Only pre-fill if the form is empty and the profile URL exists
+        // Pre-fill bio link from profile if empty
         if (app.status === "delivered" && !(app as any).bioLinkUrl && influencer.bioLinkProfileUrl) {
           if (!bioLinkForms[app.id]) {
             newBioLinkForms[app.id] = influencer.bioLinkProfileUrl;
           }
         }
-        if (app.status === "delivered" && !(app as any).amazonStorefrontUrl && influencer.amazonStorefrontUrl) {
-          if (!amazonStorefrontForms[app.id]) {
-            newAmazonForms[app.id] = influencer.amazonStorefrontUrl;
+        
+        // Pre-fill Amazon combined form
+        // Case 1: New submission - pre-fill storefront URL from profile
+        // Case 2: Legacy flow - storefront already submitted, pre-fill it so user can submit video
+        if (["delivered", "uploaded"].includes(app.status) && !app.contentUrl) {
+          if (!amazonCombinedForms[app.id]) {
+            const existingStorefront = (app as any).amazonStorefrontUrl;
+            const profileStorefront = influencer.amazonStorefrontUrl;
+            
+            if (existingStorefront || profileStorefront) {
+              newAmazonCombinedForms[app.id] = { 
+                storefrontUrl: existingStorefront || profileStorefront || "", 
+                videoUrl: "" 
+              };
+            }
           }
         }
       });
@@ -566,8 +579,8 @@ export default function DashboardPage() {
       if (Object.keys(newBioLinkForms).length > 0) {
         setBioLinkForms(prev => ({ ...prev, ...newBioLinkForms }));
       }
-      if (Object.keys(newAmazonForms).length > 0) {
-        setAmazonStorefrontForms(prev => ({ ...prev, ...newAmazonForms }));
+      if (Object.keys(newAmazonCombinedForms).length > 0) {
+        setAmazonCombinedForms(prev => ({ ...prev, ...newAmazonCombinedForms }));
       }
     }
   }, [applications, influencer]);
@@ -981,164 +994,173 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Amazon Video Upload: Amazon Storefront Submission Status */}
+        {/* Amazon Video Upload: Combined Submission (Storefront + Video together) */}
         {campaign.campaignType === "amazon_video_upload" && ["delivered", "uploaded", "completed"].includes(application.status) && (
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <Store className="h-4 w-4 text-amber-600" />
-              <span className="font-medium text-amber-600">Amazon Storefront</span>
+              <Upload className="h-4 w-4 text-amber-600" />
+              <span className="font-medium text-amber-600">Submission</span>
             </div>
             
-            {/* Amazon Storefront verified - read-only display */}
-            {(application as any).amazonStorefrontVerifiedAt ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600">Amazon Storefront link verified</span>
+            {/* Already submitted both - show both links */}
+            {(application as any).amazonStorefrontUrl && application.contentUrl ? (
+              <div className="space-y-4">
+                {/* Storefront status */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Store className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Amazon Storefront</span>
+                    {(application as any).amazonStorefrontVerifiedAt ? (
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
+                    )}
+                  </div>
+                  <a 
+                    href={(application as any).amazonStorefrontUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {(application as any).amazonStorefrontUrl}
+                  </a>
                 </div>
-                <a 
-                  href={(application as any).amazonStorefrontUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  {(application as any).amazonStorefrontUrl}
-                </a>
-              </div>
-            ) : (application as any).amazonStorefrontUrl ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600">Amazon Storefront submitted - awaiting verification</span>
+                
+                {/* Video status */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">TikTok Video</span>
+                    {(application as any).contentVerifiedAt ? (
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
+                    )}
+                  </div>
+                  <a 
+                    href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Your Video
+                  </a>
                 </div>
-                <a 
-                  href={(application as any).amazonStorefrontUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  {(application as any).amazonStorefrontUrl}
-                </a>
+                
                 <p className="text-xs text-muted-foreground">
-                  Our team will verify that your video is visible on your Amazon Storefront.
+                  Our team will verify both your Amazon Storefront video and TikTok video.
                 </p>
-                <div className="bg-purple-500/10 border border-purple-500/20 rounded-md p-2 mt-2">
-                  <p className="text-xs text-purple-600 font-medium">
-                    Next step: Once verified, you'll be able to submit your TikTok video link here.
-                  </p>
-                </div>
               </div>
-            ) : application.status === "delivered" ? (
-              <div className="space-y-3">
+            ) : ["delivered", "uploaded"].includes(application.status) ? (
+              /* Submission form - both fields required */
+              <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Step 1:</strong> Upload the product review video to your Amazon Influencer Storefront.<br />
-                  <strong>Step 2:</strong> Submit your storefront URL below so we can verify the video is visible.
+                  Submit both your Amazon Storefront URL (where you uploaded the product video) and your TikTok video URL together.
                 </p>
-                {influencer?.amazonStorefrontUrl && (
+                {influencer?.amazonStorefrontUrl && !amazonCombinedForms[application.id]?.storefrontUrl && (
                   <p className="text-xs text-amber-600">
-                    We've pre-filled your storefront URL from your profile. Just make sure you've uploaded the product video!
+                    We've pre-filled your storefront URL from your profile.
                   </p>
                 )}
-                <div className="space-y-2">
+                
+                {/* Amazon Storefront URL - show as read-only if already submitted */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Store className="h-4 w-4" />
+                    Amazon Storefront URL
+                    {(application as any).amazonStorefrontUrl && (
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Submitted</Badge>
+                    )}
+                  </label>
+                  {(application as any).amazonStorefrontUrl ? (
+                    <div className="text-sm p-2 bg-muted rounded-md">
+                      <a 
+                        href={(application as any).amazonStorefrontUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {(application as any).amazonStorefrontUrl}
+                      </a>
+                    </div>
+                  ) : (
+                    <Input
+                      placeholder="https://www.amazon.com/shop/yourname"
+                      value={amazonCombinedForms[application.id]?.storefrontUrl || ""}
+                      onChange={(e) => setAmazonCombinedForms(prev => ({
+                        ...prev,
+                        [application.id]: { 
+                          storefrontUrl: e.target.value, 
+                          videoUrl: prev[application.id]?.videoUrl || "" 
+                        }
+                      }))}
+                      className="text-sm"
+                      data-testid={`input-amazon-storefront-${application.id}`}
+                    />
+                  )}
+                </div>
+                
+                {/* TikTok Video URL */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    TikTok Video URL
+                  </label>
                   <Input
-                    placeholder="Your Amazon Storefront URL (e.g., amazon.com/shop/yourname)"
-                    value={amazonStorefrontForms[application.id] || ""}
-                    onChange={(e) => setAmazonStorefrontForms(prev => ({
+                    placeholder="https://www.tiktok.com/@yourhandle/video/..."
+                    value={amazonCombinedForms[application.id]?.videoUrl || ""}
+                    onChange={(e) => setAmazonCombinedForms(prev => ({
                       ...prev,
-                      [application.id]: e.target.value
-                    }))}
-                    className="text-sm"
-                    data-testid={`input-amazon-storefront-${application.id}`}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const amazonLink = amazonStorefrontForms[application.id];
-                      if (amazonLink) {
-                        submitAmazonStorefrontMutation.mutate({
-                          applicationId: application.id,
-                          amazonStorefrontUrl: amazonLink
-                        });
+                      [application.id]: { 
+                        storefrontUrl: prev[application.id]?.storefrontUrl || (application as any).amazonStorefrontUrl || "", 
+                        videoUrl: e.target.value 
                       }
-                    }}
-                    disabled={!amazonStorefrontForms[application.id] || submitAmazonStorefrontMutation.isPending}
-                    data-testid={`button-submit-amazon-storefront-${application.id}`}
-                  >
-                    {submitAmazonStorefrontMutation.isPending ? "Submitting..." : "Submit Storefront Link"}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-amber-600">
-                <Clock className="h-4 w-4" />
-                <span>Amazon Storefront link not yet submitted - submit after product delivery</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Amazon Video Upload: Video Upload Section (only after storefront verified) */}
-        {campaign.campaignType === "amazon_video_upload" && 
-         application.status === "delivered" && 
-         (application as any).amazonStorefrontVerifiedAt && (
-          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Upload className="h-4 w-4 text-purple-600" />
-              <span className="font-medium text-purple-600">TikTok Video Upload</span>
-            </div>
-            
-            {application.contentUrl ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-green-600">Video submitted - awaiting verification</span>
-                </div>
-                <a 
-                  href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  View Your Video
-                </a>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Your Amazon Storefront has been verified. Now you can upload your TikTok video link.
-                </p>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Your TikTok video URL"
-                    value={videoUrlForms[application.id] || ""}
-                    onChange={(e) => setVideoUrlForms(prev => ({
-                      ...prev,
-                      [application.id]: e.target.value
                     }))}
                     className="text-sm"
                     data-testid={`input-amazon-video-url-${application.id}`}
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const videoUrl = videoUrlForms[application.id];
-                      if (videoUrl) {
-                        submitVideoMutation.mutate({
-                          applicationId: application.id,
-                          videoUrl: videoUrl
-                        });
-                      }
-                    }}
-                    disabled={!videoUrlForms[application.id] || submitVideoMutation.isPending}
-                    data-testid={`button-submit-amazon-video-${application.id}`}
-                  >
-                    {submitVideoMutation.isPending ? "Submitting..." : "Submit Video"}
-                  </Button>
                 </div>
-              </>
+                
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const form = amazonCombinedForms[application.id];
+                    const storefrontUrl = form?.storefrontUrl || (application as any).amazonStorefrontUrl;
+                    const videoUrl = form?.videoUrl;
+                    if (storefrontUrl && videoUrl) {
+                      submitAmazonCombinedMutation.mutate({
+                        applicationId: application.id,
+                        amazonStorefrontUrl: storefrontUrl,
+                        videoUrl: videoUrl
+                      });
+                    }
+                  }}
+                  disabled={
+                    (!(application as any).amazonStorefrontUrl && !amazonCombinedForms[application.id]?.storefrontUrl) || 
+                    !amazonCombinedForms[application.id]?.videoUrl || 
+                    submitAmazonCombinedMutation.isPending
+                  }
+                  className="w-full"
+                  data-testid={`button-submit-amazon-combined-${application.id}`}
+                >
+                  {submitAmazonCombinedMutation.isPending ? "Submitting..." : 
+                   (application as any).amazonStorefrontUrl ? "Submit Video" : "Submit Both Links"}
+                </Button>
+                
+                {!(application as any).amazonStorefrontUrl && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Both fields are required to submit
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-amber-600">
+                <Clock className="h-4 w-4" />
+                <span>Submission available after product delivery</span>
+              </div>
             )}
           </div>
         )}

@@ -1167,7 +1167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Amazon Video Upload: Submit Amazon Storefront URL (influencer)
+  // Amazon Video Upload: Submit Amazon Storefront URL (influencer) - LEGACY endpoint kept for compatibility
   app.post("/api/applications/:id/submit-amazon-storefront", requireAuth("influencer"), async (req, res) => {
     try {
       const application = await storage.getApplication(req.params.id);
@@ -1219,6 +1219,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Emit socket event for real-time admin updates
       emitApplicationUpdated(application.campaignId, application.id, application.status);
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Amazon Video Upload: Combined submission (storefront + video URL together)
+  app.post("/api/applications/:id/submit-amazon-combined", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if campaign is amazon_video_upload
+      const campaign = await storage.getCampaign(application.campaignId);
+      if (!campaign || campaign.campaignType !== "amazon_video_upload") {
+        return res.status(400).json({ message: "This campaign does not require Amazon submission" });
+      }
+
+      // Check if application is in valid status for submission (allow delivered and uploaded)
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "You can submit after receiving the product" });
+      }
+
+      // Check if BOTH are already submitted (fully complete - cannot change)
+      if (application.amazonStorefrontUrl && application.contentUrl) {
+        return res.status(400).json({ message: "Submission has already been made and cannot be changed" });
+      }
+
+      const { amazonStorefrontUrl, videoUrl } = req.body;
+      
+      // Both fields are required for new submissions
+      if (!amazonStorefrontUrl) {
+        return res.status(400).json({ message: "Amazon Storefront URL is required" });
+      }
+      if (!videoUrl) {
+        return res.status(400).json({ message: "TikTok video URL is required" });
+      }
+
+      // Validate Amazon URL
+      try {
+        const url = new URL(amazonStorefrontUrl);
+        if (!url.hostname.includes('amazon.')) {
+          return res.status(400).json({ message: "Please enter a valid Amazon Storefront URL" });
+        }
+      } catch {
+        return res.status(400).json({ message: "Please enter a valid Amazon URL" });
+      }
+
+      // Validate TikTok URL
+      try {
+        const url = new URL(videoUrl);
+        if (!url.hostname.includes('tiktok.')) {
+          return res.status(400).json({ message: "Please enter a valid TikTok video URL" });
+        }
+      } catch {
+        return res.status(400).json({ message: "Please enter a valid TikTok URL" });
+      }
+
+      // Build update object - only update fields that are not already set
+      const updateData: any = {};
+      
+      if (!application.amazonStorefrontUrl) {
+        updateData.amazonStorefrontUrl = amazonStorefrontUrl.trim();
+        updateData.amazonStorefrontSubmittedAt = new Date();
+      }
+      
+      if (!application.contentUrl) {
+        updateData.contentUrl = videoUrl.trim();
+        updateData.contentSubmittedAt = new Date();
+      }
+      
+      // Update status to uploaded if not already
+      if (application.status === "delivered") {
+        updateData.status = "uploaded";
+      }
+
+      // Update application
+      await storage.updateApplication(application.id, updateData);
+
+      // Emit socket event for real-time admin updates
+      emitApplicationUpdated(application.campaignId, application.id, updateData.status || application.status);
 
       return res.json({ success: true });
     } catch (error: any) {
