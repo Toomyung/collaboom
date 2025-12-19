@@ -235,6 +235,8 @@ export default function DashboardPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [location] = useLocation();
   const [showPayoutConfirmDialog, setShowPayoutConfirmDialog] = useState(false);
+  const [showDeliveryConfirmDialog, setShowDeliveryConfirmDialog] = useState(false);
+  const [applicationToConfirmDelivery, setApplicationToConfirmDelivery] = useState<ApplicationWithDetails | null>(null);
 
   // Function to scroll to a specific application by ID
   const scrollToApplication = (applicationId: string) => {
@@ -450,6 +452,29 @@ export default function DashboardPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    },
+  });
+
+  const confirmDeliveryMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      await apiRequest("POST", `/api/applications/${applicationId}/confirm-delivery`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/all-history"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payout-requests"] });
+      toast({
+        title: "Delivery confirmed!",
+        description: "Thank you for confirming. Now it's time to create amazing content!",
+      });
+      setShowDeliveryConfirmDialog(false);
+      setApplicationToConfirmDelivery(null);
+    },
+    onError: (error: Error) => {
+      setShowDeliveryConfirmDialog(false);
+      setApplicationToConfirmDelivery(null);
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -1243,7 +1268,7 @@ export default function DashboardPage() {
         )}
 
         {application.shipping && (application.status === "shipped" || application.status === "delivered") && (
-          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-2">
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-3">
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-blue-600" />
               <span className="font-medium text-blue-600">Shipping Information</span>
@@ -1273,6 +1298,36 @@ export default function DashboardPage() {
                 <ExternalLink className="h-3 w-3" />
                 Track Your Package
               </a>
+            )}
+            
+            {/* Confirm Delivery Button - Only shown when status is shipped */}
+            {application.status === "shipped" && (
+              <div className="border-t border-blue-500/20 pt-3 mt-3 space-y-3">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                      <p className="font-medium">Please click "Confirm Delivery" only after you have received your package.</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        We monitor tracking numbers. If the courier shows your package as delivered but you haven't received it, 
+                        please leave a comment or contact support instead of clicking confirm.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    setApplicationToConfirmDelivery(application);
+                    setShowDeliveryConfirmDialog(true);
+                  }}
+                  className="w-full"
+                  variant="outline"
+                  data-testid={`button-confirm-delivery-${application.id}`}
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  Confirm Delivery
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -2416,6 +2471,59 @@ export default function DashboardPage() {
               data-testid="button-confirm-payout"
             >
               {requestPayoutMutation.isPending ? "Submitting..." : "Confirm Request"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delivery Confirmation Dialog */}
+      <AlertDialog open={showDeliveryConfirmDialog} onOpenChange={setShowDeliveryConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-blue-600" />
+              Confirm Package Delivery
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Are you confirming that you have <span className="font-semibold text-foreground">physically received</span> the package for{" "}
+                <span className="font-medium text-foreground">{applicationToConfirmDelivery?.campaign.name}</span>?
+              </p>
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 mt-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-amber-800 dark:text-amber-200">
+                    <p className="font-medium">Important</p>
+                    <p className="text-xs mt-1 text-amber-700 dark:text-amber-300">
+                      Only confirm if you have the package in your hands. We track all shipments and false confirmations may affect your account.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDeliveryConfirmDialog(false);
+                setApplicationToConfirmDelivery(null);
+              }}
+              disabled={confirmDeliveryMutation.isPending}
+              data-testid="button-delivery-confirm-cancel"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (applicationToConfirmDelivery) {
+                  confirmDeliveryMutation.mutate(applicationToConfirmDelivery.id);
+                }
+              }}
+              disabled={confirmDeliveryMutation.isPending}
+              data-testid="button-delivery-confirm-yes"
+            >
+              {confirmDeliveryMutation.isPending ? "Confirming..." : "Yes, I received it"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

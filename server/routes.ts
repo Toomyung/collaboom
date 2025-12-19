@@ -1916,6 +1916,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Influencer confirms delivery (bidirectional delivery confirmation)
+  app.post("/api/applications/:id/confirm-delivery", requireAuth("influencer"), async (req, res) => {
+    try {
+      const application = await storage.getApplication(req.params.id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Verify this application belongs to the logged-in influencer
+      if (application.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Can only confirm delivery for shipped applications
+      if (application.status !== "shipped") {
+        return res.status(400).json({ message: "Can only confirm delivery for shipped packages" });
+      }
+
+      const now = new Date();
+      await storage.updateApplication(application.id, {
+        status: "delivered",
+        deliveredAt: now,
+      });
+
+      // Update shipping record if exists
+      const shipping = await storage.getShippingByApplication(application.id);
+      if (shipping) {
+        await storage.updateShipping(shipping.id, {
+          status: "delivered",
+          deliveredAt: now,
+        });
+      }
+
+      // Emit real-time event for admin to see (with confirmation source)
+      emitApplicationUpdated(application.campaignId, application.id, "delivered");
+      
+      console.log(`[Delivery] Influencer confirmed delivery for application ${application.id} at ${now.toISOString()}`);
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Undo delivered (revert to shipped)
   app.post("/api/admin/applications/:id/undo-delivered", requireAuth("admin"), async (req, res) => {
     try {
