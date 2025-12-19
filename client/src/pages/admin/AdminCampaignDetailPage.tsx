@@ -256,12 +256,12 @@ export default function AdminCampaignDetailPage() {
   const handleFileUpload = async () => {
     if (!csvFile || !applications) return;
     
-    // File size check (max 5MB)
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    // File size check (max 20MB - sufficient for 1000+ rows with all shipping data)
+    const MAX_FILE_SIZE = 20 * 1024 * 1024;
     if (csvFile.size > MAX_FILE_SIZE) {
       toast({ 
         title: "File too large", 
-        description: "Maximum file size is 5MB. Please split your data into smaller files.", 
+        description: "Maximum file size is 20MB. Please split your data into smaller files.", 
         variant: "destructive" 
       });
       return;
