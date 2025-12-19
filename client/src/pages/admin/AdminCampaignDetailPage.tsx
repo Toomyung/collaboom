@@ -1085,6 +1085,9 @@ export default function AdminCampaignDetailPage() {
                           {campaign.campaignType === "link_in_bio" && (
                             <TableHead>Bio Link</TableHead>
                           )}
+                          {campaign.campaignType === "amazon_video_upload" && (
+                            <TableHead>Amazon Storefront</TableHead>
+                          )}
                           <TableHead>Phone</TableHead>
                           <TableHead>Address</TableHead>
                           <TableHead>City</TableHead>
@@ -1172,6 +1175,25 @@ export default function AdminCampaignDetailPage() {
                                       data-testid={`biolink-${app.id}`}
                                     >
                                       <span className="truncate">{inf.bioLinkProfileUrl.replace(/^https?:\/\//, '')}</span>
+                                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                              )}
+                              {campaign.campaignType === "amazon_video_upload" && (
+                                <TableCell>
+                                  {inf?.amazonStorefrontUrl ? (
+                                    <a
+                                      href={inf.amazonStorefrontUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-muted-foreground hover:text-primary hover:underline flex items-center gap-1 max-w-[150px]"
+                                      onClick={(e) => e.stopPropagation()}
+                                      data-testid={`amazon-storefront-${app.id}`}
+                                    >
+                                      <span className="truncate">{inf.amazonStorefrontUrl.replace(/^https?:\/\//, '')}</span>
                                       <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                     </a>
                                   ) : (
