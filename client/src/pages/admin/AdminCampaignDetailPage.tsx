@@ -121,6 +121,7 @@ export default function AdminCampaignDetailPage() {
   } | null>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState("");
   const [bulkSending, setBulkSending] = useState(false);
+  const [bulkSendProgress, setBulkSendProgress] = useState<{ current: number; total: number; failed: string[] } | null>(null);
   const [conversationApp, setConversationApp] = useState<{ id: string; influencerName: string } | null>(null);
   const [pendingMissedAppId, setPendingMissedAppId] = useState<string | null>(null);
   const APPROVED_PAGE_SIZE = 20;
@@ -254,6 +255,17 @@ export default function AdminCampaignDetailPage() {
 
   const handleFileUpload = async () => {
     if (!csvFile || !applications) return;
+    
+    // File size check (max 5MB)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    if (csvFile.size > MAX_FILE_SIZE) {
+      toast({ 
+        title: "File too large", 
+        description: "Maximum file size is 5MB. Please split your data into smaller files.", 
+        variant: "destructive" 
+      });
+      return;
+    }
     
     const fileName = csvFile.name.toLowerCase();
     const isXlsx = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
@@ -430,40 +442,63 @@ export default function AdminCampaignDetailPage() {
     }
 
     setBulkSending(true);
+    setBulkSendProgress({ current: 0, total: readyToSend.length, failed: [] });
+    
     let successCount = 0;
-    let errorCount = 0;
+    const failedInfluencers: string[] = [];
+    const BATCH_SIZE = 5;
 
-    for (const app of readyToSend) {
-      try {
-        const defaultData = getFormDataFromApp(app);
-        const formData = shippingForms[app.id] || defaultData;
-        
-        // Save phone and address to application shipping fields first
-        await apiRequest("PATCH", `/api/admin/applications/${app.id}/shipping-address`, {
-          phone: formData.phone,
-          addressLine1: formData.addressLine1,
-          addressLine2: formData.addressLine2,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode,
-          country: formData.country,
-        });
-        
-        await apiRequest("POST", `/api/admin/applications/${app.id}/ship`, formData);
-        successCount++;
-      } catch (error) {
-        errorCount++;
-      }
+    // Process in batches
+    for (let i = 0; i < readyToSend.length; i += BATCH_SIZE) {
+      const batch = readyToSend.slice(i, i + BATCH_SIZE);
+      
+      const results = await Promise.allSettled(
+        batch.map(async (app) => {
+          const defaultData = getFormDataFromApp(app);
+          const formData = shippingForms[app.id] || defaultData;
+          
+          // Save phone and address to application shipping fields first
+          await apiRequest("PATCH", `/api/admin/applications/${app.id}/shipping-address`, {
+            phone: formData.phone,
+            addressLine1: formData.addressLine1,
+            addressLine2: formData.addressLine2,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode,
+            country: formData.country,
+          });
+          
+          await apiRequest("POST", `/api/admin/applications/${app.id}/ship`, formData);
+          return app;
+        })
+      );
+      
+      results.forEach((result, idx) => {
+        if (result.status === "fulfilled") {
+          successCount++;
+        } else {
+          const failedApp = batch[idx];
+          const influencerName = getInfluencerDisplayName(failedApp.influencer, "Unknown");
+          failedInfluencers.push(influencerName);
+        }
+      });
+      
+      setBulkSendProgress({ 
+        current: Math.min(i + BATCH_SIZE, readyToSend.length), 
+        total: readyToSend.length, 
+        failed: failedInfluencers 
+      });
     }
 
     setBulkSending(false);
+    setBulkSendProgress(null);
     setShowBulkSendDialog(false);
     queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
     
-    if (errorCount > 0) {
+    if (failedInfluencers.length > 0) {
       toast({ 
         title: "Partially completed", 
-        description: `${successCount} shipped, ${errorCount} failed`,
+        description: `${successCount} shipped, ${failedInfluencers.length} failed: ${failedInfluencers.slice(0, 3).join(", ")}${failedInfluencers.length > 3 ? "..." : ""}`,
         variant: "destructive"
       });
     } else {
@@ -2499,6 +2534,25 @@ export default function AdminCampaignDetailPage() {
               <li>• All tracking URLs are working</li>
             </ul>
           </div>
+          {bulkSendProgress && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Processing...</span>
+                <span>{bulkSendProgress.current} / {bulkSendProgress.total}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-primary h-full transition-all duration-300"
+                  style={{ width: `${(bulkSendProgress.current / bulkSendProgress.total) * 100}%` }}
+                />
+              </div>
+              {bulkSendProgress.failed.length > 0 && (
+                <p className="text-xs text-red-600">
+                  Failed: {bulkSendProgress.failed.slice(0, 3).join(", ")}{bulkSendProgress.failed.length > 3 ? "..." : ""}
+                </p>
+              )}
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowBulkSendDialog(false)} disabled={bulkSending}>
               Cancel
