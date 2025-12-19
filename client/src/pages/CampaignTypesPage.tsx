@@ -5,12 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Gift,
   DollarSign,
-  ShoppingCart,
-  Camera,
   Package,
   CheckCircle,
   Upload,
-  FileImage,
   CreditCard,
   Store,
   Video,
@@ -26,64 +23,125 @@ import {
 import { SiTiktok, SiAmazon } from "react-icons/si";
 import { MainLayout } from "@/components/layout/MainLayout";
 
-function StepIndicator({ number, isLast = false }: { number: number; isLast?: boolean }) {
-  return (
-    <div className="flex flex-col items-center">
-      <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">
-        {number}
-      </div>
-      {!isLast && (
-        <div className="w-0.5 h-8 bg-border mt-1" />
-      )}
-    </div>
-  );
+interface ProcessStep {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
 }
 
-function ProcessStep({ 
-  step, 
-  icon: Icon, 
-  title, 
-  description, 
-  isLast = false 
-}: { 
-  step: number; 
-  icon: typeof Gift; 
-  title: string; 
-  description?: string; 
-  isLast?: boolean;
-}) {
-  return (
-    <div className="flex gap-4">
-      <StepIndicator number={step} isLast={isLast} />
-      <div className={`flex-1 ${!isLast ? 'pb-6' : ''}`}>
-        <div className="flex items-center gap-2 mb-1">
-          <Icon className="h-4 w-4 text-primary" />
-          <span className="font-medium">{title}</span>
-        </div>
-        {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function HorizontalProcess({ steps }: { steps: { icon: React.ComponentType<{ className?: string }>; label: string }[] }) {
+function HorizontalProcess({ steps, color }: { steps: ProcessStep[]; color: string }) {
+  const colorMap: Record<string, string> = {
+    purple: "bg-purple-100 dark:bg-purple-900/50 text-purple-600",
+    emerald: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600",
+    amber: "bg-amber-100 dark:bg-amber-900/50 text-amber-600",
+  };
+  
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 py-4">
       {steps.map((step, index) => (
         <div key={index} className="flex items-center gap-2">
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <step.icon className="h-5 w-5 text-primary" />
+          <div className="flex flex-col items-center gap-1.5">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colorMap[color]}`}>
+              <step.icon className="h-5 w-5" />
             </div>
-            <span className="text-xs text-muted-foreground text-center max-w-[60px]">{step.label}</span>
+            <span className="text-xs text-muted-foreground text-center max-w-[60px] leading-tight">{step.label}</span>
           </div>
           {index < steps.length - 1 && (
             <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+interface BenefitItem {
+  text: string;
+}
+
+interface RequirementItem {
+  text: string;
+  link?: { url: string; label: string };
+  highlight?: boolean;
+}
+
+function ContentGrid({ 
+  benefits, 
+  requirements, 
+  color 
+}: { 
+  benefits: BenefitItem[]; 
+  requirements: RequirementItem[];
+  color: string;
+}) {
+  const colorMap: Record<string, { check: string; arrow: string }> = {
+    purple: { check: "text-purple-500", arrow: "text-purple-500" },
+    emerald: { check: "text-emerald-500", arrow: "text-emerald-500" },
+    amber: { check: "text-amber-500", arrow: "text-amber-500" },
+  };
+  
+  return (
+    <div className="grid md:grid-cols-2 gap-6">
+      <div className="p-4 rounded-lg border bg-card">
+        <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+          <CheckCircle className={`h-4 w-4 ${colorMap[color].check}`} />
+          What You Get
+        </h4>
+        <ul className="space-y-2 text-sm">
+          {benefits.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              <CheckCircle className={`h-4 w-4 mt-0.5 shrink-0 ${colorMap[color].check}`} />
+              <span>{item.text}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="p-4 rounded-lg border bg-card">
+        <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+          <Star className={`h-4 w-4 ${colorMap[color].check}`} />
+          Requirements
+        </h4>
+        <ul className="space-y-2 text-sm">
+          {requirements.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              {item.highlight ? (
+                <CreditCard className={`h-4 w-4 mt-0.5 shrink-0 ${colorMap[color].arrow}`} />
+              ) : (
+                <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
+              )}
+              <span>
+                {item.text}
+                {item.link && (
+                  <a 
+                    href={item.link.url}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={`ml-1 ${colorMap[color].arrow} hover:underline inline-flex items-center gap-0.5`}
+                  >
+                    {item.link.label}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function PlatformBadge({ color, children }: { color: string; children: React.ReactNode }) {
+  const colorMap: Record<string, string> = {
+    purple: "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300",
+    emerald: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300",
+    amber: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300",
+  };
+  
+  return (
+    <div className={`mt-6 p-4 rounded-lg border ${colorMap[color]}`}>
+      <p className="text-sm flex items-start gap-2">
+        {children}
+      </p>
     </div>
   );
 }
@@ -121,7 +179,7 @@ export default function CampaignTypesPage() {
             <p className="text-sm text-muted-foreground">Free Products</p>
           </button>
           <button 
-            onClick={() => document.getElementById('section-cost-covered')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => document.getElementById('section-link-in-bio')?.scrollIntoView({ behavior: 'smooth' })}
             className="text-center p-6 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 hover-elevate cursor-pointer transition-all"
             data-testid="button-nav-link-in-bio"
           >
@@ -130,7 +188,7 @@ export default function CampaignTypesPage() {
             <Badge className="bg-emerald-500 text-white mt-1">+$30</Badge>
           </button>
           <button 
-            onClick={() => document.getElementById('section-amazon-store')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => document.getElementById('section-amazon-video')?.scrollIntoView({ behavior: 'smooth' })}
             className="text-center p-6 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 hover-elevate cursor-pointer transition-all"
             data-testid="button-nav-amazon-store"
           >
@@ -164,53 +222,47 @@ export default function CampaignTypesPage() {
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h4 className="font-semibold mb-4 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-purple-500" />
-                    How It Works
-                  </h4>
-                  <HorizontalProcess steps={[
+              <div className="mb-6">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-purple-500" />
+                  How It Works
+                </h4>
+                <HorizontalProcess 
+                  color="purple"
+                  steps={[
                     { icon: CheckCircle, label: "Apply" },
                     { icon: Package, label: "Receive" },
                     { icon: Video, label: "Create" },
                     { icon: Upload, label: "Upload" },
                     { icon: Star, label: "Done" },
-                  ]} />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-4 flex items-center gap-2">
-                    <Star className="h-4 w-4 text-purple-500" />
-                    What You Get
-                  </h4>
-                  <ul className="space-y-2">
-                    <li className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-purple-500 shrink-0" />
-                      <span>Free K-Beauty, Food, or Lifestyle products</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-purple-500 shrink-0" />
-                      <span>Build your portfolio with brand collaborations</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-purple-500 shrink-0" />
-                      <span>Earn points toward VIP status</span>
-                    </li>
-                  </ul>
-                </div>
+                  ]} 
+                />
               </div>
-              <div className="mt-6 p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
-                <p className="text-sm text-purple-700 dark:text-purple-300 flex items-start gap-2">
-                  <SiTiktok className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span><strong>Platform:</strong> Post your video on TikTok and share the link with us</span>
-                </p>
-              </div>
+              
+              <ContentGrid
+                color="purple"
+                benefits={[
+                  { text: "Free K-Beauty, Food, or Lifestyle products" },
+                  { text: "Build your portfolio with brand collaborations" },
+                  { text: "Earn points toward VIP status" },
+                ]}
+                requirements={[
+                  { text: "TikTok account with 1,000+ followers" },
+                  { text: "US-based shipping address" },
+                  { text: "Post video within deadline" },
+                ]}
+              />
+
+              <PlatformBadge color="purple">
+                <SiTiktok className="h-4 w-4 mt-0.5 shrink-0" />
+                <span><strong>Platform:</strong> Post your video on TikTok and share the link with us</span>
+              </PlatformBadge>
             </CardContent>
           </Card>
         </section>
 
         {/* Campaign Type 2: Link in Bio */}
-        <section id="section-cost-covered" className="mb-10 scroll-mt-20">
+        <section id="section-link-in-bio" className="mb-10 scroll-mt-20">
           <Card className="border-2 border-emerald-300 dark:border-emerald-700 overflow-hidden" data-testid="card-campaign-link-in-bio">
             <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -234,108 +286,48 @@ export default function CampaignTypesPage() {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="mb-6">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Zap className="h-4 w-4 text-emerald-500" />
-                  Step-by-Step Process
+                  How It Works
                 </h4>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center mb-2">
-                      <CheckCircle className="h-5 w-5 text-white" />
-                    </div>
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">1. Apply</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
-                      <Package className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <span className="text-xs font-medium">2. Receive Product</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
-                      <ExternalLink className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <span className="text-xs font-medium">3. Add Link to Bio</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-2">
-                      <Video className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <span className="text-xs font-medium">4. Create & Upload Video</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center mb-2">
-                      <DollarSign className="h-5 w-5 text-white" />
-                    </div>
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">5. Earn $30</span>
-                  </div>
-                </div>
+                <HorizontalProcess 
+                  color="emerald"
+                  steps={[
+                    { icon: CheckCircle, label: "Apply" },
+                    { icon: Package, label: "Receive" },
+                    { icon: ExternalLink, label: "Add Link" },
+                    { icon: Video, label: "Create" },
+                    { icon: Upload, label: "Upload" },
+                    { icon: DollarSign, label: "Earn $30" },
+                  ]} 
+                />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                    Key Benefits
-                  </h4>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>Free product from brand</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>Earn $30 cash reward</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>Help your followers find the product</span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <Camera className="h-4 w-4 text-emerald-500" />
-                    Requirements
-                  </h4>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
-                      <span>Add product purchase link to your TikTok bio (Linktree, Beacons, etc.)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
-                      <span>Submit your bio link for verification</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-muted-foreground shrink-0" />
-                      <span>Upload TikTok video with required hashtags</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CreditCard className="h-3 w-3 mt-1.5 text-emerald-500 shrink-0" />
-                      <span>
-                        <strong>PayPal account required</strong> for payment
-                        <a 
-                          href="https://www.paypal.com/us/webapps/mpp/account-selection" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="ml-1 text-emerald-600 hover:underline inline-flex items-center gap-0.5"
-                          data-testid="link-paypal-signup"
-                        >
-                          Sign up
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <ContentGrid
+                color="emerald"
+                benefits={[
+                  { text: "Free product from brand" },
+                  { text: "Earn $30 cash reward" },
+                  { text: "Help your followers find the product" },
+                ]}
+                requirements={[
+                  { text: "Add product purchase link to your TikTok bio (Linktree, Beacons, etc.)" },
+                  { text: "Submit your bio link for verification" },
+                  { text: "Upload TikTok video with required hashtags" },
+                  { text: "PayPal account required for payment", highlight: true, link: { url: "https://www.paypal.com/us/webapps/mpp/account-selection", label: "Sign up" } },
+                ]}
+              />
+
+              <PlatformBadge color="emerald">
+                <SiTiktok className="h-4 w-4 mt-0.5 shrink-0" />
+                <span><strong>Platform:</strong> TikTok video + Bio link verification required</span>
+              </PlatformBadge>
             </CardContent>
           </Card>
         </section>
 
         {/* Campaign Type 3: Amazon Video Upload */}
-        <section id="section-amazon-store" className="mb-10 scroll-mt-20">
+        <section id="section-amazon-video" className="mb-10 scroll-mt-20">
           <Card className="border-2 border-amber-300 dark:border-amber-700 overflow-hidden" data-testid="card-campaign-amazon-store">
             <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -359,154 +351,126 @@ export default function CampaignTypesPage() {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="mb-6">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-500" />
                   How It Works
                 </h4>
-                <HorizontalProcess steps={[
-                  { icon: CheckCircle, label: "Apply" },
-                  { icon: Package, label: "Receive" },
-                  { icon: Video, label: "Create" },
-                  { icon: SiTiktok, label: "Post TikTok" },
-                  { icon: SiAmazon, label: "Post Amazon" },
-                  { icon: DollarSign, label: "Earn $30" },
-                ]} />
+                <HorizontalProcess 
+                  color="amber"
+                  steps={[
+                    { icon: CheckCircle, label: "Apply" },
+                    { icon: Package, label: "Receive" },
+                    { icon: Video, label: "Create" },
+                    { icon: SiTiktok, label: "Post TikTok" },
+                    { icon: SiAmazon, label: "Post Amazon" },
+                    { icon: DollarSign, label: "Earn $30" },
+                  ]} 
+                />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                    <Store className="h-4 w-4" />
-                    Requirements
-                  </h4>
-                  <ul className="space-y-2 text-sm text-muted-foreground mb-3">
-                    <li className="flex items-start gap-2">
-                      <ArrowRight className="h-3 w-3 mt-1.5 text-amber-500 shrink-0" />
-                      <span>Active Amazon Influencer Storefront</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CreditCard className="h-3 w-3 mt-1.5 text-amber-500 shrink-0" />
-                      <span>
-                        <strong className="text-foreground">PayPal account</strong> for $30 payment
-                      </span>
-                    </li>
-                  </ul>
-                  <div className="flex flex-col gap-2">
-                    <a 
-                      href="https://affiliate-program.amazon.com/influencers" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-amber-600 hover:underline flex items-center gap-1"
-                      data-testid="link-amazon-influencer-program"
-                    >
-                      Amazon Influencer Program
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <a 
-                      href="https://www.paypal.com/us/webapps/mpp/account-selection" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-amber-600 hover:underline flex items-center gap-1"
-                      data-testid="link-paypal-signup-amazon"
-                    >
-                      Create PayPal Account
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                </div>
-                <div className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                    <Video className="h-4 w-4 text-amber-500" />
-                    Dual Platform Posting
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-2 rounded bg-muted/50">
-                      <SiTiktok className="h-5 w-5" />
-                      <span className="text-sm">TikTok Video</span>
-                      <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
-                    </div>
-                    <div className="flex items-center gap-3 p-2 rounded bg-muted/50">
-                      <SiAmazon className="h-5 w-5" />
-                      <span className="text-sm">Amazon Storefront</span>
-                      <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ContentGrid
+                color="amber"
+                benefits={[
+                  { text: "Free product from brand" },
+                  { text: "Earn $30 cash reward" },
+                  { text: "Build your Amazon Storefront presence" },
+                ]}
+                requirements={[
+                  { text: "Active Amazon Influencer Storefront", link: { url: "https://affiliate-program.amazon.com/influencers", label: "Join Program" } },
+                  { text: "Post video on TikTok AND Amazon Storefront" },
+                  { text: "Submit both links for verification" },
+                  { text: "PayPal account required for payment", highlight: true, link: { url: "https://www.paypal.com/us/webapps/mpp/account-selection", label: "Sign up" } },
+                ]}
+              />
 
-              <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-950/50 dark:to-orange-950/50 border border-amber-200 dark:border-amber-800">
-                <p className="text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
-                  <Trophy className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span><strong>Pro Tip:</strong> This is similar to Gifting but with higher rewards! Perfect for influencers who already have an Amazon Storefront.</span>
-                </p>
-              </div>
+              <PlatformBadge color="amber">
+                <Trophy className="h-4 w-4 mt-0.5 shrink-0" />
+                <span><strong>Pro Tip:</strong> Perfect for influencers who already have an Amazon Storefront. Dual platform posting maximizes your reach!</span>
+              </PlatformBadge>
             </CardContent>
           </Card>
         </section>
 
         {/* Bonus Section: Usage Rights */}
         <section className="mb-12">
-          <Card className="border-2 border-amber-300 dark:border-amber-700 overflow-hidden bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-950/20 dark:to-yellow-950/20" data-testid="card-campaign-usage-rights">
-            <CardHeader>
+          <Card className="border-2 border-rose-300 dark:border-rose-700 overflow-hidden bg-gradient-to-br from-rose-50/50 to-pink-50/50 dark:from-rose-950/20 dark:to-pink-950/20" data-testid="card-campaign-usage-rights">
+            <CardHeader className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/40 dark:to-pink-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="p-4 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 text-white w-fit">
+                <div className="p-4 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 text-white w-fit">
                   <Heart className="h-8 w-8" />
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <CardTitle className="text-2xl text-amber-700 dark:text-amber-300">Usage Rights Bonus</CardTitle>
-                    <Badge className="bg-amber-500 text-white">Optional Add-on</Badge>
+                    <CardTitle className="text-2xl text-rose-700 dark:text-rose-300">Usage Rights Bonus</CardTitle>
+                    <Badge className="bg-rose-500 text-white">Optional Add-on</Badge>
                   </div>
                   <CardDescription className="text-base">
-                    Earn extra when brands want to use your content
+                    Earn extra when brands want to use your content for marketing
                   </CardDescription>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Bonus</p>
-                  <p className="text-3xl font-bold text-amber-600">+$50</p>
+                  <p className="text-3xl font-bold text-rose-600">+$30</p>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="text-center p-4">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mb-3">
-                    <Video className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <h4 className="font-semibold mb-1">Your Content</h4>
-                  <p className="text-sm text-muted-foreground">You create amazing video content for the brand</p>
+            <CardContent className="pt-6">
+              <div className="mb-6">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-rose-500" />
+                  How It Works
+                </h4>
+                <HorizontalProcess 
+                  color="purple"
+                  steps={[
+                    { icon: Video, label: "You Create" },
+                    { icon: Heart, label: "Brand Loves It" },
+                    { icon: Star, label: "They Ask" },
+                    { icon: DollarSign, label: "+$30 Bonus" },
+                  ]} 
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-4 rounded-lg border bg-card">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-rose-500" />
+                    What You Get
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-rose-500" />
+                      <span>Extra $30 on top of campaign reward</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-rose-500" />
+                      <span>Your content featured in brand marketing</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-rose-500" />
+                      <span>Available for any campaign type</span>
+                    </li>
+                  </ul>
                 </div>
-                <div className="text-center p-4">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mb-3">
-                    <Heart className="h-8 w-8 text-amber-600" />
+                <div className="p-4 rounded-lg border bg-card">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                    <Star className="h-4 w-4 text-rose-500" />
+                    Where Brands Use Your Video
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">Landing Pages</Badge>
+                    <Badge variant="secondary">Social Media Ads</Badge>
+                    <Badge variant="secondary">Website</Badge>
+                    <Badge variant="secondary">Email Marketing</Badge>
+                    <Badge variant="secondary">Product Pages</Badge>
                   </div>
-                  <h4 className="font-semibold mb-1">Brand Loves It</h4>
-                  <p className="text-sm text-muted-foreground">Brand wants to use your video for their marketing</p>
-                </div>
-                <div className="text-center p-4">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mb-3">
-                    <DollarSign className="h-8 w-8 text-green-600" />
-                  </div>
-                  <h4 className="font-semibold mb-1">Extra $50</h4>
-                  <p className="text-sm text-muted-foreground">You receive additional payment for usage rights</p>
                 </div>
               </div>
 
-              <div className="mt-6 p-4 rounded-lg border bg-card">
-                <h4 className="font-semibold mb-3 text-amber-700 dark:text-amber-300">Where Brands Can Use Your Video</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">Landing Pages</Badge>
-                  <Badge variant="secondary">Social Media Ads</Badge>
-                  <Badge variant="secondary">Website</Badge>
-                  <Badge variant="secondary">Email Marketing</Badge>
-                  <Badge variant="secondary">Product Pages</Badge>
-                </div>
-              </div>
-
-              <div className="mt-4 p-4 rounded-lg bg-amber-100 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  <Star className="h-4 w-4 inline mr-2" />
-                  <strong>Note:</strong> This bonus is available for <strong>any campaign type</strong>. If a brand chooses to purchase usage rights to your video, you'll receive an additional $50 on top of your regular campaign reward.
+              <div className="mt-6 p-4 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800">
+                <p className="text-sm text-rose-700 dark:text-rose-300 flex items-start gap-2">
+                  <Star className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span><strong>Note:</strong> This bonus is available for <strong>any campaign type</strong>. If a brand chooses to purchase usage rights to your video, you'll receive an additional $30 on top of your regular campaign reward.</span>
                 </p>
               </div>
             </CardContent>
@@ -550,10 +514,10 @@ export default function CampaignTypesPage() {
                     <td className="text-center py-3 px-4"><CheckCircle className="h-4 w-4 mx-auto text-green-500" /></td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Amazon Account</td>
+                    <td className="py-3 px-4">Bio Link Required</td>
                     <td className="text-center py-3 px-4">-</td>
                     <td className="text-center py-3 px-4"><CheckCircle className="h-4 w-4 mx-auto text-green-500" /></td>
-                    <td className="text-center py-3 px-4">Storefront</td>
+                    <td className="text-center py-3 px-4">-</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-3 px-4">TikTok Post</td>
@@ -562,16 +526,16 @@ export default function CampaignTypesPage() {
                     <td className="text-center py-3 px-4"><CheckCircle className="h-4 w-4 mx-auto text-green-500" /></td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-3 px-4">Amazon Post</td>
+                    <td className="py-3 px-4">Amazon Storefront</td>
                     <td className="text-center py-3 px-4">-</td>
                     <td className="text-center py-3 px-4">-</td>
                     <td className="text-center py-3 px-4"><CheckCircle className="h-4 w-4 mx-auto text-green-500" /></td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4">Usage Rights Bonus</td>
-                    <td className="text-center py-3 px-4 text-amber-600">+$50</td>
-                    <td className="text-center py-3 px-4 text-amber-600">+$50</td>
-                    <td className="text-center py-3 px-4 text-amber-600">+$50</td>
+                    <td className="text-center py-3 px-4 text-rose-600">+$30</td>
+                    <td className="text-center py-3 px-4 text-rose-600">+$30</td>
+                    <td className="text-center py-3 px-4 text-rose-600">+$30</td>
                   </tr>
                 </tbody>
               </table>

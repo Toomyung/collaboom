@@ -78,9 +78,9 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 - **Notification:** Sends "Amazon Storefront Verified!" notification when admin verifies the storefront link
 
 ### Bonus: Usage of Rights
-- **Reward:** Additional $50
+- **Reward:** Additional $30
 - **Applies to:** Any campaign type
-- **Description:** If a brand wants to purchase rights to use your video content (for landing pages, social media ads, website, etc.), you receive an extra $50 bonus.
+- **Description:** If a brand wants to purchase rights to use your video content (for landing pages, social media ads, website, etc.), you receive an extra $30 bonus.
 
 ## UI Design System
 
