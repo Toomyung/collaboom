@@ -33,6 +33,7 @@ import {
   UserPlus,
   Store,
   Video,
+  Gift,
 } from "lucide-react";
 import {
   Sheet,
@@ -166,8 +167,17 @@ const linkInBioProgressSteps = [
   { label: "Approved", icon: CheckCircle },
   { label: "Shipped", icon: Truck },
   { label: "Delivered", icon: Package },
-  { label: "Bio Link", icon: ExternalLink },
-  { label: "Video", icon: Upload },
+  { label: "Submission", icon: Upload },
+  { label: "Reward", icon: Gift },
+];
+
+const amazonProgressSteps = [
+  { label: "Applied", icon: Clock },
+  { label: "Approved", icon: CheckCircle },
+  { label: "Shipped", icon: Truck },
+  { label: "Delivered", icon: Package },
+  { label: "Submission", icon: Upload },
+  { label: "Reward", icon: Gift },
 ];
 
 interface ScoreEventWithCampaign extends ScoreEvent {
@@ -766,7 +776,7 @@ export default function DashboardPage() {
     const campaign = application.campaign;
     const isLinkInBio = campaign.campaignType === "link_in_bio";
     const isAmazonVideoUpload = campaign.campaignType === "amazon_video_upload";
-    const steps = (isLinkInBio || isAmazonVideoUpload) ? linkInBioProgressSteps : progressSteps;
+    const steps = isLinkInBio ? linkInBioProgressSteps : isAmazonVideoUpload ? amazonProgressSteps : progressSteps;
     
     if (status === "rejected" || status === "deadline_missed") return null;
 
@@ -774,42 +784,34 @@ export default function DashboardPage() {
     let currentStep = statusConfig[status]?.step || 0;
     
     if (isLinkInBio) {
-      // For Link in Bio: 1=Applied, 2=Approved, 3=Shipped, 4=Delivered, 5=Bio Link, 6=Video
+      // For Link in Bio: 1=Applied, 2=Approved, 3=Shipped, 4=Delivered, 5=Submission, 6=Reward
       if (status === "pending") currentStep = 1;
       else if (status === "approved") currentStep = 2;
       else if (status === "shipped") currentStep = 3;
       else if (status === "delivered") {
-        // Check progression: bio link → video
-        if (application.contentUrl) {
-          currentStep = 6; // Video uploaded (waiting for admin verification)
-        } else if ((application as any).bioLinkVerifiedAt) {
-          currentStep = 5; // Bio Link verified, ready for video upload
-        } else if ((application as any).bioLinkUrl) {
-          currentStep = 4.5; // Bio Link submitted but not verified
-        } else {
-          currentStep = 4; // Delivered, waiting for bio link
-        }
-      } else if (status === "uploaded" || status === "completed") {
-        currentStep = 6; // Video verified/completed
+        // Delivered, waiting for submission
+        currentStep = 4;
+      } else if (status === "uploaded") {
+        // Submitted but waiting for admin verification - stay on Submission step
+        currentStep = 5;
+      } else if (status === "completed") {
+        // Admin verified - show Reward step
+        currentStep = 6;
       }
     } else if (isAmazonVideoUpload) {
-      // For Amazon Video Upload: 1=Applied, 2=Approved, 3=Shipped, 4=Delivered, 5=Storefront, 6=Video
+      // For Amazon Video Upload: 1=Applied, 2=Approved, 3=Shipped, 4=Delivered, 5=Submission, 6=Reward
       if (status === "pending") currentStep = 1;
       else if (status === "approved") currentStep = 2;
       else if (status === "shipped") currentStep = 3;
       else if (status === "delivered") {
-        // Check progression: amazon storefront → video
-        if (application.contentUrl) {
-          currentStep = 6; // Video uploaded (waiting for admin verification)
-        } else if ((application as any).amazonStorefrontVerifiedAt) {
-          currentStep = 5; // Amazon Storefront verified, ready for video upload
-        } else if ((application as any).amazonStorefrontUrl) {
-          currentStep = 4.5; // Amazon Storefront submitted but not verified
-        } else {
-          currentStep = 4; // Delivered, waiting for storefront link
-        }
-      } else if (status === "uploaded" || status === "completed") {
-        currentStep = 6; // Video verified/completed
+        // Delivered, waiting for submission
+        currentStep = 4;
+      } else if (status === "uploaded") {
+        // Submitted but waiting for admin verification - stay on Submission step
+        currentStep = 5;
+      } else if (status === "completed") {
+        // Admin verified - show Reward step
+        currentStep = 6;
       }
     }
 
