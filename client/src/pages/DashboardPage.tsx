@@ -884,27 +884,33 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Link in Bio: Combined Submission (Bio Link + Video together) */}
-        {campaign.campaignType === "link_in_bio" && ["delivered", "uploaded", "completed"].includes(application.status) && (
+        {/* Link in Bio: Submission Section (delivered or uploaded status) */}
+        {campaign.campaignType === "link_in_bio" && ["delivered", "uploaded"].includes(application.status) && (
           <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-emerald-600" />
               <span className="font-medium text-emerald-600">Submission</span>
             </div>
             
-            {/* Already submitted both - show both links */}
-            {(application as any).bioLinkUrl && application.contentUrl ? (
+            {/* Status: uploaded - Content submitted, waiting for verification */}
+            {application.status === "uploaded" && (application as any).bioLinkUrl && application.contentUrl ? (
               <div className="space-y-4">
-                {/* Bio link status */}
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm font-medium">Pending Verification</span>
+                  </div>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    Our team is reviewing your submission. This usually takes 1-3 business days.
+                  </p>
+                </div>
+                
+                {/* Show submitted Bio Link */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Bio Link</span>
-                    {(application as any).bioLinkVerifiedAt ? (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
-                    )}
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
                   </div>
                   <a 
                     href={(application as any).bioLinkUrl} 
@@ -917,16 +923,12 @@ export default function DashboardPage() {
                   </a>
                 </div>
                 
-                {/* Video status */}
+                {/* Show submitted Video */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Video className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">TikTok Video</span>
-                    {(application as any).contentVerifiedAt ? (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
-                    )}
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
                   </div>
                   <a 
                     href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
@@ -938,13 +940,9 @@ export default function DashboardPage() {
                     View Your Video
                   </a>
                 </div>
-                
-                <p className="text-xs text-muted-foreground">
-                  Our team will verify both your bio link and TikTok video.
-                </p>
               </div>
-            ) : ["delivered", "uploaded"].includes(application.status) ? (
-              /* Submission form - both fields required */
+            ) : application.status === "delivered" ? (
+              /* Status: delivered - Show submission form */
               <div className="space-y-4">
                 <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-md p-3 space-y-2">
                   <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -962,42 +960,25 @@ export default function DashboardPage() {
                   </p>
                 )}
                 
-                {/* Bio Link URL - show as read-only if already submitted */}
+                {/* Bio Link URL */}
                 <div className="space-y-1">
                   <label className="text-sm font-medium flex items-center gap-2">
                     <ExternalLink className="h-4 w-4" />
                     Bio Link URL
-                    {(application as any).bioLinkUrl && (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Submitted</Badge>
-                    )}
                   </label>
-                  {(application as any).bioLinkUrl ? (
-                    <div className="text-sm p-2 bg-muted rounded-md">
-                      <a 
-                        href={(application as any).bioLinkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        {(application as any).bioLinkUrl}
-                      </a>
-                    </div>
-                  ) : (
-                    <Input
-                      placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
-                      value={bioCombinedForms[application.id]?.bioLinkUrl || ""}
-                      onChange={(e) => setBioCombinedForms(prev => ({
-                        ...prev,
-                        [application.id]: { 
-                          bioLinkUrl: e.target.value, 
-                          videoUrl: prev[application.id]?.videoUrl || "" 
-                        }
-                      }))}
-                      className="text-sm"
-                      data-testid={`input-bio-link-${application.id}`}
-                    />
-                  )}
+                  <Input
+                    placeholder="Your bio link URL (e.g., linktr.ee/yourhandle)"
+                    value={bioCombinedForms[application.id]?.bioLinkUrl || ""}
+                    onChange={(e) => setBioCombinedForms(prev => ({
+                      ...prev,
+                      [application.id]: { 
+                        bioLinkUrl: e.target.value, 
+                        videoUrl: prev[application.id]?.videoUrl || "" 
+                      }
+                    }))}
+                    className="text-sm"
+                    data-testid={`input-bio-link-${application.id}`}
+                  />
                 </div>
                 
                 {/* TikTok Video URL */}
@@ -1012,7 +993,7 @@ export default function DashboardPage() {
                     onChange={(e) => setBioCombinedForms(prev => ({
                       ...prev,
                       [application.id]: { 
-                        bioLinkUrl: prev[application.id]?.bioLinkUrl || (application as any).bioLinkUrl || "", 
+                        bioLinkUrl: prev[application.id]?.bioLinkUrl || "", 
                         videoUrl: e.target.value 
                       }
                     }))}
@@ -1025,86 +1006,133 @@ export default function DashboardPage() {
                   size="sm"
                   onClick={() => {
                     const form = bioCombinedForms[application.id];
-                    // Always include existing bioLinkUrl from application if available (for legacy cases)
-                    const bioLinkUrl = (application as any).bioLinkUrl || form?.bioLinkUrl;
+                    const bioLinkUrl = form?.bioLinkUrl;
                     const videoUrl = form?.videoUrl;
-                    if (videoUrl) {
+                    if (bioLinkUrl && videoUrl) {
                       submitBioCombinedMutation.mutate({
                         applicationId: application.id,
-                        bioLinkUrl: bioLinkUrl || "",
+                        bioLinkUrl: bioLinkUrl,
                         videoUrl: videoUrl
                       });
                     }
                   }}
                   disabled={
-                    (!(application as any).bioLinkUrl && !bioCombinedForms[application.id]?.bioLinkUrl) || 
+                    !bioCombinedForms[application.id]?.bioLinkUrl || 
                     !bioCombinedForms[application.id]?.videoUrl || 
                     submitBioCombinedMutation.isPending
                   }
                   className="w-full"
                   data-testid={`button-submit-bio-combined-${application.id}`}
                 >
-                  {submitBioCombinedMutation.isPending ? "Submitting..." : 
-                   (application as any).bioLinkUrl ? "Submit Video" : "Submit Both Links"}
+                  {submitBioCombinedMutation.isPending ? "Submitting..." : "Submit Both Links"}
                 </Button>
                 
-                {!(application as any).bioLinkUrl && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    Both fields are required to submit
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground text-center">
+                  Both fields are required to submit
+                </p>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-amber-600">
-                <Clock className="h-4 w-4" />
-                <span>Submission available after product delivery</span>
-              </div>
-            )}
+            ) : null}
           </div>
         )}
 
-        {/* Link in Bio: Cash Reward Status */}
+        {/* Link in Bio: Reward Section (completed status only) */}
         {campaign.campaignType === "link_in_bio" && application.status === "completed" && (
-          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-2">
+          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-600">Cash Reward: $30</span>
+              <Gift className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-green-600">Reward</span>
             </div>
-            {application.cashRewardSentAt ? (
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-green-600">Reward sent to your PayPal</span>
+            
+            {/* Verified submissions */}
+            <div className="space-y-3">
+              {/* Verified Bio Link */}
+              {(application as any).bioLinkUrl && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Bio Link</span>
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                  </div>
+                  <a 
+                    href={(application as any).bioLinkUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {(application as any).bioLinkUrl}
+                  </a>
+                </div>
+              )}
+              
+              {/* Verified Video */}
+              {application.contentUrl && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">TikTok Video</span>
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                  </div>
+                  <a 
+                    href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Your Video
+                  </a>
+                </div>
+              )}
+            </div>
+            
+            {/* Cash Reward */}
+            <div className="border-t border-green-500/20 pt-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <span className="font-semibold text-green-600 text-lg">+$30 Earned</span>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-amber-600">
-                <Clock className="h-4 w-4" />
-                <span>Reward pending - we'll send it to your PayPal soon</span>
-              </div>
-            )}
+              {application.cashRewardSentAt ? (
+                <div className="flex items-center gap-2 text-sm mt-1">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-green-600">Reward sent to your PayPal</span>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Request payout from your Cash Earned balance
+                </p>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Amazon Video Upload: Combined Submission (Storefront + Video together) */}
-        {campaign.campaignType === "amazon_video_upload" && ["delivered", "uploaded", "completed"].includes(application.status) && (
+        {/* Amazon Video Upload: Submission Section (delivered or uploaded status) */}
+        {campaign.campaignType === "amazon_video_upload" && ["delivered", "uploaded"].includes(application.status) && (
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-amber-600" />
               <span className="font-medium text-amber-600">Submission</span>
             </div>
             
-            {/* Already submitted both - show both links */}
-            {(application as any).amazonStorefrontUrl && application.contentUrl ? (
+            {/* Status: uploaded - Content submitted, waiting for verification */}
+            {application.status === "uploaded" && (application as any).amazonStorefrontUrl && application.contentUrl ? (
               <div className="space-y-4">
-                {/* Storefront status */}
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm font-medium">Pending Verification</span>
+                  </div>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    Our team is reviewing your submission. This usually takes 1-3 business days.
+                  </p>
+                </div>
+                
+                {/* Show submitted Storefront */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Store className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Amazon Storefront</span>
-                    {(application as any).amazonStorefrontVerifiedAt ? (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
-                    )}
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
                   </div>
                   <a 
                     href={(application as any).amazonStorefrontUrl} 
@@ -1117,16 +1145,12 @@ export default function DashboardPage() {
                   </a>
                 </div>
                 
-                {/* Video status */}
+                {/* Show submitted Video */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Video className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">TikTok Video</span>
-                    {(application as any).contentVerifiedAt ? (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
-                    )}
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Pending</Badge>
                   </div>
                   <a 
                     href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
@@ -1138,13 +1162,9 @@ export default function DashboardPage() {
                     View Your Video
                   </a>
                 </div>
-                
-                <p className="text-xs text-muted-foreground">
-                  Our team will verify both your Amazon Storefront video and TikTok video.
-                </p>
               </div>
-            ) : ["delivered", "uploaded"].includes(application.status) ? (
-              /* Submission form - both fields required */
+            ) : application.status === "delivered" ? (
+              /* Status: delivered - Show submission form */
               <div className="space-y-4">
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 space-y-2">
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
@@ -1162,42 +1182,25 @@ export default function DashboardPage() {
                   </p>
                 )}
                 
-                {/* Amazon Storefront URL - show as read-only if already submitted */}
+                {/* Amazon Storefront URL */}
                 <div className="space-y-1">
                   <label className="text-sm font-medium flex items-center gap-2">
                     <Store className="h-4 w-4" />
                     Amazon Storefront URL
-                    {(application as any).amazonStorefrontUrl && (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">Submitted</Badge>
-                    )}
                   </label>
-                  {(application as any).amazonStorefrontUrl ? (
-                    <div className="text-sm p-2 bg-muted rounded-md">
-                      <a 
-                        href={(application as any).amazonStorefrontUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        {(application as any).amazonStorefrontUrl}
-                      </a>
-                    </div>
-                  ) : (
-                    <Input
-                      placeholder="https://www.amazon.com/shop/yourname"
-                      value={amazonCombinedForms[application.id]?.storefrontUrl || ""}
-                      onChange={(e) => setAmazonCombinedForms(prev => ({
-                        ...prev,
-                        [application.id]: { 
-                          storefrontUrl: e.target.value, 
-                          videoUrl: prev[application.id]?.videoUrl || "" 
-                        }
-                      }))}
-                      className="text-sm"
-                      data-testid={`input-amazon-storefront-${application.id}`}
-                    />
-                  )}
+                  <Input
+                    placeholder="https://www.amazon.com/shop/yourname"
+                    value={amazonCombinedForms[application.id]?.storefrontUrl || ""}
+                    onChange={(e) => setAmazonCombinedForms(prev => ({
+                      ...prev,
+                      [application.id]: { 
+                        storefrontUrl: e.target.value, 
+                        videoUrl: prev[application.id]?.videoUrl || "" 
+                      }
+                    }))}
+                    className="text-sm"
+                    data-testid={`input-amazon-storefront-${application.id}`}
+                  />
                 </div>
                 
                 {/* TikTok Video URL */}
@@ -1212,7 +1215,7 @@ export default function DashboardPage() {
                     onChange={(e) => setAmazonCombinedForms(prev => ({
                       ...prev,
                       [application.id]: { 
-                        storefrontUrl: prev[application.id]?.storefrontUrl || (application as any).amazonStorefrontUrl || "", 
+                        storefrontUrl: prev[application.id]?.storefrontUrl || "", 
                         videoUrl: e.target.value 
                       }
                     }))}
@@ -1225,7 +1228,7 @@ export default function DashboardPage() {
                   size="sm"
                   onClick={() => {
                     const form = amazonCombinedForms[application.id];
-                    const storefrontUrl = form?.storefrontUrl || (application as any).amazonStorefrontUrl;
+                    const storefrontUrl = form?.storefrontUrl;
                     const videoUrl = form?.videoUrl;
                     if (storefrontUrl && videoUrl) {
                       submitAmazonCombinedMutation.mutate({
@@ -1236,50 +1239,92 @@ export default function DashboardPage() {
                     }
                   }}
                   disabled={
-                    (!(application as any).amazonStorefrontUrl && !amazonCombinedForms[application.id]?.storefrontUrl) || 
+                    !amazonCombinedForms[application.id]?.storefrontUrl || 
                     !amazonCombinedForms[application.id]?.videoUrl || 
                     submitAmazonCombinedMutation.isPending
                   }
                   className="w-full"
                   data-testid={`button-submit-amazon-combined-${application.id}`}
                 >
-                  {submitAmazonCombinedMutation.isPending ? "Submitting..." : 
-                   (application as any).amazonStorefrontUrl ? "Submit Video" : "Submit Both Links"}
+                  {submitAmazonCombinedMutation.isPending ? "Submitting..." : "Submit Both Links"}
                 </Button>
                 
-                {!(application as any).amazonStorefrontUrl && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    Both fields are required to submit
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground text-center">
+                  Both fields are required to submit
+                </p>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-amber-600">
-                <Clock className="h-4 w-4" />
-                <span>Submission available after product delivery</span>
-              </div>
-            )}
+            ) : null}
           </div>
         )}
 
-        {/* Amazon Video Campaign: Cash Reward Status */}
+        {/* Amazon Video Upload: Reward Section (completed status only) */}
         {campaign.campaignType === "amazon_video_upload" && application.status === "completed" && (
-          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-2">
+          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-600">Cash Reward: $30</span>
+              <Gift className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-green-600">Reward</span>
             </div>
-            {application.cashRewardSentAt ? (
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-green-600">Reward sent to your PayPal</span>
+            
+            {/* Verified submissions */}
+            <div className="space-y-3">
+              {/* Verified Storefront */}
+              {(application as any).amazonStorefrontUrl && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Store className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Amazon Storefront</span>
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                  </div>
+                  <a 
+                    href={(application as any).amazonStorefrontUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {(application as any).amazonStorefrontUrl}
+                  </a>
+                </div>
+              )}
+              
+              {/* Verified Video */}
+              {application.contentUrl && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">TikTok Video</span>
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Verified</Badge>
+                  </div>
+                  <a 
+                    href={application.contentUrl.startsWith('http') ? application.contentUrl : `https://${application.contentUrl}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Your Video
+                  </a>
+                </div>
+              )}
+            </div>
+            
+            {/* Cash Reward */}
+            <div className="border-t border-green-500/20 pt-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <span className="font-semibold text-green-600 text-lg">+$50 Earned</span>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-amber-600">
-                <Clock className="h-4 w-4" />
-                <span>Reward pending - we'll send it to your PayPal soon</span>
-              </div>
-            )}
+              {application.cashRewardSentAt ? (
+                <div className="flex items-center gap-2 text-sm mt-1">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-green-600">Reward sent to your PayPal</span>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Request payout from your Cash Earned balance
+                </p>
+              )}
+            </div>
           </div>
         )}
 
