@@ -38,6 +38,8 @@ interface ApplicationCardProps {
   isSubmittingBioLink?: boolean;
   onSubmitAmazonStorefront?: (amazonStorefrontUrl: string) => void;
   isSubmittingAmazonStorefront?: boolean;
+  onSubmitVideo?: (videoUrl: string) => void;
+  isSubmittingVideo?: boolean;
 }
 
 const statusConfig: Record<
@@ -72,7 +74,7 @@ const statusConfig: Record<
     label: "Delivered",
     color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
     icon: Package,
-    description: "Package delivered! If you've posted with the correct hashtags and mentions, our team reviews content daily and will move it to Uploaded automatically.",
+    description: "Package delivered! Please create your TikTok video and submit the link below.",
   },
   uploaded: {
     label: "Content Uploaded",
@@ -104,12 +106,15 @@ export function ApplicationCard({
   isSubmittingBioLink,
   onSubmitAmazonStorefront,
   isSubmittingAmazonStorefront,
+  onSubmitVideo,
+  isSubmittingVideo,
 }: ApplicationCardProps) {
   const campaign = application.campaign;
   const status = statusConfig[application.status] || statusConfig.pending;
   const StatusIcon = status.icon;
   const [bioLinkInput, setBioLinkInput] = useState("");
   const [amazonStorefrontInput, setAmazonStorefrontInput] = useState("");
+  const [videoUrlInput, setVideoUrlInput] = useState("");
 
   const deadline = new Date(campaign.deadline);
   const isDeadlineSoon =
@@ -129,6 +134,27 @@ export function ApplicationCard({
       setAmazonStorefrontInput("");
     }
   };
+
+  const handleSubmitVideo = () => {
+    if (videoUrlInput.trim() && onSubmitVideo) {
+      onSubmitVideo(videoUrlInput.trim());
+      setVideoUrlInput("");
+    }
+  };
+
+  // Determine if video submission is available
+  const canSubmitVideo = 
+    application.status === "delivered" &&
+    !application.contentUrl &&
+    onSubmitVideo &&
+    (
+      // Gifting: Can submit immediately after delivered
+      campaign.campaignType === "gifting" ||
+      // Link in Bio: Only after bio link is verified
+      (campaign.campaignType === "link_in_bio" && application.bioLinkVerifiedAt) ||
+      // Amazon: Only after storefront is verified
+      (campaign.campaignType === "amazon_video_upload" && application.amazonStorefrontVerifiedAt)
+    );
 
   return (
     <Card
@@ -346,7 +372,9 @@ export function ApplicationCard({
                       "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
                       application.status === "uploaded" 
                         ? "bg-emerald-500 text-white" 
-                        : "bg-muted text-muted-foreground"
+                        : application.contentUrl
+                          ? "bg-yellow-500 text-white"
+                          : "bg-muted text-muted-foreground"
                     )}>
                       {application.status === "uploaded" ? <CheckCircle className="h-3.5 w-3.5" /> : "3"}
                     </div>
@@ -356,18 +384,68 @@ export function ApplicationCard({
                           "text-sm font-medium",
                           application.status === "uploaded" ? "text-emerald-600" : "text-foreground"
                         )}>
-                          Upload TikTok video
+                          Submit TikTok video
                         </span>
                         {application.status === "uploaded" ? (
                           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
-                            Completed
+                            Verified
+                          </Badge>
+                        ) : application.contentUrl ? (
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
+                            Under Review
+                          </Badge>
+                        ) : application.bioLinkVerifiedAt ? (
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">
+                            Ready to Submit
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">
-                            Pending
+                            Waiting
                           </Badge>
                         )}
                       </div>
+                      {/* Video submission form - only show when bio link is verified and video not yet submitted */}
+                      {application.bioLinkVerifiedAt && !application.contentUrl && onSubmitVideo && (
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            type="url"
+                            placeholder="https://www.tiktok.com/@yourname/video/..."
+                            value={videoUrlInput}
+                            onChange={(e) => setVideoUrlInput(e.target.value)}
+                            className="h-8 text-sm flex-1"
+                            data-testid={`input-video-${application.id}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSubmitVideo}
+                            disabled={!videoUrlInput.trim() || isSubmittingVideo}
+                            className="h-8"
+                            data-testid={`button-submit-video-${application.id}`}
+                          >
+                            {isSubmittingVideo ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Submit"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      {application.contentUrl && (
+                        <a
+                          href={application.contentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View submitted video
+                        </a>
+                      )}
+                      {!application.bioLinkVerifiedAt && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Complete step 2 first
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -510,7 +588,9 @@ export function ApplicationCard({
                       "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
                       application.status === "uploaded" 
                         ? "bg-amber-500 text-white" 
-                        : "bg-muted text-muted-foreground"
+                        : application.contentUrl
+                          ? "bg-yellow-500 text-white"
+                          : "bg-muted text-muted-foreground"
                     )}>
                       {application.status === "uploaded" ? <CheckCircle className="h-3.5 w-3.5" /> : "3"}
                     </div>
@@ -520,18 +600,68 @@ export function ApplicationCard({
                           "text-sm font-medium",
                           application.status === "uploaded" ? "text-amber-600" : "text-foreground"
                         )}>
-                          Upload TikTok video
+                          Submit TikTok video
                         </span>
                         {application.status === "uploaded" ? (
                           <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
-                            Completed
+                            Verified
+                          </Badge>
+                        ) : application.contentUrl ? (
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
+                            Under Review
+                          </Badge>
+                        ) : application.amazonStorefrontVerifiedAt ? (
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">
+                            Ready to Submit
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">
-                            Pending
+                            Waiting
                           </Badge>
                         )}
                       </div>
+                      {/* Video submission form - only show when storefront is verified and video not yet submitted */}
+                      {application.amazonStorefrontVerifiedAt && !application.contentUrl && onSubmitVideo && (
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            type="url"
+                            placeholder="https://www.tiktok.com/@yourname/video/..."
+                            value={videoUrlInput}
+                            onChange={(e) => setVideoUrlInput(e.target.value)}
+                            className="h-8 text-sm flex-1"
+                            data-testid={`input-video-amazon-${application.id}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSubmitVideo}
+                            disabled={!videoUrlInput.trim() || isSubmittingVideo}
+                            className="h-8"
+                            data-testid={`button-submit-video-amazon-${application.id}`}
+                          >
+                            {isSubmittingVideo ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Submit"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      {application.contentUrl && (
+                        <a
+                          href={application.contentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View submitted video
+                        </a>
+                      )}
+                      {!application.amazonStorefrontVerifiedAt && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Complete step 2 first
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -548,6 +678,90 @@ export function ApplicationCard({
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Gifting Campaign - Video Submission */}
+            {(campaign as any).campaignType === "gifting" && 
+             application.status === "delivered" && (
+              <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-purple-600" />
+                  <span className="font-medium text-purple-600">Submit Your TikTok Video</span>
+                </div>
+                
+                <div className="space-y-2">
+                  {/* Video submission status */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                      application.contentUrl 
+                        ? "bg-yellow-500 text-white" 
+                        : "bg-purple-500 text-white"
+                    )}>
+                      {application.contentUrl ? <Clock className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">
+                          {application.contentUrl ? "Video submitted" : "Submit your TikTok video link"}
+                        </span>
+                        {application.contentUrl ? (
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
+                            Under Review
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">
+                            Ready to Submit
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Video submission form */}
+                      {!application.contentUrl && onSubmitVideo && (
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            type="url"
+                            placeholder="https://www.tiktok.com/@yourname/video/..."
+                            value={videoUrlInput}
+                            onChange={(e) => setVideoUrlInput(e.target.value)}
+                            className="h-8 text-sm flex-1"
+                            data-testid={`input-video-gifting-${application.id}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSubmitVideo}
+                            disabled={!videoUrlInput.trim() || isSubmittingVideo}
+                            className="h-8"
+                            data-testid={`button-submit-video-gifting-${application.id}`}
+                          >
+                            {isSubmittingVideo ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Submit"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {application.contentUrl && (
+                        <a
+                          href={application.contentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          View submitted video
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  Once submitted, our team will review your video and mark it as verified.
+                </p>
               </div>
             )}
 

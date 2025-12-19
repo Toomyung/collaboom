@@ -233,8 +233,8 @@ export default function CampaignTypesPage() {
                     { icon: CheckCircle, label: "Apply" },
                     { icon: Package, label: "Receive" },
                     { icon: Video, label: "Create" },
-                    { icon: Upload, label: "Upload" },
-                    { icon: Star, label: "Done" },
+                    { icon: Upload, label: "Submit" },
+                    { icon: Star, label: "Verified" },
                   ]} 
                 />
               </div>
@@ -249,7 +249,7 @@ export default function CampaignTypesPage() {
                 requirements={[
                   { text: "TikTok account with 1,000+ followers" },
                   { text: "US-based shipping address" },
-                  { text: "Post video within deadline" },
+                  { text: "Create TikTok video and submit link for verification" },
                 ]}
               />
 
@@ -313,7 +313,7 @@ export default function CampaignTypesPage() {
                 requirements={[
                   { text: "Add product purchase link to your TikTok bio (Linktree, Beacons, etc.)" },
                   { text: "Submit your bio link for verification" },
-                  { text: "Upload TikTok video with required hashtags" },
+                  { text: "Create TikTok video and submit the link for verification" },
                   { text: "PayPal account required for payment", highlight: true, link: { url: "https://www.paypal.com/us/webapps/mpp/account-selection", label: "Sign up" } },
                 ]}
               />

@@ -1211,7 +1211,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Submit video for Link in Bio campaign (after bio link verified)
+  // Submit video URL for ALL campaign types (unified endpoint)
+  // - Gifting: Can submit after "delivered" status
+  // - Link in Bio: Can submit after bio link is verified
+  // - Amazon Video Upload: Can submit after Amazon storefront is verified
   app.post("/api/applications/:id/submit-video", requireAuth("influencer"), async (req, res) => {
     try {
       const application = await storage.getApplication(req.params.id);
@@ -1223,35 +1226,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      // Check if campaign is link_in_bio
       const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "link_in_bio") {
-        return res.status(400).json({ message: "This endpoint is only for Link in Bio campaigns" });
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
       }
 
       // Check if application status is delivered
       if (application.status !== "delivered") {
-        return res.status(400).json({ message: "Invalid application status for video submission" });
+        return res.status(400).json({ message: "You can only submit your video after receiving the product" });
       }
 
-      // Check if bio link has been verified
-      if (!application.bioLinkVerifiedAt) {
-        return res.status(400).json({ message: "Your bio link must be verified before submitting a video" });
+      // Check campaign-specific prerequisites
+      if (campaign.campaignType === "link_in_bio") {
+        // Link in Bio: Bio link must be verified first
+        if (!application.bioLinkVerifiedAt) {
+          return res.status(400).json({ message: "Your bio link must be verified before submitting a video" });
+        }
+      } else if (campaign.campaignType === "amazon_video_upload") {
+        // Amazon: Storefront must be verified first
+        if (!application.amazonStorefrontVerifiedAt) {
+          return res.status(400).json({ message: "Your Amazon Storefront must be verified before submitting a video" });
+        }
       }
+      // Gifting campaigns: No prerequisites, can submit right after delivered
 
       const { videoUrl } = req.body;
       if (!videoUrl || typeof videoUrl !== 'string') {
         return res.status(400).json({ message: "Video URL is required" });
       }
 
-      // Update application with video URL and set uploadedAt timestamp
+      // Basic URL validation - should be a TikTok URL
+      try {
+        const url = new URL(videoUrl);
+        if (!url.hostname.includes('tiktok.')) {
+          return res.status(400).json({ message: "Please enter a valid TikTok video URL" });
+        }
+      } catch {
+        return res.status(400).json({ message: "Please enter a valid URL" });
+      }
+
+      // Update application with video URL and submission timestamp
       // Note: Status remains "delivered" until admin verifies the video
       await storage.updateApplication(application.id, {
-        contentUrl: videoUrl,
-        uploadedAt: new Date(),
+        contentUrl: videoUrl.trim(),
+        contentSubmittedAt: new Date(),
       });
 
-      return res.json({ success: true, message: "Video submitted successfully. Awaiting admin verification." });
+      // Emit socket event for real-time admin updates
+      emitApplicationUpdated(application.campaignId, application.id, application.status);
+
+      return res.json({ success: true, message: "Video submitted successfully! Our team will review it soon." });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

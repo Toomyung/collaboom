@@ -240,6 +240,7 @@ export const applications = pgTable("applications", {
   firstTime: boolean("first_time").default(false),
   notesInternal: text("notes_internal"),
   contentUrl: text("content_url"), // URL of uploaded video content (TikTok link)
+  contentSubmittedAt: timestamp("content_submitted_at"), // When influencer submitted the video URL
   pointsAwarded: integer("points_awarded"), // Points awarded when content is verified
   // Shipping info (admin-editable, separate from influencer's original data)
   shippingPhone: text("shipping_phone"),

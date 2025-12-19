@@ -120,7 +120,7 @@ const statusConfig: Record<
     bgColor: "bg-purple-500/10 border border-purple-500/20",
     textColor: "text-purple-700",
     icon: Package,
-    description: "Package delivered! If you've posted with the correct hashtags and mentions, our team reviews content daily and will move it to Uploaded automatically.",
+    description: "Package delivered! Please create your TikTok video and submit the link below.",
     step: 4,
   },
   uploaded: {
@@ -781,6 +781,11 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">
                   Our team will verify that the product purchase link is visible on your bio page.
                 </p>
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-md p-2 mt-2">
+                  <p className="text-xs text-purple-600 font-medium">
+                    Next step: Once verified, you'll be able to submit your TikTok video link here.
+                  </p>
+                </div>
               </div>
             ) : application.status === "delivered" ? (
               <div className="space-y-3">
@@ -954,6 +959,11 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">
                   Our team will verify that your video is visible on your Amazon Storefront.
                 </p>
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-md p-2 mt-2">
+                  <p className="text-xs text-purple-600 font-medium">
+                    Next step: Once verified, you'll be able to submit your TikTok video link here.
+                  </p>
+                </div>
               </div>
             ) : application.status === "delivered" ? (
               <div className="space-y-3">
@@ -1116,6 +1126,78 @@ export default function DashboardPage() {
                 Track Your Package
               </a>
             )}
+          </div>
+        )}
+
+        {/* Gifting Campaign - Video Submission */}
+        {application.campaign.campaignType === "gifting" && 
+         application.status === "delivered" && (
+          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Upload className="h-4 w-4 text-purple-600" />
+              <span className="font-medium text-purple-600">Submit Your TikTok Video</span>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {application.contentUrl ? "Video submitted" : "Submit your TikTok video link"}
+                </span>
+                {application.contentUrl ? (
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
+                    Under Review
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">
+                    Ready to Submit
+                  </Badge>
+                )}
+              </div>
+              
+              {!application.contentUrl && (
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    placeholder="https://www.tiktok.com/@yourname/video/..."
+                    value={videoUrlForms[application.id] || ""}
+                    onChange={(e) => setVideoUrlForms(prev => ({ ...prev, [application.id]: e.target.value }))}
+                    className="flex-1"
+                    data-testid={`input-video-gifting-${application.id}`}
+                  />
+                  <Button
+                    onClick={() => {
+                      const videoUrl = videoUrlForms[application.id];
+                      if (videoUrl) {
+                        submitVideoMutation.mutate({
+                          applicationId: application.id,
+                          videoUrl: videoUrl
+                        });
+                      }
+                    }}
+                    disabled={!videoUrlForms[application.id] || submitVideoMutation.isPending}
+                    data-testid={`button-submit-video-gifting-${application.id}`}
+                  >
+                    {submitVideoMutation.isPending ? "Submitting..." : "Submit Video"}
+                  </Button>
+                </div>
+              )}
+              
+              {application.contentUrl && (
+                <a
+                  href={application.contentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View submitted video
+                </a>
+              )}
+            </div>
+            
+            <p className="text-xs text-muted-foreground">
+              Once submitted, our team will review your video and mark it as verified.
+            </p>
           </div>
         )}
 
