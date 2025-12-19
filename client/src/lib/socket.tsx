@@ -80,6 +80,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications/my-ids"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/all-history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId, "applications"] });
