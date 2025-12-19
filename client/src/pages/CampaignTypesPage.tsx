@@ -36,17 +36,17 @@ function HorizontalProcess({ steps, color }: { steps: ProcessStep[]; color: stri
   };
   
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 py-4">
+    <div className="flex flex-wrap items-start justify-center gap-2 py-4">
       {steps.map((step, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <div className="flex flex-col items-center gap-1.5">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colorMap[color]}`}>
+        <div key={index} className="flex items-start gap-2">
+          <div className="flex flex-col items-center w-[70px]">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${colorMap[color]}`}>
               <step.icon className="h-5 w-5" />
             </div>
-            <span className="text-xs text-muted-foreground text-center max-w-[60px] leading-tight">{step.label}</span>
+            <span className="text-xs text-muted-foreground text-center mt-1.5 h-8 flex items-start justify-center">{step.label}</span>
           </div>
           {index < steps.length - 1 && (
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block mt-3" />
           )}
         </div>
       ))}
