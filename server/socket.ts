@@ -159,6 +159,7 @@ export function emitNotificationCreated(influencerId: string): void {
 // Generic emit to a specific user
 export function emitToUser(userId: string, event: string, data: any): void {
   if (!io) return;
+  console.log(`[Socket.IO] Emitting ${event} to user:${userId}`, JSON.stringify(data));
   io.to(`user:${userId}`).emit(event, data);
 }
 
