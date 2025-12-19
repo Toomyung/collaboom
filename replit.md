@@ -43,9 +43,10 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
 
 ### 1. Gifting Campaign (Implemented)
 - **Reward:** Free product (no cash)
-- **Process:** Apply → Receive product at address → Create TikTok video → Upload link
+- **Process:** Apply → Receive product at address → Create TikTok video → Submit video link → Admin verifies
 - **Platform:** TikTok only
 - **Description:** Brands send free products to influencers in exchange for UGC content.
+- **Video Submission:** Influencers manually submit their TikTok video URL via the dashboard after product delivery.
 
 ### 2. Link in Bio Campaign (Implemented)
 - **Reward:** $30 cash + free product
@@ -54,13 +55,15 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
   2. Receive free product at address
   3. Add product purchase link to TikTok bio via Linktree/Beacons
   4. Submit bio link URL for admin verification
-  5. Create and upload TikTok video
-  6. Receive $30 reward upon both bio link and video verification
+  5. Wait for bio link verification (UI shows "Next step" message)
+  6. Submit TikTok video link after bio is verified
+  7. Receive $30 reward upon both bio link and video verification
 - **Platform:** TikTok
 - **Requirements:** Linktree, Beacons, or similar bio link service
-- **Schema Fields:** `bioLinkUrl` (influencer submission), `bioLinkVerifiedAt` (admin verification timestamp), `bioLinkVerifiedByAdminId` (admin ID)
+- **Schema Fields:** `bioLinkUrl` (influencer submission), `bioLinkVerifiedAt` (admin verification timestamp), `bioLinkVerifiedByAdminId` (admin ID), `contentSubmittedAt` (video submission timestamp)
 - **Admin Workflow:** "Bio" tab between Shipping and Uploads tabs shows bio link verification status; admin can verify link after product delivery
 - **Notification:** Sends "Bio Link Verified!" notification when admin verifies the bio link
+- **Video Submission Gating:** Video submission form only appears after bio link is verified
 
 ### 3. Amazon Video Upload Campaign (Implemented)
 - **Reward:** $50 cash + product
@@ -69,13 +72,15 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity:
   2. Receive free product at address
   3. Upload product video to Amazon Influencer Storefront
   4. Submit Amazon Storefront URL for admin verification
-  5. Create and upload TikTok video
-  6. Receive $50 reward upon both storefront and video verification
+  5. Wait for storefront verification (UI shows "Next step" message)
+  6. Submit TikTok video link after storefront is verified
+  7. Receive $50 reward upon both storefront and video verification
 - **Platform:** TikTok + Amazon Storefront
 - **Requirements:** Must have active Amazon Influencer Storefront
-- **Schema Fields:** `amazonStorefrontUrl` (influencer submission), `amazonStorefrontVerifiedAt` (admin verification timestamp), `amazonStorefrontVerifiedByAdminId` (admin ID)
+- **Schema Fields:** `amazonStorefrontUrl` (influencer submission), `amazonStorefrontVerifiedAt` (admin verification timestamp), `amazonStorefrontVerifiedByAdminId` (admin ID), `contentSubmittedAt` (video submission timestamp)
 - **Admin Workflow:** "Amazon" tab between Shipping and Uploads tabs shows storefront verification status; admin can verify link after product delivery
 - **Notification:** Sends "Amazon Storefront Verified!" notification when admin verifies the storefront link
+- **Video Submission Gating:** Video submission form only appears after Amazon Storefront is verified
 
 ### Bonus: Usage of Rights
 - **Reward:** Additional $30
