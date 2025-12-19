@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApplicationWithDetails, ShippingIssue, ScoreEvent, SupportTicket } from "@shared/schema";
+import { ApplicationWithDetails, ShippingIssue, ScoreEvent, SupportTicket, PayoutRequest } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, Redirect, useLocation } from "wouter";
 import {
@@ -233,6 +233,7 @@ export default function DashboardPage() {
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [location] = useLocation();
+  const [showPayoutConfirmDialog, setShowPayoutConfirmDialog] = useState(false);
 
   // Function to scroll to a specific application by ID
   const scrollToApplication = (applicationId: string) => {
@@ -304,6 +305,11 @@ export default function DashboardPage() {
     enabled: isAuthenticated && showSupportSheet,
   });
 
+  const { data: payoutData } = useQuery<{ requests: PayoutRequest[]; totalPayoutsRequested: number }>({
+    queryKey: ["/api/payout-requests"],
+    enabled: isAuthenticated && showCashSheet,
+  });
+
   const submitSupportTicketMutation = useMutation({
     mutationFn: async ({ subject, message }: { subject: string; message: string }) => {
       await apiRequest("POST", "/api/support-tickets", { subject, message });
@@ -318,6 +324,25 @@ export default function DashboardPage() {
       setSupportMessage("");
     },
     onError: (error: Error) => {
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
+    },
+  });
+
+  const requestPayoutMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      await apiRequest("POST", "/api/payout-requests", { amount });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payout-requests"] });
+      toast({
+        title: "Payout request submitted",
+        description: "Your payout request has been submitted and is pending admin review.",
+      });
+      setShowPayoutConfirmDialog(false);
+    },
+    onError: (error: Error) => {
+      setShowPayoutConfirmDialog(false);
       setErrorMessage(formatApiError(error));
       setShowErrorDialog(true);
     },
@@ -2066,16 +2091,7 @@ export default function DashboardPage() {
               Cash Earned
             </SheetTitle>
             <SheetDescription>
-              Total earned: <span className="font-bold text-foreground">
-                ${allApplications?.filter(a => 
-                  (a.status === "uploaded" || a.status === "completed") && 
-                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
-                ).reduce((sum, a) => {
-                  if (a.campaign.campaignType === "link_in_bio") return sum + 30;
-                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
-                  return sum;
-                }, 0) || 0}
-              </span>
+              Manage your earnings and request payouts
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
@@ -2084,52 +2100,198 @@ export default function DashboardPage() {
                 (a.status === "uploaded" || a.status === "completed") && 
                 (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
               ) || [];
-              return paidCampaigns.length > 0 ? (
-                <div className="space-y-3">
-                  {paidCampaigns.map((app) => (
-                    <div 
-                      key={app.id} 
-                      className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20"
-                    >
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                        {getCampaignThumbnail(app.campaign) ? (
-                          <img 
-                            src={getCampaignThumbnail(app.campaign)!} 
-                            alt={app.campaign.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
-                            <Package className="h-5 w-5 text-primary/40" />
-                          </div>
-                        )}
+              const totalEarned = paidCampaigns.reduce((sum, a) => {
+                if (a.campaign.campaignType === "link_in_bio") return sum + 30;
+                if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                return sum;
+              }, 0);
+              const totalPayoutsRequested = payoutData?.totalPayoutsRequested || 0;
+              const availableBalance = totalEarned - totalPayoutsRequested;
+              const payoutRequests = payoutData?.requests || [];
+              
+              return (
+                <div className="space-y-6">
+                  {/* Balance Summary */}
+                  <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total Earned</p>
+                        <p className="text-xl font-bold text-foreground">${totalEarned}</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{app.campaign.name}</p>
-                        <p className="text-xs text-muted-foreground">{app.campaign.brandName}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
-                            ${app.campaign.campaignType === "link_in_bio" ? 30 : app.campaign.campaignType === "amazon_video_upload" ? 50 : 0}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {app.uploadedAt ? format(new Date(app.uploadedAt), "MMM d, yyyy") : ""}
-                          </span>
-                        </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Available Balance</p>
+                        <p className="text-xl font-bold text-emerald-600">${availableBalance}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No paid campaigns completed yet</p>
-                  <p className="text-sm">Look for "Gift + Paid" campaigns to earn cash!</p>
+                    {availableBalance > 0 && (
+                      <Button 
+                        className="w-full mt-4" 
+                        onClick={() => setShowPayoutConfirmDialog(true)}
+                        disabled={!influencer?.paypalEmail}
+                        data-testid="button-request-payout"
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Request Payout (${availableBalance})
+                      </Button>
+                    )}
+                    {availableBalance > 0 && !influencer?.paypalEmail && (
+                      <p className="text-xs text-amber-600 mt-2 text-center">
+                        Please add your PayPal email in your profile to request payouts.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Payout History */}
+                  {payoutRequests.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Payout History</h4>
+                      {payoutRequests.map((request) => (
+                        <div 
+                          key={request.id} 
+                          className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
+                        >
+                          <div>
+                            <p className="font-medium text-sm">${request.amount}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {request.createdAt ? format(new Date(request.createdAt), "MMM d, yyyy") : ""}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant="secondary" 
+                            className={cn(
+                              "text-xs",
+                              request.status === "pending" && "bg-yellow-500/10 text-yellow-600",
+                              request.status === "processing" && "bg-blue-500/10 text-blue-600",
+                              request.status === "completed" && "bg-emerald-500/10 text-emerald-600",
+                              request.status === "rejected" && "bg-red-500/10 text-red-600",
+                            )}
+                          >
+                            {request.status === "pending" ? "Pending" : 
+                             request.status === "processing" ? "Processing" : 
+                             request.status === "completed" ? "Completed" : "Rejected"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Campaign Earnings */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Campaign Earnings</h4>
+                    {paidCampaigns.length > 0 ? (
+                      <div className="space-y-3">
+                        {paidCampaigns.map((app) => (
+                          <div 
+                            key={app.id} 
+                            className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20"
+                          >
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                              {getCampaignThumbnail(app.campaign) ? (
+                                <img 
+                                  src={getCampaignThumbnail(app.campaign)!} 
+                                  alt={app.campaign.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
+                                  <Package className="h-5 w-5 text-primary/40" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{app.campaign.name}</p>
+                              <p className="text-xs text-muted-foreground">{app.campaign.brandName}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
+                                  ${app.campaign.campaignType === "link_in_bio" ? 30 : app.campaign.campaignType === "amazon_video_upload" ? 50 : 0}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {app.uploadedAt ? format(new Date(app.uploadedAt), "MMM d, yyyy") : ""}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No paid campaigns completed yet</p>
+                        <p className="text-sm">Look for "Gift + Paid" campaigns to earn cash!</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      {/* Payout Request Confirmation Dialog */}
+      <AlertDialog open={showPayoutConfirmDialog} onOpenChange={setShowPayoutConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request Payout</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const paidCampaigns = allApplications?.filter(a => 
+                  (a.status === "uploaded" || a.status === "completed") && 
+                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+                ) || [];
+                const totalEarned = paidCampaigns.reduce((sum, a) => {
+                  if (a.campaign.campaignType === "link_in_bio") return sum + 30;
+                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                  return sum;
+                }, 0);
+                const totalPayoutsRequested = payoutData?.totalPayoutsRequested || 0;
+                const availableBalance = totalEarned - totalPayoutsRequested;
+                
+                return (
+                  <>
+                    <p className="mb-4">
+                      You are requesting a payout of <span className="font-bold text-foreground">${availableBalance}</span> to your PayPal account:
+                    </p>
+                    <p className="font-medium text-foreground mb-4">{influencer?.paypalEmail}</p>
+                    <p className="text-sm">
+                      Once submitted, your request will be reviewed and processed by our team. You'll receive a notification when the payout is complete.
+                    </p>
+                  </>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPayoutConfirmDialog(false)}
+              disabled={requestPayoutMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                const paidCampaigns = allApplications?.filter(a => 
+                  (a.status === "uploaded" || a.status === "completed") && 
+                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+                ) || [];
+                const totalEarned = paidCampaigns.reduce((sum, a) => {
+                  if (a.campaign.campaignType === "link_in_bio") return sum + 30;
+                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                  return sum;
+                }, 0);
+                const totalPayoutsRequested = payoutData?.totalPayoutsRequested || 0;
+                const availableBalance = totalEarned - totalPayoutsRequested;
+                requestPayoutMutation.mutate(availableBalance);
+              }}
+              disabled={requestPayoutMutation.isPending}
+              data-testid="button-confirm-payout"
+            >
+              {requestPayoutMutation.isPending ? "Submitting..." : "Confirm Request"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Support Sheet */}
       <Sheet open={showSupportSheet} onOpenChange={setShowSupportSheet}>
