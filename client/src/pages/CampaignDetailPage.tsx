@@ -136,6 +136,8 @@ export default function CampaignDetailPage() {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
+  const [showFirstVipDialog, setShowFirstVipDialog] = useState(false);
+  const [approvedCampaignName, setApprovedCampaignName] = useState("");
 
   useCampaignSocket(id);
 
@@ -165,18 +167,31 @@ export default function CampaignDetailPage() {
       const res = await apiRequest("POST", `/api/campaigns/${id}/apply`);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications/my-ids"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications/all-history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", id] });
-      toast({
-        title: "Application submitted!",
-        description: "We'll review your application and get back to you soon.",
-      });
+      
       setShowApplyDialog(false);
       setShowVerificationDialog(false);
       setAgreementChecked(false);
+      
+      // Check if this is the first VIP auto-approval
+      if (data.firstVipAutoApproval && data.autoApproved) {
+        setApprovedCampaignName(data.campaignName || campaign?.name || "");
+        setShowFirstVipDialog(true);
+      } else if (data.autoApproved) {
+        toast({
+          title: "Auto-Approved!",
+          description: "Your VIP status grants you instant approval. Check your dashboard for next steps.",
+        });
+      } else {
+        toast({
+          title: "Application submitted!",
+          description: "We'll review your application and get back to you soon.",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -838,6 +853,43 @@ export default function CampaignDetailPage() {
               data-testid="button-confirm-apply"
             >
               {applyMutation.isPending ? "Applying..." : "Apply Now"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* First VIP Auto-Approval Celebration Dialog */}
+      <Dialog open={showFirstVipDialog} onOpenChange={setShowFirstVipDialog}>
+        <DialogContent className="sm:max-w-md text-center" data-testid="dialog-first-vip-approval">
+          <DialogHeader className="items-center">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <span className="text-4xl">👑</span>
+            </div>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-yellow-600 bg-clip-text text-transparent">
+              VIP Auto-Approved!
+            </DialogTitle>
+            <DialogDescription className="text-base leading-relaxed mt-4 space-y-4">
+              <p className="font-medium text-foreground">
+                Your application for <span className="text-primary font-semibold">{approvedCampaignName}</span> has been instantly approved!
+              </p>
+              <p>
+                This is because you've achieved <span className="text-amber-500 font-semibold">VIP status</span> - a recognition of your outstanding work and dedication to creating quality content.
+              </p>
+              <p className="text-muted-foreground">
+                On behalf of Team Collaboom, we sincerely congratulate you and express our deepest gratitude. Continue maintaining your excellent score, and we promise to bring you even greater opportunities ahead!
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6">
+            <Button 
+              onClick={() => {
+                setShowFirstVipDialog(false);
+                setLocation("/dashboard");
+              }} 
+              className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white"
+              data-testid="button-vip-continue"
+            >
+              Continue to Dashboard
             </Button>
           </DialogFooter>
         </DialogContent>

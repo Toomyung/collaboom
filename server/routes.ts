@@ -871,6 +871,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // VIP auto-approval: automatically approve without admin review
       if (isVIP) {
+        // Check if this is the first auto-approval after becoming VIP
+        const isFirstVipAutoApproval = influencer.pendingTierUpgrade === "vip";
+        
         await storage.updateApplication(application.id, {
           status: "approved",
           approvedAt: new Date(),
@@ -880,6 +883,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateCampaign(campaignId, {
           approvedCount: (campaign.approvedCount ?? 0) + 1,
         });
+        
+        // Clear pendingTierUpgrade if this was first VIP auto-approval
+        if (isFirstVipAutoApproval) {
+          await storage.updateInfluencer(influencer.id, { pendingTierUpgrade: null });
+        }
 
         // Send approval email (non-blocking)
         sendApplicationApprovedEmail(
@@ -912,9 +920,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emitApplicationUpdated(campaignId, application.id, "approved");
         emitCampaignUpdated(campaignId);
 
-        // Return with auto-approved status
+        // Return with auto-approved status and first VIP flag
         const updatedApplication = await storage.getApplication(application.id);
-        return res.json({ ...updatedApplication, autoApproved: true });
+        return res.json({ 
+          ...updatedApplication, 
+          autoApproved: true,
+          firstVipAutoApproval: isFirstVipAutoApproval,
+          campaignName: campaign.name,
+        });
       }
 
       // Emit real-time event for new application
