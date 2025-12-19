@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { Shield, ArrowLeft, Loader2, ExternalLink, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,9 @@ export default function AdminLoginPage() {
   const { loginAdmin, adminLoginPending } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Detect if running in iframe (Replit preview)
+  const isInIframe = window.self !== window.top;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +76,24 @@ export default function AdminLoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {isInIframe && (
+              <Alert className="bg-muted/50 border-muted-foreground/20">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between gap-2">
+                  <span className="text-sm">For best experience, open in a new tab</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(window.location.href, '_blank')}
+                    className="shrink-0"
+                    data-testid="button-open-new-tab"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Open
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
