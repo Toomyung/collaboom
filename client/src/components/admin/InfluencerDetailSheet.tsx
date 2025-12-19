@@ -1368,6 +1368,23 @@ export function InfluencerDetailSheet({
                           <p>-</p>
                         )}
                       </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Amazon Storefront</p>
+                        {selectedInfluencer.amazonStorefrontUrl ? (
+                          <a
+                            href={selectedInfluencer.amazonStorefrontUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-primary hover:underline break-all"
+                            data-testid="influencer-amazon-storefront"
+                          >
+                            {selectedInfluencer.amazonStorefrontUrl}
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <p>-</p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
