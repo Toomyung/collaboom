@@ -3339,6 +3339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "admin_reply",
           title: "Admin replied to your question",
           message: response || "Your shipping issue has been resolved.",
+          channel: "in_app",
         });
 
         // Emit notification created event
@@ -3389,6 +3390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "admin_reply",
           title: "Admin replied to your question",
           message: response || "Your shipping issue has been reviewed.",
+          channel: "in_app",
         });
 
         // Emit notification created event
