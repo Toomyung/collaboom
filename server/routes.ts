@@ -1710,6 +1710,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get campaign info for notification message
+      const campaign = await storage.getCampaign(application.campaignId);
+
+      // Create notification for delivered status
+      await storage.createNotification({
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        type: "delivered",
+        channel: "in_app",
+        title: "Package Delivered!",
+        message: `Your package for ${campaign?.name || "campaign"} has been delivered. Time to create amazing content!`,
+      });
+      emitNotificationCreated(application.influencerId);
+
       // Emit real-time event
       emitApplicationUpdated(application.campaignId, application.id, "delivered");
 
