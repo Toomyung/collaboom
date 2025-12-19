@@ -1306,12 +1306,13 @@ export default function DashboardPage() {
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 space-y-2">
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                    <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
                       <p className="font-medium">Please click "Confirm Delivery" only after you have received your package.</p>
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        We monitor tracking numbers. If the courier shows your package as delivered but you haven't received it, 
-                        please leave a comment or contact support instead of clicking confirm.
-                      </p>
+                      <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1 list-disc list-inside">
+                        <li>We monitor all tracking numbers and can verify delivery status with the courier.</li>
+                        <li>If the courier shows "delivered" but you haven't confirmed, our admin may mark it as delivered.</li>
+                        <li>If the courier shows "delivered" but you haven't received the package, please leave a comment or contact support.</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
