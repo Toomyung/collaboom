@@ -1305,9 +1305,9 @@ export default function AdminCampaignDetailPage() {
                   <div className="overflow-x-auto">
                     <Table className="text-xs">
                       <TableHeader>
-                        <TableRow className="bg-muted/50">
+                        <TableRow className="bg-muted">
                           <TableHead className="w-14 text-center text-xs">ID</TableHead>
-                          <TableHead className="min-w-[160px] sticky left-[56px] bg-muted/50 z-10 text-xs">Influencer</TableHead>
+                          <TableHead className="min-w-[160px] sticky left-[56px] bg-muted z-10 text-xs">Influencer</TableHead>
                           <TableHead className="min-w-[100px] text-xs">Phone</TableHead>
                           <TableHead className="min-w-[90px] text-xs">TikTok</TableHead>
                           <TableHead className="min-w-[180px] text-xs">Address</TableHead>
