@@ -1057,6 +1057,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: validationResult.data.message,
       });
 
+      // Emit socket event to notify admins of new comment
+      emitToAdmins("comment:created", {
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        issueId: issue.id
+      });
+
       return res.json({ success: true, issue });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -3322,6 +3329,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Emit socket event to notify influencer of reply
+      if (issueWithDetails) {
+        emitToUser(issueWithDetails.influencerId, "comment:updated", {
+          campaignId: issueWithDetails.campaignId,
+          applicationId: issueWithDetails.applicationId,
+          issueId: issue.id,
+          status: "resolved"
+        });
+      }
+
       return res.json({ success: true, issue });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
@@ -3333,6 +3350,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { response } = req.body;
       
+      // Get issue details first for socket notification
+      const allIssues = await storage.getAllShippingIssues();
+      const issueWithDetails = allIssues.find(i => i.id === req.params.id);
+      
       const issue = await storage.updateShippingIssue(req.params.id, {
         status: "dismissed",
         resolvedByAdminId: req.session.userId,
@@ -3342,6 +3363,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!issue) {
         return res.status(404).json({ message: "Issue not found" });
+      }
+
+      // Emit socket event to notify influencer
+      if (issueWithDetails) {
+        emitToUser(issueWithDetails.influencerId, "comment:updated", {
+          campaignId: issueWithDetails.campaignId,
+          applicationId: issueWithDetails.applicationId,
+          issueId: issue.id,
+          status: "dismissed"
+        });
       }
 
       return res.json({ success: true, issue });

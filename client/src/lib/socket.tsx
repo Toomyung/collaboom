@@ -60,12 +60,29 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       console.log("[Socket] Comment created:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId, "comments"] });
+      // Invalidate admin issues list for real-time updates
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/issues"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId, "applications"] });
+    });
+
+    socketInstance.on("comment:updated", (data: { campaignId: string; applicationId: string; issueId: string; status: string }) => {
+      console.log("[Socket] Comment updated:", data);
+      queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId, "comments"] });
+      // Invalidate influencer's issues list
+      queryClient.invalidateQueries({ queryKey: ["/api/my-issues"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
+      // Invalidate admin issues list
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/issues"] });
     });
 
     socketInstance.on("comment:deleted", (data: { campaignId: string; applicationId: string }) => {
       console.log("[Socket] Comment deleted:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId, "comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/issues"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-issues"] });
     });
 
     socketInstance.on("application:created", (data: { campaignId: string; applicationId: string }) => {
