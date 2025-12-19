@@ -21,7 +21,6 @@ import {
   Camera,
   Verified,
   TrendingUp,
-  Clock,
   Eye,
   Bell,
   FileCheck,
@@ -386,10 +385,10 @@ export default function LandingPage() {
               
               <div className="space-y-4">
                 {[
-                  { icon: Bell, title: "Real-time Notifications", desc: "Get instant updates on approvals and shipments" },
-                  { icon: Truck, title: "Shipment Tracking", desc: "Know exactly when your products will arrive" },
-                  { icon: TrendingUp, title: "Score Progress", desc: "Watch your reputation grow with each campaign" },
-                  { icon: FileCheck, title: "Easy Submissions", desc: "Upload your TikTok links with one click" },
+                  { icon: Bell, title: "Real-time Notifications", desc: "Get instant updates on approvals and shipments", id: "notifications" },
+                  { icon: Truck, title: "Shipment Tracking", desc: "Know exactly when your products will arrive", id: "tracking" },
+                  { icon: TrendingUp, title: "Score Progress", desc: "Watch your reputation grow with each campaign", id: "score" },
+                  { icon: FileCheck, title: "Easy Submissions", desc: "Upload your TikTok links with one click", id: "submissions" },
                 ].map((item, i) => (
                   <motion.div
                     key={item.title}
@@ -398,6 +397,7 @@ export default function LandingPage() {
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
                     className="flex items-start gap-3"
+                    data-testid={`feature-${item.id}`}
                   >
                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <item.icon className="h-5 w-5 text-primary" />
@@ -440,15 +440,15 @@ export default function LandingPage() {
                 <CardContent className="p-4 space-y-4">
                   {/* Mock Stats Row */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="mock-stat-active">
                       <p className="text-2xl font-bold text-primary">3</p>
                       <p className="text-xs text-muted-foreground">Active</p>
                     </div>
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="mock-stat-earned">
                       <p className="text-2xl font-bold text-emerald-600">$90</p>
                       <p className="text-xs text-muted-foreground">Earned</p>
                     </div>
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center" data-testid="mock-stat-score">
                       <p className="text-2xl font-bold text-amber-600">72</p>
                       <p className="text-xs text-muted-foreground">Score</p>
                     </div>
@@ -457,11 +457,11 @@ export default function LandingPage() {
                   {/* Mock Campaign Cards */}
                   <div className="space-y-2">
                     {[
-                      { name: "K-Beauty Serum", status: "Shipped", color: "bg-blue-500" },
-                      { name: "Organic Snacks", status: "Awaiting Upload", color: "bg-amber-500" },
-                      { name: "Lifestyle Brand", status: "Approved", color: "bg-emerald-500" },
-                    ].map((campaign, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-card border rounded-lg">
+                      { name: "K-Beauty Serum", status: "Shipped", color: "bg-blue-500", id: "serum" },
+                      { name: "Organic Snacks", status: "Awaiting Upload", color: "bg-amber-500", id: "snacks" },
+                      { name: "Lifestyle Brand", status: "Approved", color: "bg-emerald-500", id: "lifestyle" },
+                    ].map((campaign) => (
+                      <div key={campaign.id} className="flex items-center justify-between p-3 bg-card border rounded-lg" data-testid={`mock-campaign-${campaign.id}`}>
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
                             <Gift className="h-5 w-5 text-primary" />
