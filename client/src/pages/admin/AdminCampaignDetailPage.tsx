@@ -1865,6 +1865,20 @@ export default function AdminCampaignDetailPage() {
                                   <Store className="h-3 w-3" />
                                   <span className="truncate max-w-[200px]">{app.amazonStorefrontUrl}</span>
                                 </a>
+                              ) : app.influencer?.amazonStorefrontUrl ? (
+                                <div className="space-y-1">
+                                  <a
+                                    href={app.influencer.amazonStorefrontUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-amber-600 hover:underline flex items-center gap-1"
+                                    data-testid={`link-amazon-profile-url-${app.id}`}
+                                  >
+                                    <Store className="h-3 w-3" />
+                                    <span className="truncate max-w-[200px]">{app.influencer.amazonStorefrontUrl}</span>
+                                  </a>
+                                  <span className="text-xs text-muted-foreground block">(from profile)</span>
+                                </div>
                               ) : (
                                 <span className="text-muted-foreground text-sm">Not submitted yet</span>
                               )}
