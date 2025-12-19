@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface PointsAwardPopupProps {
   points: number;
   reason: string;
+  message?: string | null;
   open: boolean;
   onClose: () => void;
 }
@@ -78,7 +79,7 @@ function AnimatedCounter({ value, duration = 1200 }: { value: number; duration?:
   return <span>{displayValue}</span>;
 }
 
-export function PointsAwardPopup({ points, reason, open, onClose }: PointsAwardPopupProps) {
+export function PointsAwardPopup({ points, reason, message, open, onClose }: PointsAwardPopupProps) {
   const [showCounter, setShowCounter] = useState(false);
   
   useEffect(() => {
@@ -92,6 +93,7 @@ export function PointsAwardPopup({ points, reason, open, onClose }: PointsAwardP
   const labels = reasonLabels[reason] || reasonLabels.default;
   const isPositive = points > 0;
   const IconComponent = labels.icon;
+  const displayDescription = message || labels.description;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -160,7 +162,7 @@ export function PointsAwardPopup({ points, reason, open, onClose }: PointsAwardP
             transition={{ delay: 0.4, duration: 0.4 }}
           >
             <DialogDescription className="text-sm text-muted-foreground" data-testid="text-points-description">
-              {labels.description}
+              {displayDescription}
             </DialogDescription>
           </motion.div>
         </DialogHeader>

@@ -279,6 +279,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <PointsAwardPopup
           points={currentEvent.delta}
           reason={currentEvent.reason}
+          message={currentEvent.displayReason}
           open={true}
           onClose={markCurrentAsSeen}
         />
