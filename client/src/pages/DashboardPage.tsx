@@ -944,9 +944,16 @@ export default function DashboardPage() {
             ) : ["delivered", "uploaded"].includes(application.status) ? (
               /* Submission form - both fields required */
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Submit both your bio link URL (with the product's purchase link) and your TikTok video URL together.
-                </p>
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-md p-3 space-y-2">
+                  <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                    Bio Link Requirements:
+                  </p>
+                  <ul className="text-xs text-emerald-700 dark:text-emerald-300 space-y-1 list-disc list-inside">
+                    <li>Use a bio link service (such as Linktree, Beacons, etc.)</li>
+                    <li>Add the product purchase link from campaign guidelines inside your bio link page</li>
+                    <li>Your bio link must be visible in your TikTok profile bio to be verified</li>
+                  </ul>
+                </div>
                 {influencer?.bioLinkProfileUrl && !bioCombinedForms[application.id]?.bioLinkUrl && (
                   <p className="text-xs text-emerald-600">
                     We've pre-filled your bio link URL from your profile.
