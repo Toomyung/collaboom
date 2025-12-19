@@ -20,8 +20,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, formatApiError } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 
 const ITEMS_PER_PAGE = 12;
@@ -59,6 +68,8 @@ export default function CampaignListPage() {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const { isAuthenticated, influencer } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -106,11 +117,10 @@ export default function CampaignListPage() {
       setSelectedCampaign(null);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Application failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      setShowApplyDialog(false);
+      setShowVerificationDialog(false);
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -500,6 +510,23 @@ export default function CampaignListPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Error Dialog */}
+      <AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Application Failed</AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              {errorMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowErrorDialog(false)} data-testid="button-error-confirm">
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
