@@ -52,8 +52,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { formatApiError } from "@/lib/queryClient";
 import {
   Accordion,
   AccordionContent,
@@ -220,6 +230,8 @@ export default function DashboardPage() {
   const [supportMessage, setSupportMessage] = useState("");
   const [showTierUpgradeDialog, setShowTierUpgradeDialog] = useState(false);
   const [pendingTierUpgrade, setPendingTierUpgrade] = useState<string | null>(null);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [location] = useLocation();
 
   // Function to scroll to a specific application by ID
@@ -306,11 +318,8 @@ export default function DashboardPage() {
       setSupportMessage("");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to submit ticket",
-        description: error.message,
-        variant: "destructive",
-      });
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -336,13 +345,10 @@ export default function DashboardPage() {
       setApplicationToCancel(null);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to cancel",
-        description: error.message,
-        variant: "destructive",
-      });
       setShowCancelDialog(false);
       setApplicationToCancel(null);
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -361,11 +367,8 @@ export default function DashboardPage() {
       setSelectedApplication(null);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to submit",
-        description: error.message,
-        variant: "destructive",
-      });
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -383,13 +386,10 @@ export default function DashboardPage() {
       setApplicationToDismiss(null);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to dismiss",
-        description: error.message,
-        variant: "destructive",
-      });
       setShowDismissDialog(false);
       setApplicationToDismiss(null);
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -436,11 +436,8 @@ export default function DashboardPage() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to submit",
-        description: error.message,
-        variant: "destructive",
-      });
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -459,11 +456,8 @@ export default function DashboardPage() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to submit",
-        description: error.message,
-        variant: "destructive",
-      });
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -482,11 +476,8 @@ export default function DashboardPage() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to submit",
-        description: error.message,
-        variant: "destructive",
-      });
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -505,11 +496,8 @@ export default function DashboardPage() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to submit",
-        description: error.message,
-        variant: "destructive",
-      });
+      setErrorMessage(formatApiError(error));
+      setShowErrorDialog(true);
     },
   });
 
@@ -2194,6 +2182,23 @@ export default function DashboardPage() {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      {/* Error Dialog */}
+      <AlertDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Error</AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              {errorMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowErrorDialog(false)} data-testid="button-error-confirm">
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
