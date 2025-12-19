@@ -74,15 +74,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Session middleware with secure configuration
+  // In Replit's embedded preview (dev mode), cookies need sameSite: "none" and secure: true
+  // to work in the cross-origin iframe context
+  const isReplitEnv = !!process.env.REPL_SLUG;
   const sessionMiddleware = session({
     secret: sessionSecret || "dev-only-secret-key-not-for-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProduction, // HTTPS only in production
+      secure: true, // Always use secure in Replit (HTTPS)
       httpOnly: true, // Prevent XSS access to cookie
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: "lax", // CSRF protection - blocks cross-site POST requests
+      sameSite: isReplitEnv && !isProduction ? "none" : "lax", // Allow cross-site in Replit dev iframe
     },
   });
   app.use(sessionMiddleware);
