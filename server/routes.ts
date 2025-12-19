@@ -78,7 +78,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware with secure configuration
   // In Replit's embedded preview (dev mode), cookies need sameSite: "none" and secure: true
   // to work in the cross-origin iframe context
+  // Also need "partitioned: true" for CHIPS (Cookies Having Independent Partitioned State)
+  // to work with modern browsers that block third-party cookies
   const isReplitEnv = !!process.env.REPL_SLUG;
+  const isDevIframe = isReplitEnv && !isProduction;
   const sessionMiddleware = session({
     secret: sessionSecret || "dev-only-secret-key-not-for-production",
     resave: false,
@@ -87,8 +90,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       secure: true, // Always use secure in Replit (HTTPS)
       httpOnly: true, // Prevent XSS access to cookie
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: isReplitEnv && !isProduction ? "none" : "lax", // Allow cross-site in Replit dev iframe
-    },
+      sameSite: isDevIframe ? "none" : "lax", // Allow cross-site in Replit dev iframe
+      partitioned: isDevIframe, // CHIPS for third-party cookie support in iframes
+    } as any, // Type assertion needed as partitioned is not in older @types/express-session
   });
   app.use(sessionMiddleware);
 
