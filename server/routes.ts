@@ -2424,6 +2424,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ).then(() => {
                 console.log(`Tier upgrade email (standard) sent to ${updatedInfluencer.email}`);
               }).catch(console.error);
+              
+              // Create notification for Standard tier upgrade
+              storage.createNotification({
+                influencerId: updatedInfluencer.id,
+                campaignId: campaign?.id,
+                applicationId: application.id,
+                type: "tier_upgraded",
+                channel: "both",
+                title: "Standard Influencer Status!",
+                message: "Congratulations! You've completed your first campaign and reached Standard status. You can now apply to up to 3 campaigns per day!",
+              }).then(() => {
+                emitNotificationCreated(updatedInfluencer.id);
+              }).catch(console.error);
             } else if (newTier === "vip" && previousTier !== "vip") {
               // → VIP upgrade (score reached 85+)
               // Set pending tier upgrade for celebration popup
@@ -2435,6 +2448,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 "vip"
               ).then(() => {
                 console.log(`Tier upgrade email (vip) sent to ${updatedInfluencer.email}`);
+              }).catch(console.error);
+              
+              // Create notification for VIP tier upgrade
+              storage.createNotification({
+                influencerId: updatedInfluencer.id,
+                campaignId: campaign?.id,
+                applicationId: application.id,
+                type: "tier_upgraded",
+                channel: "both",
+                title: "VIP Status Achieved!",
+                message: "Congratulations! You've reached VIP status. Enjoy auto-approval, unlimited applications, and 24h early access to paid campaigns!",
+              }).then(() => {
+                emitNotificationCreated(updatedInfluencer.id);
               }).catch(console.error);
             }
           }
