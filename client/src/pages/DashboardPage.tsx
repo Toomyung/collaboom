@@ -792,8 +792,8 @@ export default function DashboardPage() {
         // Delivered, waiting for submission
         currentStep = 4;
       } else if (status === "uploaded") {
-        // Submitted but waiting for admin verification - stay on Submission step
-        currentStep = 5;
+        // Check if verified (has points) - show Reward, otherwise stay on Submission
+        currentStep = application.pointsAwarded ? 6 : 5;
       } else if (status === "completed") {
         // Admin verified - show Reward step
         currentStep = 6;
@@ -807,8 +807,8 @@ export default function DashboardPage() {
         // Delivered, waiting for submission
         currentStep = 4;
       } else if (status === "uploaded") {
-        // Submitted but waiting for admin verification - stay on Submission step
-        currentStep = 5;
+        // Check if verified (has points) - show Reward, otherwise stay on Submission
+        currentStep = application.pointsAwarded ? 6 : 5;
       } else if (status === "completed") {
         // Admin verified - show Reward step
         currentStep = 6;
@@ -884,8 +884,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Link in Bio: Submission Section (delivered or uploaded status) */}
-        {campaign.campaignType === "link_in_bio" && ["delivered", "uploaded"].includes(application.status) && (
+        {/* Link in Bio: Submission Section (delivered or uploaded without verification) */}
+        {campaign.campaignType === "link_in_bio" && ["delivered", "uploaded"].includes(application.status) && !application.pointsAwarded && (
           <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-emerald-600" />
@@ -1035,8 +1035,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Link in Bio: Reward Section (completed status only) */}
-        {campaign.campaignType === "link_in_bio" && application.status === "completed" && (
+        {/* Link in Bio: Reward Section (completed or verified with points) */}
+        {campaign.campaignType === "link_in_bio" && (application.status === "completed" || (application.status === "uploaded" && application.pointsAwarded)) && (
           <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Gift className="h-4 w-4 text-green-600" />
@@ -1106,8 +1106,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Amazon Video Upload: Submission Section (delivered or uploaded status) */}
-        {campaign.campaignType === "amazon_video_upload" && ["delivered", "uploaded"].includes(application.status) && (
+        {/* Amazon Video Upload: Submission Section (delivered or uploaded without verification) */}
+        {campaign.campaignType === "amazon_video_upload" && ["delivered", "uploaded"].includes(application.status) && !application.pointsAwarded && (
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-amber-600" />
@@ -1257,8 +1257,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Amazon Video Upload: Reward Section (completed status only) */}
-        {campaign.campaignType === "amazon_video_upload" && application.status === "completed" && (
+        {/* Amazon Video Upload: Reward Section (completed or verified with points) */}
+        {campaign.campaignType === "amazon_video_upload" && (application.status === "completed" || (application.status === "uploaded" && application.pointsAwarded)) && (
           <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Gift className="h-4 w-4 text-green-600" />
