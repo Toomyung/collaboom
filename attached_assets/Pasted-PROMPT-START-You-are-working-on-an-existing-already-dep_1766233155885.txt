@@ -1,0 +1,266 @@
+PROMPT START
+
+You are working on an existing, already-deployed product called Collaboom.
+
+Your task is to create documentation only.
+You must NOT modify code, database schema, or configuration in any way.
+
+Context (Must Read First)
+
+The system already has a baseline PRD:
+📄 docs/prd/PRD-Campaigns-and-Applications.md
+
+This document defines:
+
+Campaigns
+
+Applications
+
+Application states
+
+Admin vs Creator responsibilities
+
+This task is to create PRD #2, which focuses on:
+Upload submission, verification, and deadline handling
+
+The system is in late development / early production.
+
+Real users may already exist
+
+Stability and operational safety are critical
+
+Output File (Strict)
+
+Create the following file ONLY:
+
+docs/prd/PRD-Upload-Verification-and-Deadlines.md
+
+Do NOT create or modify any other files.
+
+Goal of PRD #2
+
+This PRD must clearly define operational rules for:
+
+How creators submit upload proof
+
+How admins verify or reject submissions
+
+How deadlines are enforced
+
+What happens when creators fail to upload
+
+Which states are considered terminal
+
+What actions are allowed or forbidden after terminal states
+
+This area is the highest operational risk zone of the platform and must be explicit.
+
+Absolute Rules (DO NOT VIOLATE)
+
+❌ Do NOT modify or suggest code changes
+❌ Do NOT change database schema or enums
+❌ Do NOT invent brand-new concepts unrelated to existing behavior
+❌ Do NOT contradict PRD #1
+
+✅ Use PRD #1 as the source of truth for application states
+✅ If something is unclear, mark it clearly as Assumption
+✅ If a decision is needed later, mark it as Decision Needed
+
+Writing Language & Style
+
+Write the PRD in English
+
+Use simple, explicit English
+
+Prefer bullet points over long paragraphs
+
+Assume the reader is:
+
+A developer
+
+An operator
+
+Or an AI agent implementing logic strictly
+
+This is not marketing copy.
+This is a system rules document.
+
+Required Sections (Must Include All)
+1. Purpose & Scope
+
+Why upload verification exists
+
+Why this process must be strict
+
+How it connects to Application states defined in PRD #1
+
+2. Terminology
+
+Define clearly:
+
+Upload Submission
+
+Verification
+
+Deadline
+
+Resubmission
+
+Terminal State
+
+3. User Roles & Allowed Actions
+Creator Actions (No direct state mutation)
+
+Submit upload proof
+
+View verification status
+
+Resubmit (if allowed)
+
+View deadline information
+
+Explicitly state what creators cannot do.
+
+Admin Actions
+
+Review submission
+
+Approve submission
+
+Reject submission
+
+Request resubmission (if applicable)
+
+Mark deadline missed (manual or automatic)
+
+4. Upload Submission Requirements
+
+Define what is required for verification readiness.
+
+Include differences by campaign type:
+
+Gifting
+
+Link-in-bio
+
+Amazon video upload
+
+For each type, clarify:
+
+What kind of link or proof is required
+
+What makes a submission invalid
+
+5. Verification Workflow
+
+Define the step-by-step flow:
+
+Submission received
+
+Verification pending
+
+Approved / Rejected
+
+Optional resubmission
+
+Clarify:
+
+Whether multiple resubmissions are allowed
+
+Who decides final approval
+
+What happens after approval
+
+6. Deadlines & Time-Based Rules
+
+Define:
+
+Upload deadline
+
+Grace period (if any)
+
+Automatic vs manual deadline handling
+
+Admin override rules (if allowed)
+
+Clearly state:
+
+What happens when the deadline is missed
+
+Which state the application moves to
+
+7. Terminal States & Locking Rules
+
+Define which states are terminal, such as:
+
+completed
+
+rejected
+
+deadline_missed / expired
+
+For terminal states:
+
+Explicitly state that no further mutations are allowed
+
+Clarify which actions are blocked
+
+8. Failure & Edge Cases
+
+Cover scenarios such as:
+
+Invalid or broken links
+
+Private or deleted content
+
+Submission after deadline
+
+Content changed after approval
+
+Long verification delays
+
+9. Operational Safety Rules
+
+Include rules like:
+
+No payout before verification approval
+
+No verification without submission
+
+No state rollback after terminal state
+
+(This section defines “things we must never allow”)
+
+10. Assumptions & Open Questions
+
+List:
+
+Any assumptions made due to unclear implementation
+
+Any decisions that must be confirmed later
+
+These must be clearly labeled.
+
+11. Relation to Future PRDs
+
+Briefly explain that:
+
+Payout and settlement logic will be defined in PRD #3
+
+This PRD intentionally stops before financial execution
+
+Final Instructions
+
+Generate the PRD as a complete, readable document
+
+Do not reference this prompt in the output
+
+Do not include implementation code
+
+Do not modify any existing files
+
+This PRD should be suitable to act as a baseline reference
+
+After completing the file, stop.
+
+PROMPT END

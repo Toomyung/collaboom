@@ -1,0 +1,170 @@
+PROMPT START
+
+Stop. Do NOT summarize PRD #1 again.
+
+The previous output repeated Campaign and Application definitions.
+That is NOT the goal.
+
+What You Must Do Now
+
+Create PRD #2, which is a procedural, operational rules document.
+
+This document is NOT about:
+
+Campaign types
+
+Application state lists
+
+Payout systems
+
+Score or tier systems
+
+Those already belong to PRD #1.
+
+Scope of PRD #2 (VERY IMPORTANT)
+
+PRD #2 is ONLY about:
+
+Upload submission
+
+Verification workflow
+
+Deadlines
+
+Failure handling
+
+Terminal state locking rules
+
+If a section does not directly relate to one of the above,
+DO NOT include it.
+
+Output File (Strict)
+
+Create or overwrite ONLY:
+
+docs/prd/PRD-Upload-Verification-and-Deadlines.md
+
+Do NOT touch any other file.
+
+Rules You Must Follow
+
+Use PRD #1 as the baseline reference
+
+Do NOT redefine campaign or application states
+
+Do NOT re-list enums or states
+
+Do NOT include payout logic beyond blocking rules
+
+Do NOT include score or tier systems
+
+Write in English
+
+Write in procedural rules, not summaries
+
+Required Structure (Must Follow Exactly)
+1. Purpose
+
+Explain why upload verification and deadlines exist
+(from an operational risk perspective).
+
+2. Creator Actions (Actions Only)
+
+List only actions a creator can perform, such as:
+
+submit upload proof
+
+resubmit proof (if allowed)
+
+view verification result
+
+Explicitly state:
+Creators cannot directly change application states.
+
+3. Upload Submission Rules
+
+Define:
+
+What counts as a valid submission
+
+Required format per campaign type
+
+When a submission is considered “received”
+
+4. Verification Workflow (Step-by-Step)
+
+Describe the exact sequence:
+
+Submission received
+
+Verification pending
+
+Approved OR rejected
+
+Optional resubmission
+
+Final resolution
+
+No state tables. Describe behavior.
+
+5. Deadline Enforcement
+
+Define:
+
+Upload deadline
+
+What happens at deadline
+
+Automatic vs admin-triggered deadline_missed
+
+Whether extensions are allowed and how
+
+6. Terminal State Locking
+
+Define:
+
+Which states are terminal
+
+What is forbidden after reaching a terminal state
+
+No rollback rules
+
+7. Failure & Edge Cases
+
+Cover:
+
+Invalid links
+
+Private or deleted content
+
+Late submissions
+
+Content changes after approval
+
+8. Safety Rules (Never Allowed)
+
+Examples:
+
+No verification without submission
+
+No payout eligibility before verification approval
+
+No state mutation after terminal state
+
+9. Assumptions & Open Questions
+
+List assumptions and decisions that must be confirmed later.
+
+Final Instructions
+
+This document must read like a rulebook for operators and developers
+
+Do NOT restate PRD #1
+
+Do NOT summarize the system
+
+Focus ONLY on upload, verification, and deadlines
+
+Generate the document now.
+
+PROMPT END
