@@ -197,6 +197,7 @@ export function useAuth() {
   const logoutMutation = useMutation({
     mutationFn: logoutUser,
     onSuccess: () => {
+      setWasAuthenticated(false);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       setLocation("/");
     },

@@ -45,9 +45,11 @@ function SessionExpiredHandler() {
 
   useEffect(() => {
     const handleSessionExpired = () => {
-      // Only invalidate auth-related queries, not the entire cache
+      // Invalidate all auth-dependent queries
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/influencer"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin"] });
       
       toast({
         title: "Session Expired",
