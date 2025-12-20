@@ -670,7 +670,7 @@ export function ApplicationCard({
                     <div className="mt-3 pt-3 border-t border-amber-500/20">
                       <div className="flex items-center gap-2 text-amber-600">
                         <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">$50 Reward Earned!</span>
+                        <span className="font-medium">$30 Reward Earned!</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Your reward will be sent to your PayPal account

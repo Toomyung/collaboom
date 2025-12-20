@@ -274,10 +274,10 @@ export const applications = pgTable("applications", {
   reimbursementSentByAdminId: varchar("reimbursement_sent_by_admin_id"),
   reimbursementAmount: integer("reimbursement_amount"),
   reimbursementPaypalTransactionId: text("reimbursement_paypal_transaction_id"),
-  // Cash reward fields - Used for link_in_bio ($30) and amazon_video_upload ($50)
-  cashRewardSentAt: timestamp("cash_reward_sent_at"), // When admin sent the $30/$50 cash reward
+  // Cash reward fields - Used for link_in_bio ($30) and amazon_video_upload ($30)
+  cashRewardSentAt: timestamp("cash_reward_sent_at"), // When admin sent the $30 cash reward
   cashRewardSentByAdminId: varchar("cash_reward_sent_by_admin_id"),
-  cashRewardAmount: integer("cash_reward_amount"), // Cash reward amount ($30 for link_in_bio, $50 for amazon_video_upload)
+  cashRewardAmount: integer("cash_reward_amount"), // Cash reward amount ($30 for link_in_bio, $30 for amazon_video_upload)
   cashRewardPaypalTransactionId: text("cash_reward_paypal_transaction_id"), // PayPal transaction ID for cash reward
   // Email threading - stores the first email's Message-ID for threading subsequent emails
   emailThreadId: text("email_thread_id"),

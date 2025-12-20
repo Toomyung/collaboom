@@ -1763,7 +1763,7 @@ export default function DashboardPage() {
                     (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
                   ).reduce((sum, a) => {
                     if (a.campaign.campaignType === "link_in_bio") return sum + 30;
-                    if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                    if (a.campaign.campaignType === "amazon_video_upload") return sum + 30;
                     return sum;
                   }, 0) || 0}
                 </p>
@@ -2335,7 +2335,7 @@ export default function DashboardPage() {
               ) || [];
               const totalEarned = paidCampaigns.reduce((sum, a) => {
                 if (a.campaign.campaignType === "link_in_bio") return sum + 30;
-                if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                if (a.campaign.campaignType === "amazon_video_upload") return sum + 30;
                 return sum;
               }, 0);
               const totalPayoutsRequested = payoutData?.totalPayoutsRequested || 0;
@@ -2486,7 +2486,7 @@ export default function DashboardPage() {
                 ) || [];
                 const totalEarned = paidCampaigns.reduce((sum, a) => {
                   if (a.campaign.campaignType === "link_in_bio") return sum + 30;
-                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 30;
                   return sum;
                 }, 0);
                 const totalPayoutsRequested = payoutData?.totalPayoutsRequested || 0;
@@ -2522,7 +2522,7 @@ export default function DashboardPage() {
                 ) || [];
                 const totalEarned = paidCampaigns.reduce((sum, a) => {
                   if (a.campaign.campaignType === "link_in_bio") return sum + 30;
-                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+                  if (a.campaign.campaignType === "amazon_video_upload") return sum + 30;
                   return sum;
                 }, 0);
                 const totalPayoutsRequested = payoutData?.totalPayoutsRequested || 0;

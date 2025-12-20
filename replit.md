@@ -80,7 +80,7 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity. All
 
 ### Influencer Payout Requests
 - **Balance Calculation:** Available Balance = Total Earned - Total Payouts Requested
-- **Reward Amounts:** $30 for Link in Bio campaigns, $50 for Amazon Video Upload campaigns
+- **Reward Amounts:** $30 for Link in Bio campaigns, $30 for Amazon Video Upload campaigns
 - **Requirements:** PayPal email must be set in influencer profile before requesting payouts
 - **Request Flow:**
   1. Influencer opens "Cash Earned" sheet from dashboard

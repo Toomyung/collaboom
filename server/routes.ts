@@ -2225,7 +2225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Product Cost Covered / Amazon Video: Send cash reward ($30/$50)
+  // Link in Bio / Amazon Video: Send cash reward ($30)
   app.post("/api/admin/applications/:id/send-reward", requireAuth("admin"), async (req, res) => {
     try {
       const application = await storage.getApplication(req.params.id);
@@ -2915,7 +2915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate cash earned based on campaign type
       const cashEarned = completedApps.reduce((sum, a) => {
         if (a.campaign?.campaignType === "link_in_bio") return sum + 30;
-        if (a.campaign?.campaignType === "amazon_video_upload") return sum + 50;
+        if (a.campaign?.campaignType === "amazon_video_upload") return sum + 30;
         return sum;
       }, 0);
       
@@ -3885,7 +3885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         )
         .reduce((sum, a) => {
           if (a.campaign.campaignType === "link_in_bio") return sum + 30;
-          if (a.campaign.campaignType === "amazon_video_upload") return sum + 50;
+          if (a.campaign.campaignType === "amazon_video_upload") return sum + 30;
           return sum;
         }, 0);
 
