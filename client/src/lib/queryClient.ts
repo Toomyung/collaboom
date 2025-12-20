@@ -159,6 +159,20 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// Helper to detect network errors across different browsers/runtimes
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) {
+    const msg = error.message.toLowerCase();
+    // Cover common fetch failure messages across browsers
+    return msg.includes("failed to fetch") ||
+           msg.includes("network") ||
+           msg.includes("fetch failed") ||
+           msg.includes("load failed") ||
+           msg.includes("connection");
+  }
+  return false;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -168,7 +182,7 @@ export const queryClient = new QueryClient({
       staleTime: Infinity,
       retry: (failureCount, error) => {
         // Retry network errors up to 2 times with exponential backoff
-        if (error instanceof TypeError && error.message === "Failed to fetch") {
+        if (isNetworkError(error)) {
           return failureCount < 2;
         }
         // Retry 5xx server errors once
@@ -182,7 +196,7 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: (failureCount, error) => {
         // Only retry network errors for mutations, not API errors
-        if (error instanceof TypeError && error.message === "Failed to fetch") {
+        if (isNetworkError(error)) {
           return failureCount < 1;
         }
         return false;
