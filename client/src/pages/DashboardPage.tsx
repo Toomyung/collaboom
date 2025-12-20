@@ -1760,7 +1760,8 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold">
                   ${allApplications?.filter(a => 
                     (a.status === "uploaded" || a.status === "completed") && 
-                    (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+                    (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload") &&
+                    a.pointsAwarded && a.pointsAwarded > 0 // Only count admin-verified submissions
                   ).reduce((sum, a) => {
                     if (a.campaign.campaignType === "link_in_bio") return sum + 30;
                     if (a.campaign.campaignType === "amazon_video_upload") return sum + 30;
@@ -2329,9 +2330,11 @@ export default function DashboardPage() {
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
             {(() => {
+              // Only count verified campaigns (with pointsAwarded) for cash earned
               const paidCampaigns = allApplications?.filter(a => 
                 (a.status === "uploaded" || a.status === "completed") && 
-                (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+                (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload") &&
+                a.pointsAwarded && a.pointsAwarded > 0 // Only count admin-verified submissions
               ) || [];
               const totalEarned = paidCampaigns.reduce((sum, a) => {
                 if (a.campaign.campaignType === "link_in_bio") return sum + 30;
@@ -2482,7 +2485,8 @@ export default function DashboardPage() {
               {(() => {
                 const paidCampaigns = allApplications?.filter(a => 
                   (a.status === "uploaded" || a.status === "completed") && 
-                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload") &&
+                  a.pointsAwarded && a.pointsAwarded > 0 // Only count admin-verified submissions
                 ) || [];
                 const totalEarned = paidCampaigns.reduce((sum, a) => {
                   if (a.campaign.campaignType === "link_in_bio") return sum + 30;
@@ -2518,7 +2522,8 @@ export default function DashboardPage() {
               onClick={() => {
                 const paidCampaigns = allApplications?.filter(a => 
                   (a.status === "uploaded" || a.status === "completed") && 
-                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+                  (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload") &&
+                  a.pointsAwarded && a.pointsAwarded > 0 // Only count admin-verified submissions
                 ) || [];
                 const totalEarned = paidCampaigns.reduce((sum, a) => {
                   if (a.campaign.campaignType === "link_in_bio") return sum + 30;
