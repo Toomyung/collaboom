@@ -10,6 +10,7 @@ import express, {
 import { registerRoutes } from "./routes";
 import { seedDatabase } from "./seed";
 import { setupSecurityMiddleware, apiLimiter } from "./security";
+import { runMigrations } from "./migrate";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -74,6 +75,7 @@ app.use((req, res, next) => {
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
+  await runMigrations();
   await seedDatabase();
   const server = await registerRoutes(app);
 

@@ -1,0 +1,107 @@
+PROMPT START
+
+You are working on an existing production codebase called Collaboom.
+Your task is to improve database migration safety without changing application behavior.
+
+Context
+
+The project uses Drizzle ORM with PostgreSQL.
+
+drizzle.config.ts already exists and outputs migrations to ./migrations.
+
+The project currently relies on drizzle-kit push, which is unsafe for production.
+
+This app already has real users and data.
+
+Goal
+
+Migrate the project to a migration-based workflow using drizzle-kit generate and drizzle-kit migrate.
+
+Strict Rules (IMPORTANT)
+
+❌ Do NOT change any existing database schema.
+
+❌ Do NOT rename tables, columns, or types.
+
+❌ Do NOT modify authentication, routes, or frontend code.
+
+❌ Do NOT introduce breaking changes.
+
+✅ Only modify files explicitly listed below.
+
+✅ If unsure, ASK before making assumptions.
+
+Files You Are Allowed to Modify
+
+package.json
+
+server/app.ts
+
+server/seed.ts
+
+You may CREATE ONE new file: server/migrate.ts
+
+Required Tasks
+1) Update package.json
+
+Add the following scripts (keep existing scripts intact unless specified):
+
+db:generate → runs drizzle-kit generate
+
+db:migrate → runs drizzle-kit migrate
+
+db:studio → runs drizzle-kit studio
+
+Keep db:push, but mark it as development-only in a comment if possible.
+
+2) Add migration runner
+
+Create a new file server/migrate.ts that:
+
+Imports the existing db instance
+
+Uses drizzle-orm migration utilities
+
+Runs migrations from the ./migrations directory
+
+Logs when migrations start and finish
+
+3) Run migrations on server startup
+
+In server/app.ts:
+
+Import runMigrations from server/migrate.ts
+
+Execute migrations before routes are registered
+
+Ensure migrations run only once on startup
+
+4) Protect production from unsafe seeding
+
+In server/seed.ts:
+
+Prevent seed execution in production unless an explicit env variable is set
+
+Example: allow seeding only if ALLOW_PROD_SEED=true
+
+Output Requirements
+
+Make minimal, clean changes
+
+Do not introduce new dependencies unless absolutely required
+
+Explain each change briefly in comments
+
+Ensure the app behavior remains identical except for safer DB handling
+
+Confirmation
+
+After completing the task, summarize:
+
+What files were changed
+
+Why this is safer for production
+
+What command developers should now run when changing the schema
+
+PROMPT END

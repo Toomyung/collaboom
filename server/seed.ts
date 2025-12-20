@@ -4,6 +4,16 @@ import * as bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 
 export async function seedDatabase() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const allowProdSeed = process.env.ALLOW_PROD_SEED === 'true';
+  
+  if (isProduction && !allowProdSeed) {
+    console.log('[Seed] Skipping seeding in production (set ALLOW_PROD_SEED=true to override)');
+    await warmupDatabase();
+    startKeepAlive();
+    return;
+  }
+  
   try {
     // Warm up database connection first
     await warmupDatabase();
