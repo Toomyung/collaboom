@@ -2912,8 +2912,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const missedApps = enrichedApplications.filter(
         (a) => a.status === "deadline_missed"
       );
-      // Calculate cash earned based on campaign type
+      // Calculate cash earned based on campaign type - only count verified submissions
       const cashEarned = completedApps.reduce((sum, a) => {
+        // Only count if admin verified (pointsAwarded > 0)
+        if (!a.pointsAwarded || a.pointsAwarded <= 0) return sum;
         if (a.campaign?.campaignType === "link_in_bio") return sum + 30;
         if (a.campaign?.campaignType === "amazon_video_upload") return sum + 30;
         return sum;
@@ -3876,12 +3878,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please add your PayPal email in your profile before requesting a payout." });
       }
 
-      // Calculate available balance
+      // Calculate available balance - only count verified submissions (with pointsAwarded)
       const applications = await storage.getApplicationsWithDetails(influencerId);
       const totalEarned = applications
         .filter(a => 
           (a.status === "uploaded" || a.status === "completed") && 
-          (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload")
+          (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload") &&
+          a.pointsAwarded && a.pointsAwarded > 0 // Only count admin-verified submissions
         )
         .reduce((sum, a) => {
           if (a.campaign.campaignType === "link_in_bio") return sum + 30;
