@@ -166,10 +166,27 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error) => {
+        // Retry network errors up to 2 times with exponential backoff
+        if (error instanceof TypeError && error.message === "Failed to fetch") {
+          return failureCount < 2;
+        }
+        // Retry 5xx server errors once
+        if (error instanceof ApiError && error.status >= 500) {
+          return failureCount < 1;
+        }
+        return false;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     },
     mutations: {
-      retry: false,
+      retry: (failureCount, error) => {
+        // Only retry network errors for mutations, not API errors
+        if (error instanceof TypeError && error.message === "Failed to fetch") {
+          return failureCount < 1;
+        }
+        return false;
+      },
     },
   },
 });

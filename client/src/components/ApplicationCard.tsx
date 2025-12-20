@@ -170,6 +170,8 @@ export function ApplicationCard({
               alt={campaign.name}
               className="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
+              fetchPriority="low"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">

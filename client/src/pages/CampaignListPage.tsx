@@ -5,7 +5,7 @@ import { CampaignCard } from "@/components/CampaignCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Campaign, MinimalCampaign } from "@shared/schema";
-import { Search, Sparkles, Filter, ChevronLeft, ChevronRight, Loader2, ExternalLink } from "lucide-react";
+import { Search, Sparkles, Filter, ChevronLeft, ChevronRight, Loader2, ExternalLink, RefreshCw, WifiOff } from "lucide-react";
 import { SiTiktok } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,7 +75,7 @@ export default function CampaignListPage() {
   const { toast } = useToast();
 
   // Use minimal=true to get only the fields needed for the list view
-  const { data: campaigns, isLoading } = useQuery<MinimalCampaign[]>({
+  const { data: campaigns, isLoading, error: campaignsError, refetch } = useQuery<MinimalCampaign[]>({
     queryKey: ["/api/campaigns", { minimal: true }],
     queryFn: async () => {
       const res = await fetch("/api/campaigns?minimal=true");
@@ -249,13 +249,47 @@ export default function CampaignListPage() {
 
         {/* Campaign Grid */}
         {isLoading ? (
-          <div className="min-h-[60vh] flex flex-col items-center justify-center" data-testid="loading-campaigns">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 text-primary animate-spin" data-testid="spinner-campaigns" />
-              </div>
+          <div data-testid="loading-campaigns">
+            {/* Skeleton grid matching the actual layout */}
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-lg border bg-card overflow-hidden animate-pulse">
+                  {/* Image skeleton - matches aspect-square on mobile */}
+                  <div className="aspect-square sm:aspect-[4/3] md:aspect-[16/9] bg-muted" />
+                  {/* Content skeleton */}
+                  <div className="p-2 sm:p-4 space-y-2">
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                    <div className="flex gap-2 mt-2">
+                      <div className="h-3 bg-muted rounded w-12" />
+                      <div className="h-3 bg-muted rounded w-12" />
+                    </div>
+                  </div>
+                  {/* Button skeleton */}
+                  <div className="p-2 sm:p-4 pt-0">
+                    <div className="h-8 bg-muted rounded w-full" />
+                  </div>
+                </div>
+              ))}
             </div>
-            <p className="mt-4 text-muted-foreground text-sm" data-testid="text-loading-campaigns">Loading campaigns...</p>
+          </div>
+        ) : campaignsError ? (
+          <div className="min-h-[40vh] flex flex-col items-center justify-center text-center px-4" data-testid="error-campaigns">
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <WifiOff className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">Connection Problem</h3>
+            <p className="text-muted-foreground mb-4 text-sm max-w-sm">
+              We couldn't load the campaigns. Please check your internet connection and try again.
+            </p>
+            <Button
+              onClick={() => refetch()}
+              className="gap-2"
+              data-testid="button-retry"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
           </div>
         ) : paginatedCampaigns && paginatedCampaigns.length > 0 ? (
           <>

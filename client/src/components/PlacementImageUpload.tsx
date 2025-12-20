@@ -107,6 +107,8 @@ export function PlacementImageUpload({ value = [], onChange, maxImages = 6 }: Pl
                 src={img}
                 alt={`Placement ${index + 1}`}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                 {index > 0 && (
