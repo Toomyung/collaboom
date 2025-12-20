@@ -1722,7 +1722,10 @@ export default function DashboardPage() {
               </div>
               <div className="flex-1">
                 <p className="text-2xl font-bold">
-                  {allApplications?.filter(a => a.status === "uploaded" || a.status === "completed").length || 0}
+                  {allApplications?.filter(a => 
+                    (a.status === "uploaded" || a.status === "completed") && 
+                    a.pointsAwarded && a.pointsAwarded > 0 // Only count admin-verified completions
+                  ).length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Completed</p>
               </div>
@@ -2204,12 +2207,19 @@ export default function DashboardPage() {
               Completed Campaigns
             </SheetTitle>
             <SheetDescription>
-              You've completed {allApplications?.filter(a => a.status === "uploaded" || a.status === "completed").length || 0} campaigns
+              You've completed {allApplications?.filter(a => 
+                (a.status === "uploaded" || a.status === "completed") && 
+                a.pointsAwarded && a.pointsAwarded > 0
+              ).length || 0} campaigns
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-140px)] mt-4 pr-4">
             {(() => {
-              const completed = allApplications?.filter(a => a.status === "uploaded" || a.status === "completed") || [];
+              // Only show verified/completed campaigns (with pointsAwarded)
+              const completed = allApplications?.filter(a => 
+                (a.status === "uploaded" || a.status === "completed") && 
+                a.pointsAwarded && a.pointsAwarded > 0
+              ) || [];
               return completed.length > 0 ? (
                 <div className="space-y-3">
                   {completed.map((app) => (

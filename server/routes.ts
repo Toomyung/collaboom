@@ -2905,17 +2905,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // Calculate stats
+      // Calculate stats - only count admin-verified submissions (with pointsAwarded)
       const completedApps = enrichedApplications.filter(
-        (a) => a.status === "uploaded" || a.status === "completed"
+        (a) => (a.status === "uploaded" || a.status === "completed") && 
+               a.pointsAwarded && a.pointsAwarded > 0
       );
       const missedApps = enrichedApplications.filter(
         (a) => a.status === "deadline_missed"
       );
-      // Calculate cash earned based on campaign type - only count verified submissions
+      // Calculate cash earned based on campaign type
       const cashEarned = completedApps.reduce((sum, a) => {
-        // Only count if admin verified (pointsAwarded > 0)
-        if (!a.pointsAwarded || a.pointsAwarded <= 0) return sum;
         if (a.campaign?.campaignType === "link_in_bio") return sum + 30;
         if (a.campaign?.campaignType === "amazon_video_upload") return sum + 30;
         return sum;
