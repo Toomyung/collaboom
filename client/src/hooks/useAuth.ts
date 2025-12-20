@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { Influencer, Admin } from "@shared/schema";
+import { setWasAuthenticated } from "@/lib/queryClient";
 
 export type AuthUser = {
   id: string;
@@ -139,6 +140,13 @@ export function useAuth() {
     queryFn: getCurrentUser,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Track authenticated state for session expiry detection
+  useEffect(() => {
+    if (authState?.user) {
+      setWasAuthenticated(true);
+    }
+  }, [authState?.user]);
 
   const signInWithGoogle = async (onRetry?: (attempt: number) => void) => {
     const supabase = await getSupabase();

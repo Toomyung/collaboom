@@ -1,11 +1,12 @@
-import { lazy, Suspense } from "react";
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { lazy, Suspense, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
+import { queryClient, SESSION_EXPIRED_EVENT } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SocketProvider } from "./lib/socket";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const LandingPage = lazy(() => import("@/pages/LandingPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -36,6 +37,33 @@ function PageLoader() {
       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
     </div>
   );
+}
+
+function SessionExpiredHandler() {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      // Only invalidate auth-related queries, not the entire cache
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      
+      toast({
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+        variant: "destructive",
+      });
+      setLocation("/login");
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    };
+  }, [toast, setLocation]);
+
+  return null;
 }
 
 function Router() {
@@ -83,6 +111,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <SocketProvider>
         <TooltipProvider>
+          <SessionExpiredHandler />
           <Toaster />
           <Router />
         </TooltipProvider>

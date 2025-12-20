@@ -1,4 +1,40 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, QueryFunction, QueryCache, MutationCache } from "@tanstack/react-query";
+
+// Session expiry event for global handling
+export const SESSION_EXPIRED_EVENT = 'session-expired';
+
+// Track if user was authenticated (set by auth hook when login succeeds)
+let wasAuthenticated = false;
+
+export function setWasAuthenticated(value: boolean) {
+  wasAuthenticated = value;
+  if (value) {
+    sessionStorage.setItem('wasAuthenticated', 'true');
+  } else {
+    sessionStorage.removeItem('wasAuthenticated');
+  }
+}
+
+export function getWasAuthenticated(): boolean {
+  return wasAuthenticated || sessionStorage.getItem('wasAuthenticated') === 'true';
+}
+
+function dispatchSessionExpired() {
+  // Only dispatch if user was previously authenticated
+  if (!getWasAuthenticated()) {
+    return;
+  }
+  
+  // Only dispatch once per minute to avoid spamming
+  const lastDispatch = sessionStorage.getItem('lastSessionExpiry');
+  const now = Date.now();
+  if (lastDispatch && now - parseInt(lastDispatch) < 60000) {
+    return;
+  }
+  sessionStorage.setItem('lastSessionExpiry', now.toString());
+  setWasAuthenticated(false);
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+}
 
 export class ApiError extends Error {
   public status: number;
@@ -174,6 +210,22 @@ function isNetworkError(error: unknown): boolean {
 }
 
 export const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      // Detect session expiry on protected endpoints (not /api/auth/me)
+      if (error instanceof ApiError && error.status === 401) {
+        dispatchSessionExpired();
+      }
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      // Detect session expiry on mutations
+      if (error instanceof ApiError && error.status === 401) {
+        dispatchSessionExpired();
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
