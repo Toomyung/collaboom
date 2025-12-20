@@ -76,9 +76,10 @@ export function CampaignCard({
     // Link in Bio
     if (campaignType === "link_in_bio") {
       return (
-        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white">
-          <TypeIcon className="h-3 w-3 mr-1" />
-          Link in Bio
+        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+          <TypeIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+          <span className="hidden sm:inline">Link in Bio</span>
+          <span className="sm:hidden">Bio</span>
         </Badge>
       );
     }
@@ -86,34 +87,37 @@ export function CampaignCard({
     // Amazon Video Upload
     if (campaignType === "amazon_video_upload") {
       return (
-        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white">
-          <TypeIcon className="h-3 w-3 mr-1" />
-          Amazon Video
+        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+          <TypeIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+          <span className="hidden sm:inline">Amazon Video</span>
+          <span className="sm:hidden">Amazon</span>
         </Badge>
       );
     }
     
     // Gifting
     return (
-      <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 text-white">
-        <TypeIcon className="h-3 w-3 mr-1" />
-        Gifting
+      <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+        <TypeIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+        <span className="hidden sm:inline">Gifting</span>
+        <span className="sm:hidden">Gift</span>
       </Badge>
     );
   };
 
   const getStatusBadge = () => {
+    const baseClass = "text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5";
     if (isClosed) {
-      return <Badge variant="secondary">Closed</Badge>;
+      return <Badge variant="secondary" className={baseClass}>Closed</Badge>;
     }
     if (isApplicationClosed) {
-      return <Badge variant="secondary">Applications Closed</Badge>;
+      return <Badge variant="secondary" className={baseClass}>Closed</Badge>;
     }
     if (isFull) {
-      return <Badge variant="secondary">Full</Badge>;
+      return <Badge variant="secondary" className={baseClass}>Full</Badge>;
     }
     return (
-      <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Active</Badge>
+      <Badge className={cn("bg-green-500/10 text-green-600 border-green-500/20", baseClass)}>Active</Badge>
     );
   };
 
@@ -151,8 +155,9 @@ export function CampaignCard({
       onClick={handleCardClick}
       data-testid={`card-campaign-${campaign.id}`}
     >
+      {/* Image - compact square on mobile, 16:9 on larger screens */}
       <div className={cn(
-        "relative aspect-[16/9] overflow-hidden bg-muted",
+        "relative aspect-square sm:aspect-[4/3] md:aspect-[16/9] overflow-hidden bg-muted",
         isDisabled && "grayscale-[30%]"
       )}>
         {getCampaignThumbnail(campaign) ? (
@@ -168,64 +173,72 @@ export function CampaignCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-purple-500/20">
-            <Sparkles className="h-12 w-12 text-primary/40" />
+            <Sparkles className="h-8 w-8 sm:h-12 sm:w-12 text-primary/40" />
           </div>
         )}
-        <div className="absolute top-3 right-3 flex flex-col gap-2">
+        {/* Campaign type badge - smaller on mobile */}
+        <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2">
           {getCampaignTypeBadge()}
         </div>
-        <div className="absolute bottom-3 left-3">{getStatusBadge()}</div>
+        {/* Status badge - smaller on mobile */}
+        <div className="absolute bottom-1.5 left-1.5 sm:bottom-3 sm:left-3">{getStatusBadge()}</div>
       </div>
 
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground mb-1">
+      {/* Content - compact padding and text on mobile */}
+      <CardContent className="p-2 sm:p-4 space-y-1.5 sm:space-y-3">
+        <div className="flex items-start justify-between gap-1 sm:gap-2">
+          <div className="min-w-0 flex-1">
+            {/* Brand name - hidden on mobile to save space */}
+            <p className="hidden sm:block text-xs text-muted-foreground mb-1">
               {campaign.brandName}
               {campaign.productName && ` - ${campaign.productName}`}
             </p>
-            <h3 className="font-semibold text-lg leading-tight truncate">{campaign.name}</h3>
+            {/* Campaign name - smaller on mobile */}
+            <h3 className="font-semibold text-sm sm:text-lg leading-tight line-clamp-2 sm:truncate">{campaign.name}</h3>
           </div>
-          <div className="flex flex-col gap-1 items-end shrink-0">
+          {/* Category badge - hidden on mobile */}
+          <div className="hidden sm:flex flex-col gap-1 items-end shrink-0">
             {getCategoryBadge()}
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Users className="h-4 w-4" />
-            <span>
-              {campaign.approvedCount ?? 0}/{campaign.inventory} slots
+        {/* Stats - compact on mobile */}
+        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="whitespace-nowrap">
+              {campaign.approvedCount ?? 0}/{campaign.inventory}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4" />
-            <span>
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="whitespace-nowrap">
               {isApplicationClosed 
-                ? "Applications closed" 
+                ? "Closed" 
                 : daysLeftToApply === 0 
-                  ? "Last day to apply" 
-                  : `${daysLeftToApply} days to apply`}
+                  ? "Last day" 
+                  : `${daysLeftToApply}d`}
             </span>
           </div>
         </div>
       </CardContent>
 
       {showApplyButton && (
-        <CardFooter className="p-4 pt-0 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <CardFooter className="p-2 sm:p-4 pt-0 flex gap-2" onClick={(e) => e.stopPropagation()}>
           {isApplied ? (
-            <Badge variant="secondary" className="h-9 px-4 flex-1 justify-center">
+            <Badge variant="secondary" className="flex-1 justify-center">
               Applied
             </Badge>
           ) : (
             <Button
               className="flex-1"
+              size="sm"
               disabled={!canApply || isFull || isClosed || isApplicationClosed}
               onClick={handleApplyClick}
               title={isApplicationClosed ? "Application deadline has passed" : applyDisabledReason}
               data-testid={`button-apply-${campaign.id}`}
             >
-              Apply Now
+              Apply
             </Button>
           )}
         </CardFooter>

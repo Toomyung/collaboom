@@ -210,28 +210,28 @@ export default function CampaignListPage() {
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Discover Campaigns</h1>
-          <p className="text-muted-foreground">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
+        {/* Header - compact on mobile */}
+        <div className="mb-3 sm:mb-6 md:mb-8">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2">Discover Campaigns</h1>
+          <p className="text-muted-foreground text-sm sm:text-base hidden sm:block">
             Browse available campaigns and apply to receive free products
           </p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        {/* Search and Filters - compact on mobile */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-3 sm:mb-6 md:mb-8">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search campaigns..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10"
               data-testid="input-search"
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 -mx-2 px-2 sm:mx-0 sm:px-0">
             {categories.map((category) => (
               <Button
                 key={category.id}
@@ -259,7 +259,7 @@ export default function CampaignListPage() {
           </div>
         ) : paginatedCampaigns && paginatedCampaigns.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
               {paginatedCampaigns.map((campaign, index) => (
                 <CampaignCard
                   key={campaign.id}
