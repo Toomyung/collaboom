@@ -1089,47 +1089,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Product Cost Covered: Submit purchase proof (influencer)
-  app.post("/api/applications/:id/submit-purchase", requireAuth("influencer"), async (req, res) => {
-    try {
-      const application = await storage.getApplication(req.params.id);
-      if (!application) {
-        return res.status(404).json({ message: "Application not found" });
-      }
-
-      if (application.influencerId !== req.session.userId) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
-      // Check if campaign is link_in_bio
-      const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "link_in_bio") {
-        return res.status(400).json({ message: "This campaign does not require purchase proof" });
-      }
-
-      // Check if application is approved
-      if (application.status !== "approved") {
-        return res.status(400).json({ message: "Application must be approved to submit purchase proof" });
-      }
-
-      const { screenshotUrl, amazonOrderId } = req.body;
-      if (!screenshotUrl) {
-        return res.status(400).json({ message: "Purchase screenshot URL is required" });
-      }
-
-      // Update application with purchase proof
-      await storage.updateApplication(application.id, {
-        purchaseScreenshotUrl: screenshotUrl,
-        purchaseSubmittedAt: new Date(),
-        amazonOrderId: amazonOrderId || null,
-      });
-
-      return res.json({ success: true });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message });
-    }
-  });
-
   // Link in Bio: Submit bio link (influencer)
   app.post("/api/applications/:id/submit-bio-link", requireAuth("influencer"), async (req, res) => {
     try {
@@ -1163,65 +1122,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateApplication(application.id, {
         bioLinkUrl: bioLinkUrl,
         bioLinkSubmittedAt: new Date(),
-      });
-
-      // Emit socket event for real-time admin updates
-      emitApplicationUpdated(application.campaignId, application.id, application.status);
-
-      return res.json({ success: true });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Amazon Video Upload: Submit Amazon Storefront URL (influencer) - LEGACY endpoint kept for compatibility
-  app.post("/api/applications/:id/submit-amazon-storefront", requireAuth("influencer"), async (req, res) => {
-    try {
-      const application = await storage.getApplication(req.params.id);
-      if (!application) {
-        return res.status(404).json({ message: "Application not found" });
-      }
-
-      if (application.influencerId !== req.session.userId) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
-      // Check if campaign is amazon_video_upload
-      const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "amazon_video_upload") {
-        return res.status(400).json({ message: "This campaign does not require Amazon Storefront submission" });
-      }
-
-      // Check if application is in valid status for submission
-      if (!["delivered", "uploaded"].includes(application.status)) {
-        return res.status(400).json({ message: "You can submit your Amazon Storefront link after receiving the product" });
-      }
-
-      // Check if already submitted (immutable once submitted)
-      if (application.amazonStorefrontUrl) {
-        return res.status(400).json({ message: "Amazon Storefront link has already been submitted and cannot be changed" });
-      }
-
-      const { amazonStorefrontUrl } = req.body;
-      if (!amazonStorefrontUrl) {
-        return res.status(400).json({ message: "Amazon Storefront URL is required" });
-      }
-
-      // Basic URL validation
-      try {
-        const url = new URL(amazonStorefrontUrl);
-        // Must be an Amazon URL
-        if (!url.hostname.includes('amazon.')) {
-          return res.status(400).json({ message: "Please enter a valid Amazon Storefront URL" });
-        }
-      } catch {
-        return res.status(400).json({ message: "Please enter a valid URL" });
-      }
-
-      // Update application with Amazon Storefront link
-      await storage.updateApplication(application.id, {
-        amazonStorefrontUrl: amazonStorefrontUrl.trim(),
-        amazonStorefrontSubmittedAt: new Date(),
       });
 
       // Emit socket event for real-time admin updates
@@ -2164,75 +2064,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Emit real-time event
       emitApplicationUpdated(application.campaignId, application.id, "delivered");
-
-      return res.json({ success: true });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Legacy: Verify purchase proof (kept for backward compatibility)
-  app.post("/api/admin/applications/:id/verify-purchase", requireAuth("admin"), async (req, res) => {
-    try {
-      const application = await storage.getApplication(req.params.id);
-      if (!application) {
-        return res.status(404).json({ message: "Application not found" });
-      }
-
-      // Check if campaign is link_in_bio
-      const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "link_in_bio") {
-        return res.status(400).json({ message: "This campaign is not a Product Cost Covered campaign" });
-      }
-
-      // Check if purchase proof was submitted
-      if (!application.purchaseScreenshotUrl) {
-        return res.status(400).json({ message: "No purchase proof has been submitted" });
-      }
-
-      // Mark purchase as verified
-      await storage.updateApplication(application.id, {
-        purchaseVerifiedAt: new Date(),
-        purchaseVerifiedByAdminId: (req.session as any)?.user?.id || null,
-      });
-
-      return res.json({ success: true });
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Product Cost Covered: Send reimbursement
-  app.post("/api/admin/applications/:id/send-reimbursement", requireAuth("admin"), async (req, res) => {
-    try {
-      const application = await storage.getApplication(req.params.id);
-      if (!application) {
-        return res.status(404).json({ message: "Application not found" });
-      }
-
-      // Check if campaign is link_in_bio
-      const campaign = await storage.getCampaign(application.campaignId);
-      if (!campaign || campaign.campaignType !== "link_in_bio") {
-        return res.status(400).json({ message: "This campaign is not a Product Cost Covered campaign" });
-      }
-
-      // Check if purchase was verified
-      if (!application.purchaseVerifiedAt) {
-        return res.status(400).json({ message: "Purchase proof must be verified before reimbursement" });
-      }
-
-      const { amount, paypalTransactionId } = req.body;
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ message: "Reimbursement amount is required" });
-      }
-
-      // Mark reimbursement as sent
-      await storage.updateApplication(application.id, {
-        reimbursementSentAt: new Date(),
-        reimbursementSentByAdminId: (req.session as any)?.user?.id || null,
-        reimbursementAmount: amount,
-        reimbursementPaypalTransactionId: paypalTransactionId || null,
-      });
 
       return res.json({ success: true });
     } catch (error: any) {
