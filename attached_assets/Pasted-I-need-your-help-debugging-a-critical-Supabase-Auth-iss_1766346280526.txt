@@ -1,0 +1,71 @@
+I need your help debugging a critical Supabase Auth issue.
+Please read carefully and reason step by step.
+
+Context:
+- This is a production app deployed on Render.
+- Frontend + backend are using Supabase for DB + Google OAuth.
+- Supabase plan is FREE.
+- The app URL is https://collaboom.onrender.com
+- OAuth redirect target is /auth/callback on that domain.
+
+Problem:
+Google OAuth login completely fails BEFORE reaching Google.
+The browser fails to even load the Supabase auth endpoint.
+
+This is the exact URL being opened:
+https://ltcfqwtlmtychuntnpqs.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fcollaboom.onrender.com%2Fauth%2Fcallback
+
+Browser error:
+DNS_PROBE_FINISHED_NXDOMAIN
+
+Critical observation:
+The Supabase project domain itself does NOT resolve at the DNS level.
+
+I tested locally on my machine:
+
+nslookup ltcfqwtlmtychuntnpqs.supabase.co 8.8.8.8
+→ NXDOMAIN
+
+nslookup ltcfqwtlmtychuntnpqs.supabase.co 1.1.1.1
+→ NXDOMAIN
+
+curl -I https://ltcfqwtlmtychuntnpqs.supabase.co/auth/v1/health
+→ Could not resolve host
+
+This means:
+- The domain ltcfqwtlmtychuntnpqs.supabase.co does not exist or is not reachable globally.
+- This is NOT a redirect mismatch, NOT a Google Console issue, and NOT a frontend routing issue.
+
+What I already verified:
+1) Supabase dashboard → Settings → Data API → Project URL shows:
+   https://ltcfqwtlmtychuntnpqs.supabase.co
+
+2) Render environment variables:
+   SUPABASE_URL = https://ltcfqwtlmtychuntnpqs.supabase.co
+   SUPABASE_ANON_KEY = sb_publishable_...
+   VITE_SUPABASE_URL = same
+   VITE_SUPABASE_ANON_KEY = same
+
+3) Google Cloud Console:
+   - Authorized JS origins include:
+     https://collaboom.io
+     https://ltcfqwtlmtychuntnpqs.supabase.co
+   - Redirect URI is correctly set.
+
+4) Supabase project is NOT paused (checked Project availability).
+
+Important note:
+Supabase status page currently shows Auth issues related to SMTP emails,
+but this issue happens BEFORE email or OAuth consent.
+This is a DNS-level failure.
+
+What I need from you:
+- Based on this information, do you think this Supabase project is in a broken / orphaned state?
+- Is this something that can happen on Free plans (project URL not resolving)?
+- From a practical standpoint, is the fastest fix:
+  A) Recreate a new Supabase project and migrate
+  B) Change any infrastructure/config I missed
+  C) Something else you recommend
+
+Please do NOT give generic Supabase setup instructions.
+I need a concrete diagnosis and recommended next action.
