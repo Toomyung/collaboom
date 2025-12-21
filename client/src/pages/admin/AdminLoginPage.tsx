@@ -82,7 +82,7 @@ export default function AdminLoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@collaboom.com"
+                  placeholder="admin@collaboom.io"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   data-testid="input-email"
@@ -93,7 +93,7 @@ export default function AdminLoginPage() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder="admin1234"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   data-testid="input-password"
