@@ -1,0 +1,63 @@
+We are preparing to migrate the main database from Neon Postgres to Supabase Postgres.
+This prompt is ONLY for preparation and safety checks. 
+Do NOT migrate data automatically.
+
+Context:
+- Current DB: Neon Postgres (DATABASE_URL)
+- Target DB: Supabase Postgres
+- ORM: Drizzle
+- Migrations: Drizzle Kit (migration-based only)
+- Supabase is already used for Auth and Storage
+- We do NOT use auto schema sync
+
+Goals:
+1. Ensure the codebase is fully compatible with Supabase Postgres
+2. Remove Neon-specific assumptions
+3. Make DB switching safe by only changing DATABASE_URL later
+
+Strict Rules:
+- Do NOT modify production data
+- Do NOT generate or apply migrations
+- Do NOT auto-sync schemas
+- Do NOT touch Supabase Auth logic
+- Do NOT refactor unrelated code
+- Only minimal, necessary changes
+
+Tasks:
+
+1) Audit database connection code
+- Inspect server/db.ts (or equivalent)
+- Ensure it uses a generic Postgres connection compatible with Supabase
+- Confirm no Neon-specific features are required beyond standard Postgres
+
+2) Verify Drizzle configuration
+- Inspect drizzle.config.ts
+- Ensure dialect is "postgresql"
+- Ensure DATABASE_URL is the only DB dependency
+- Confirm migrations folder is correctly referenced
+
+3) Search for Neon-specific references
+- Search entire repo for:
+  - "neon"
+  - "@neondatabase"
+- List all occurrences
+- Propose safe replacements or confirm they are removable
+
+4) Add explicit safety comments
+- Add comments in db connection and drizzle config explaining:
+  - DB provider can be swapped by changing DATABASE_URL
+  - Migrations must always be used
+  - Auto-sync is forbidden in production
+
+5) Output a Migration Readiness Report
+Include:
+- Files inspected
+- Neon-specific code found (if any)
+- What must change when switching to Supabase Postgres
+- What must NOT be changed
+- A safe step-by-step checklist for the human-led DB migration
+
+Final Output:
+- Do NOT apply migrations
+- Do NOT change DATABASE_URL
+- Only code inspection + minimal cleanup + documentation comments

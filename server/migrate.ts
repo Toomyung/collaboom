@@ -1,3 +1,12 @@
+/**
+ * DATABASE MIGRATION RUNNER
+ * 
+ * MIGRATION NOTES:
+ * - Current provider: Neon Postgres (uses drizzle-orm/neon-serverless/migrator)
+ * - To switch to Supabase Postgres: Change import to 'drizzle-orm/node-postgres/migrator'
+ * - Always use Drizzle migrations for schema changes
+ * - AUTO-SYNC IS FORBIDDEN in production - use migration files only
+ */
 import { db } from './db';
 import { migrate } from 'drizzle-orm/neon-serverless/migrator';
 import path from 'path';

@@ -1,8 +1,23 @@
+/**
+ * DATABASE CONNECTION CONFIGURATION
+ * 
+ * MIGRATION NOTES:
+ * - Current provider: Neon Postgres (uses @neondatabase/serverless)
+ * - To switch to Supabase Postgres: Replace imports and Pool with standard 'pg' package
+ *   1. Change: import { Pool } from 'pg';
+ *   2. Change: import { drizzle } from 'drizzle-orm/node-postgres';
+ *   3. Remove: neonConfig and ws imports/configuration
+ *   4. Update: server/migrate.ts to use 'drizzle-orm/node-postgres/migrator'
+ * - DB provider can be swapped by changing DATABASE_URL after code updates
+ * - Always use Drizzle migrations (npm run db:generate, npm run db:push)
+ * - AUTO-SYNC IS FORBIDDEN in production - use migration files only
+ */
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from 'ws';
 import * as schema from '../shared/schema';
 
+// Neon-specific: WebSocket constructor for serverless connections
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {

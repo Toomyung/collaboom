@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend
 - **Server:** Express.js REST API with session-based authentication.
-- **Database:** PostgreSQL via Drizzle ORM and `@neondatabase/serverless` driver. A storage abstraction layer allows for flexible database implementations.
+- **Database:** PostgreSQL via Drizzle ORM. Currently using `@neondatabase/serverless` driver (Supabase migration ready - see `docs/MIGRATION_READINESS_REPORT.md`). A storage abstraction layer allows for flexible database implementations.
 - **Authentication:** Email/password with bcrypt, `express-session`, role-based access control, and session persistence. Google OAuth with automatic retry logic (up to 2 attempts with increasing delays) to handle intermittent Supabase 400 errors on first login.
 - **Security:** SESSION_SECRET required in production, Helmet CSP, sameSite cookies for CSRF protection, rate limiting on auth endpoints.
 - **Core Features:**
@@ -154,7 +154,7 @@ Consistent color gradients used across the platform for campaign types:
 
 ## External Dependencies
 
-- **PostgreSQL Database:** Primary data store, accessed via Drizzle ORM and Neon.
+- **PostgreSQL Database:** Primary data store, accessed via Drizzle ORM. Currently using Neon Postgres (migration to Supabase Postgres documented in `docs/MIGRATION_READINESS_REPORT.md`).
 - **Resend API:** Used for sending transactional emails.
 - **Supabase Storage:** Hosts campaign images in the `collaboom-campaign` bucket, requiring specific RLS policies for anonymous access and deletion.
 - **Third-Party UI Libraries:** Radix UI, shadcn/ui, Tailwind CSS, Google Fonts (Inter).
