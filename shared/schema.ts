@@ -163,7 +163,7 @@ export const campaigns = pgTable("campaigns", {
   name: text("name").notNull(),
   brandName: text("brand_name").notNull(),
   productName: text("product_name"), // Product name for the campaign
-  campaignType: text("campaign_type").notNull().default("gifting"), // 'gifting' | 'product_cost_covered' | 'amazon_video_upload'
+  campaignType: text("campaign_type").notNull().default("gifting"), // 'gifting' | 'link_in_bio' | 'amazon_video_upload'
   category: text("category").notNull(), // 'beauty' | 'food' | 'lifestyle'
   inventory: integer("inventory").notNull(),
   approvedCount: integer("approved_count").default(0),
@@ -190,7 +190,6 @@ export const campaigns = pgTable("campaigns", {
   applicationDeadline: timestamp("application_deadline"), // Deadline to apply for the campaign
   deadline: timestamp("deadline").notNull(), // Upload deadline (content submission deadline)
   campaignTimeline: text("campaign_timeline"), // Free-form campaign timeline description
-  productCost: integer("product_cost"), // Legacy field - no longer used (was for product_cost_covered campaigns)
   status: text("status").notNull().default("draft"), // 'draft' | 'active' | 'full' | 'closed' | 'archived'
   createdByAdminId: varchar("created_by_admin_id"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -260,20 +259,6 @@ export const applications = pgTable("applications", {
   amazonStorefrontSubmittedAt: timestamp("amazon_storefront_submitted_at"), // When influencer submitted the storefront link
   amazonStorefrontVerifiedAt: timestamp("amazon_storefront_verified_at"), // When admin verified the storefront link
   amazonStorefrontVerifiedByAdminId: varchar("amazon_storefront_verified_by_admin_id"),
-  // Legacy product cost covered fields (kept for backward compatibility)
-  productCostSentAt: timestamp("product_cost_sent_at"),
-  productCostSentByAdminId: varchar("product_cost_sent_by_admin_id"),
-  productCostAmount: integer("product_cost_amount"),
-  productCostPaypalTransactionId: text("product_cost_paypal_transaction_id"),
-  purchaseScreenshotUrl: text("purchase_screenshot_url"),
-  purchaseSubmittedAt: timestamp("purchase_submitted_at"),
-  purchaseVerifiedAt: timestamp("purchase_verified_at"),
-  purchaseVerifiedByAdminId: varchar("purchase_verified_by_admin_id"),
-  amazonOrderId: text("amazon_order_id"),
-  reimbursementSentAt: timestamp("reimbursement_sent_at"),
-  reimbursementSentByAdminId: varchar("reimbursement_sent_by_admin_id"),
-  reimbursementAmount: integer("reimbursement_amount"),
-  reimbursementPaypalTransactionId: text("reimbursement_paypal_transaction_id"),
   // Cash reward fields - Used for link_in_bio ($30) and amazon_video_upload ($30)
   cashRewardSentAt: timestamp("cash_reward_sent_at"), // When admin sent the $30 cash reward
   cashRewardSentByAdminId: varchar("cash_reward_sent_by_admin_id"),
