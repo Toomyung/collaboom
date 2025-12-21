@@ -44,12 +44,40 @@ Influencer campaign management platform connecting US-based TikTok influencers (
 Create a `.env` file with:
 
 ```env
+# Required
 DATABASE_URL=your_postgres_connection_string
 SESSION_SECRET=your_session_secret
 RESEND_API_KEY=your_resend_api_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
+NODE_ENV=production
+
+# Optional - Admin seeding
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_secure_password
+ADMIN_NAME=Admin User
 ```
+
+### Render Deployment
+
+For deploying on Render:
+
+1. **Environment Variables** (set in Render Dashboard):
+   - `DATABASE_URL` - Supabase PostgreSQL connection string
+   - `SESSION_SECRET` - Random string for session encryption (use Render's Generate button)
+   - `SUPABASE_URL` - Your Supabase project URL
+   - `SUPABASE_ANON_KEY` - Your Supabase anonymous key
+   - `RESEND_API_KEY` - Resend API key for email
+   - `NODE_ENV` - Set to `production`
+
+2. **First-time Setup** (run in Render Shell):
+   ```bash
+   # Apply database schema
+   npm run db:push
+   
+   # Create admin user
+   ADMIN_EMAIL=your@email.com ADMIN_PASSWORD=yourpassword npm run seed:admin
+   ```
 
 ### Installation
 

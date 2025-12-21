@@ -56,6 +56,7 @@ export interface IStorage {
   // Admin
   getAdmin(id: string): Promise<Admin | undefined>;
   getAdminByEmail(email: string): Promise<Admin | undefined>;
+  getAnyAdmin(): Promise<Admin | undefined>;
   createAdmin(admin: InsertAdmin): Promise<Admin>;
   
   // Influencer
@@ -332,6 +333,11 @@ export class MemStorage implements IStorage {
 
   async getAdminByEmail(email: string): Promise<Admin | undefined> {
     return Array.from(this.admins.values()).find(a => a.email === email);
+  }
+
+  async getAnyAdmin(): Promise<Admin | undefined> {
+    const admins = Array.from(this.admins.values());
+    return admins.length > 0 ? admins[0] : undefined;
   }
 
   async createAdmin(admin: InsertAdmin): Promise<Admin> {

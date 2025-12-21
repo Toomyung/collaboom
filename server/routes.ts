@@ -1,6 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 import { storage } from "./storage";
 import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
@@ -76,15 +78,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Session middleware with secure configuration
+  // Use PostgreSQL session store in production for reliability and scalability
   // In Replit's embedded preview (dev mode), cookies need sameSite: "none" and secure: true
-  // to work in the cross-origin iframe context
   const isReplitEnv = !!process.env.REPL_SLUG;
+  const isRenderEnv = !!process.env.RENDER;
+  
+  // Configure session store
+  let sessionStore;
+  if (isProduction) {
+    const PgSession = connectPgSimple(session);
+    sessionStore = new PgSession({
+      pool: pool,
+      tableName: 'session',
+      createTableIfMissing: true,
+    });
+    console.log('[Session] Using PostgreSQL session store');
+  } else {
+    console.log('[Session] Using MemoryStore (development only)');
+  }
+
   const sessionMiddleware = session({
+    store: sessionStore,
     secret: sessionSecret || "dev-only-secret-key-not-for-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, // Always use secure in Replit (HTTPS)
+      secure: isProduction || isReplitEnv, // HTTPS in production and Replit
       httpOnly: true, // Prevent XSS access to cookie
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       sameSite: isReplitEnv && !isProduction ? "none" : "lax", // Allow cross-site in Replit dev iframe
@@ -335,6 +354,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const admin = await storage.getAdminByEmail(email);
       if (!admin) {
         logSecurityEvent('admin_login_unknown_email', { ip: req.ip });
+        // Check if any admin exists at all
+        const anyAdmin = await storage.getAnyAdmin();
+        if (!anyAdmin) {
+          return res.status(401).json({ 
+            message: "No admin account exists. Please run: npm run seed:admin with ADMIN_EMAIL and ADMIN_PASSWORD environment variables." 
+          });
+        }
         return res.status(401).json({ message: "Invalid email or password" });
       }
 

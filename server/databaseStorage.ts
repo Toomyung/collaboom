@@ -33,6 +33,11 @@ export class DatabaseStorage implements IStorage {
     return admin;
   }
 
+  async getAnyAdmin(): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).limit(1);
+    return admin;
+  }
+
   async createAdmin(admin: InsertAdmin): Promise<Admin> {
     const passwordHash = await bcrypt.hash(admin.password, 10);
     const [newAdmin] = await db.insert(admins).values({

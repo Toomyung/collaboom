@@ -1,0 +1,63 @@
+You are working on a Node/Express + Vite app deployed on Render, using Supabase and Drizzle.
+
+Current production issue:
+- Admin login returns 401 with security log: admin_login_unknown_email
+- Previously it was "relation admins does not exist", so schema may now exist but there is no admin seed.
+Goal:
+1) Ensure the database schema includes the `admins` table.
+2) Ensure there is a safe way to create the first admin user in production.
+3) Improve production session reliability (currently MemoryStore warning and occasional session reload failures).
+4) Make deployment on Render reliable.
+
+Please implement the following changes:
+
+A) Database / Drizzle
+- Confirm the Drizzle schema defines an `admins` table. If missing, add it.
+- Ensure there is a deterministic way to apply schema in production.
+  - Add or update package.json scripts if needed:
+    - "db:push" should apply schema to the DATABASE_URL.
+- Create a migration/seed-safe approach:
+  - Create a script at `server/scripts/seed-admin.ts` (or similar) that:
+    - Reads env vars:
+      - ADMIN_EMAIL
+      - ADMIN_PASSWORD
+      - (optional) ADMIN_NAME
+    - Hashes password with bcryptjs
+    - Upserts into `admins` table (idempotent).
+    - Logs clearly what happened.
+- Add a package.json script:
+  - "seed:admin": "tsx server/scripts/seed-admin.ts"
+
+B) Production bootstrap
+- In server startup (production only), optionally run admin seed if env var ENABLE_ADMIN_SEED=true.
+  - If not enabled, do nothing.
+  - This prevents accidental seeding unless explicitly turned on.
+
+C) Session store for production
+- Replace MemoryStore usage with Postgres-backed session store using connect-pg-simple.
+- Use existing DATABASE_URL for the session store.
+- Ensure cookies/settings are production-safe behind Render proxy:
+  - app.set('trust proxy', 1)
+  - session cookie should be secure in production (secure: true) and sameSite should be "lax" (or configurable).
+  - SESSION_SECRET must be required in production (already required).
+- Ensure session store table is created automatically (connect-pg-simple supports creating table), or provide SQL/init.
+
+D) Render deployment helpers
+- Add a Render-friendly optional prestart step (without breaking local dev):
+  - If env var RUN_DB_PUSH_ON_START=true, run db push before starting server, or document a Pre-Deploy command for Render.
+- Update README with exact Render env vars required:
+  - DATABASE_URL
+  - SUPABASE_URL
+  - SUPABASE_ANON_KEY
+  - RESEND_API_KEY
+  - SESSION_SECRET
+  - (Optional) ADMIN_EMAIL, ADMIN_PASSWORD, ENABLE_ADMIN_SEED, RUN_DB_PUSH_ON_START
+
+E) Admin login behavior
+- If no admin exists, return a clear error message from /api/auth/admin/login:
+  - e.g., "No admin account exists. Please seed the first admin."
+  - Avoid leaking sensitive details.
+
+After implementing:
+- Run tests or basic checks locally in Replit (npm run build).
+- Commit changes with a clear message and push to GitHub.
