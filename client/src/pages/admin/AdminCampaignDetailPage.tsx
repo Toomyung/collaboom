@@ -573,35 +573,7 @@ export default function AdminCampaignDetailPage() {
     },
   });
 
-  // Legacy: Verify purchase (kept for backward compatibility)
-  const verifyPurchaseMutation = useMutation({
-    mutationFn: async (applicationId: string) => {
-      await apiRequest("POST", `/api/admin/applications/${applicationId}/verify-purchase`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      toast({ title: "Purchase verified" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Failed to verify purchase", description: error.message, variant: "destructive" });
-    },
-  });
-
-  // Legacy: Send reimbursement (kept for backward compatibility)
-  const sendReimbursementMutation = useMutation({
-    mutationFn: async ({ applicationId, amount, paypalTransactionId }: { applicationId: string; amount: number; paypalTransactionId?: string }) => {
-      await apiRequest("POST", `/api/admin/applications/${applicationId}/send-reimbursement`, { amount, paypalTransactionId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", id, "applications"] });
-      toast({ title: "Reimbursement recorded" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Failed to record reimbursement", description: error.message, variant: "destructive" });
-    },
-  });
-
-  // Product Cost Covered / Amazon Video: Send cash reward
+  // Link in Bio / Amazon Video: Send cash reward ($30)
   const sendRewardMutation = useMutation({
     mutationFn: async ({ applicationId, paypalTransactionId }: { applicationId: string; paypalTransactionId?: string }) => {
       await apiRequest("POST", `/api/admin/applications/${applicationId}/send-reward`, { paypalTransactionId });

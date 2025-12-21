@@ -488,26 +488,6 @@ export default function DashboardPage() {
     },
   });
 
-  // Legacy: Purchase proof (no longer used for new campaigns)
-  const [purchaseProofForms, setPurchaseProofForms] = useState<Record<string, { screenshotUrl: string; amazonOrderId: string }>>({});
-  
-  const submitPurchaseProofMutation = useMutation({
-    mutationFn: async ({ applicationId, screenshotUrl, amazonOrderId }: { applicationId: string; screenshotUrl: string; amazonOrderId?: string }) => {
-      await apiRequest("POST", `/api/applications/${applicationId}/submit-purchase`, { screenshotUrl, amazonOrderId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
-      toast({
-        title: "Purchase proof submitted",
-        description: "We'll verify your purchase and send the reimbursement soon.",
-      });
-    },
-    onError: (error: Error) => {
-      setErrorMessage(formatApiError(error));
-      setShowErrorDialog(true);
-    },
-  });
-
   // Link in Bio: Submit bio link
   const [bioLinkForms, setBioLinkForms] = useState<Record<string, string>>({});
   
