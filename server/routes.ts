@@ -1251,6 +1251,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "This campaign does not require Amazon submission" });
       }
 
+      // PRD SAFETY: Enforce deadline
+      if (campaign.deadline && new Date() > new Date(campaign.deadline)) {
+        return res.status(400).json({ message: "Submission deadline has passed" });
+      }
+
       // Check if application is in valid status for submission (allow delivered and uploaded)
       if (!["delivered", "uploaded"].includes(application.status)) {
         return res.status(400).json({ message: "You can submit after receiving the product" });
@@ -1337,6 +1342,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const campaign = await storage.getCampaign(application.campaignId);
       if (!campaign || campaign.campaignType !== "link_in_bio") {
         return res.status(400).json({ message: "This campaign does not require bio link submission" });
+      }
+
+      // PRD SAFETY: Enforce deadline
+      if (campaign.deadline && new Date() > new Date(campaign.deadline)) {
+        return res.status(400).json({ message: "Submission deadline has passed" });
       }
 
       // Check if application is in valid status for submission (allow delivered and uploaded)
@@ -1432,6 +1442,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const campaign = await storage.getCampaign(application.campaignId);
       if (!campaign) {
         return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      // PRD SAFETY: Enforce deadline
+      if (campaign.deadline && new Date() > new Date(campaign.deadline)) {
+        return res.status(400).json({ message: "Submission deadline has passed" });
       }
 
       // Check if application status is delivered
@@ -2580,12 +2595,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Application not found" });
       }
 
+      // PRD SAFETY: Only allow verification for delivered or uploaded status
+      if (!["delivered", "uploaded"].includes(application.status)) {
+        return res.status(400).json({ message: "Can only verify applications with delivered or uploaded status" });
+      }
+
+      // PRD SAFETY: Require contentUrl before verification
+      if (!application.contentUrl) {
+        return res.status(400).json({ message: "Cannot verify application without video submission" });
+      }
+
       // Get points from request body (default 5)
       const points = typeof req.body.points === 'number' ? req.body.points : 5;
 
-      // Update application status with points awarded
+      // Update application status with points awarded - PRD FIX: Set to "completed" not "uploaded"
       await storage.updateApplication(application.id, {
-        status: "uploaded",
+        status: "completed",
         uploadedAt: new Date(),
         pointsAwarded: points,
       });
@@ -2808,7 +2833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Undo missed (revert to delivered)
+  // Undo missed (revert to delivered) - CONTROLLED TERMINAL OVERRIDE
   app.post("/api/admin/uploads/:applicationId/undo-missed", requireAuth("admin"), async (req, res) => {
     try {
       const application = await storage.getApplication(req.params.applicationId);
@@ -2819,6 +2844,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (application.status !== "deadline_missed") {
         return res.status(400).json({ message: "Can only undo missed applications" });
       }
+
+      // PRD SAFETY: Terminal states are immutable by default
+      if (process.env.ALLOW_TERMINAL_OVERRIDE !== "true") {
+        return res.status(403).json({ message: "Terminal states cannot be reverted." });
+      }
+
+      // Require reason for override (min 10 chars)
+      const { reason } = req.body;
+      if (!reason || typeof reason !== "string" || reason.trim().length < 10) {
+        return res.status(400).json({ message: "A reason of at least 10 characters is required for terminal state override." });
+      }
+
+      // Log warning for audit trail
+      console.warn("[TERMINAL_OVERRIDE]", JSON.stringify({
+        timestamp: new Date().toISOString(),
+        applicationId: application.id,
+        adminId: req.session.userId || "unknown",
+        previousStatus: application.status,
+        newStatus: "delivered",
+        reason: reason.trim(),
+      }));
 
       // Revert application status to delivered
       await storage.updateApplication(application.id, {
@@ -2834,7 +2880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      return res.json({ success: true });
+      return res.json({ success: true, overrideUsed: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -2905,9 +2951,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // Calculate stats - only count admin-verified submissions (with pointsAwarded)
+      // Calculate stats - only count admin-verified submissions (status=completed with pointsAwarded)
+      // PRD FIX: Only "completed" status counts for payouts, not "uploaded"
       const completedApps = enrichedApplications.filter(
-        (a) => (a.status === "uploaded" || a.status === "completed") && 
+        (a) => a.status === "completed" && 
                a.pointsAwarded && a.pointsAwarded > 0
       );
       const missedApps = enrichedApplications.filter(
@@ -3877,11 +3924,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please add your PayPal email in your profile before requesting a payout." });
       }
 
-      // Calculate available balance - only count verified submissions (with pointsAwarded)
+      // Calculate available balance - only count verified submissions (status=completed with pointsAwarded)
+      // PRD FIX: Only "completed" status counts for payouts, not "uploaded"
       const applications = await storage.getApplicationsWithDetails(influencerId);
       const totalEarned = applications
         .filter(a => 
-          (a.status === "uploaded" || a.status === "completed") && 
+          a.status === "completed" && 
           (a.campaign.campaignType === "link_in_bio" || a.campaign.campaignType === "amazon_video_upload") &&
           a.pointsAwarded && a.pointsAwarded > 0 // Only count admin-verified submissions
         )
