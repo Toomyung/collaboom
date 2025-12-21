@@ -1,30 +1,24 @@
 /**
  * DATABASE CONNECTION CONFIGURATION
  * 
- * MIGRATION NOTES:
- * - Current provider: Neon Postgres (uses @neondatabase/serverless)
- * - To switch to Supabase Postgres: Replace imports and Pool with standard 'pg' package
- *   1. Change: import { Pool } from 'pg';
- *   2. Change: import { drizzle } from 'drizzle-orm/node-postgres';
- *   3. Remove: neonConfig and ws imports/configuration
- *   4. Update: server/migrate.ts to use 'drizzle-orm/node-postgres/migrator'
- * - DB provider can be swapped by changing DATABASE_URL after code updates
- * - Always use Drizzle migrations (npm run db:generate, npm run db:push)
- * - AUTO-SYNC IS FORBIDDEN in production - use migration files only
+ * This configuration uses standard 'pg' package compatible with any PostgreSQL provider:
+ * - Supabase Postgres
+ * - Neon Postgres  
+ * - Any standard PostgreSQL database
+ * 
+ * DB provider can be swapped by only changing DATABASE_URL environment variable.
+ * Always use Drizzle migrations (npm run db:generate, npm run db:push)
+ * AUTO-SYNC IS FORBIDDEN in production - use migration files only
  */
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../shared/schema';
-
-// Neon-specific: WebSocket constructor for serverless connections
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-// Configure pool with connection settings optimized for serverless
+// Configure pool with connection settings
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
   max: 10,  // Maximum connections
