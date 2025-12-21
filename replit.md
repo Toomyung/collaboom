@@ -141,6 +141,17 @@ Consistent color gradients used across the platform for campaign types:
   - Theme toggle for dark/light mode
 - **Mobile-first:** Hamburger menu provides consistent navigation on all screen sizes
 
+## Recent Changes
+
+### December 2024: Legacy Code Cleanup
+- **Removed Legacy Campaign Type:** `product_cost_covered` campaign type code and references completely removed
+- **Schema Cleanup:** Removed 14 unused database columns (13 from applications, 1 from campaigns):
+  - `campaigns.productCost`
+  - `applications`: productCostSentAt, productCostSentByAdminId, productCostAmount, productCostPaypalTransactionId, purchaseScreenshotUrl, purchaseSubmittedAt, purchaseVerifiedAt, purchaseVerifiedByAdminId, amazonOrderId, reimbursementSentAt, reimbursementSentByAdminId, reimbursementAmount, reimbursementPaypalTransactionId
+- **API Cleanup:** Removed 4 unused endpoints: submit-purchase, verify-purchase, send-reimbursement, standalone submit-amazon-storefront
+- **Frontend Cleanup:** Removed legacy mutations from DashboardPage and AdminCampaignDetailPage
+- **Active Campaign Types:** gifting, link_in_bio, amazon_video_upload (no purchase-based campaigns)
+
 ## External Dependencies
 
 - **PostgreSQL Database:** Primary data store, accessed via Drizzle ORM and Neon.
