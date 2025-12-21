@@ -16,9 +16,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend
 - **Server:** Express.js REST API with session-based authentication.
-- **Database:** PostgreSQL via Drizzle ORM. Currently using `@neondatabase/serverless` driver (Supabase migration ready - see `docs/MIGRATION_READINESS_REPORT.md`). A storage abstraction layer allows for flexible database implementations.
+- **Database:** PostgreSQL via Drizzle ORM using standard `pg` driver (node-postgres). Provider-agnostic - works with any PostgreSQL instance via DATABASE_URL. A storage abstraction layer allows for flexible database implementations.
 - **Authentication:** Email/password with bcrypt, `express-session`, role-based access control, and session persistence. Google OAuth with automatic retry logic (up to 2 attempts with increasing delays) to handle intermittent Supabase 400 errors on first login.
+- **Session Store:** MemoryStore for development, PostgreSQL via connect-pg-simple for production (creates `session` table automatically).
 - **Security:** SESSION_SECRET required in production, Helmet CSP, sameSite cookies for CSRF protection, rate limiting on auth endpoints.
+- **Admin Seeding:** Run `ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx server/scripts/seed-admin.ts` to create the first admin account.
 - **Core Features:**
     - **State Machine:** Implements state transitions for applications, influencer accounts, and campaigns.
     - **Admin Tools:** Notes system, score/penalty event history, shipping issue management, support ticket system, enhanced influencer management.

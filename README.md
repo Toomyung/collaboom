@@ -76,7 +76,7 @@ For deploying on Render:
    npm run db:push
    
    # Create admin user
-   ADMIN_EMAIL=your@email.com ADMIN_PASSWORD=yourpassword npm run seed:admin
+   ADMIN_EMAIL=your@email.com ADMIN_PASSWORD=yourpassword npx tsx server/scripts/seed-admin.ts
    ```
 
 ### Installation
