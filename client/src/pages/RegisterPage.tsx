@@ -106,11 +106,6 @@ export default function RegisterPage() {
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   {loadingMessage}
                 </>
-              ) : authLoading || !supabaseReady ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Loading...
-                </>
               ) : (
                 <>
                   <SiGoogle className="h-5 w-5 mr-2" />
