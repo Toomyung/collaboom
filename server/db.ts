@@ -30,6 +30,7 @@ export const pool = new Pool({
   max: 10,  // Maximum connections
   idleTimeoutMillis: 60000,  // Keep connections alive for 60 seconds
   connectionTimeoutMillis: 10000,  // Connection timeout
+  ssl: { rejectUnauthorized: false },  // Required for Supabase connection
 });
 
 export const db = drizzle(pool, { schema });
