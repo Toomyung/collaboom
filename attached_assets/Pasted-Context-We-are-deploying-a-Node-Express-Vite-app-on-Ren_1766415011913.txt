@@ -1,0 +1,41 @@
+Context:
+We are deploying a Node/Express + Vite app on Render with a Supabase Postgres database.
+Current Render logs show:
+- "relation \"admins\" does not exist"
+- connect-pg-simple session store errors (failed to load session)
+Previously we also saw "Tenant or user not found" which was fixed by using Supabase IPv4-compatible pooler connection string (Session pooler / Transaction pooler).
+
+Conclusion:
+DB connection now works, but database schema/migrations were never applied in production.
+We must ensure migrations run BEFORE the server starts on Render, and optionally run seed in production when enabled.
+
+Your task:
+1) Find existing migration logic (there is server/migrate.ts and server/seed.ts in the repo).
+2) Make production deployment robust by automatically running migrations on startup.
+   - Add/modify a start script so that on Render it runs migrations first, then starts the server.
+   - Example: node dist/migrate.js && node dist/index.js (adjust to actual build output).
+3) Ensure connect-pg-simple session store table is created during migration (or create it if missing).
+   - If the project relies on connect-pg-simple auto-creating a table, make sure the DB user has rights and the session table name is correct.
+   - If needed, explicitly create the session table in migration.
+4) Make admin seeding optional but possible in production:
+   - Current seed.ts has logic like: skipping seeding in production unless ALLOW_PROD_SEED=true.
+   - Keep it safe: only seed when both:
+     - ENABLE_ADMIN_SEED=true
+     - ALLOW_PROD_SEED=true (or a single flag, but must be explicit)
+   - Admin credentials come from env: ADMIN_EMAIL / ADMIN_PASSWORD.
+5) Add clear logs:
+   - On startup, log whether migration ran, which DB host is used (without secrets), and whether seeding was executed or skipped (and why).
+6) Verify:
+   - After changes, local build should still work.
+   - Production should not crash if tables already exist; migrations should be idempotent.
+
+Deliverables:
+- Update package.json scripts / start command logic as needed.
+- Update server startup (app.ts / index-prod.ts / index.ts etc.) to run migrations safely before session store usage.
+- Ensure migrations create missing tables including "admins".
+- Commit changes with a message like: "Run migrations on startup + optional prod seed".
+
+Notes:
+- Render provides env DATABASE_URL; we set it to Supabase pooler URL.
+- Do NOT print credentials or full DATABASE_URL in logs.
+- Keep changes minimal and production-safe.

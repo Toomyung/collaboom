@@ -14,7 +14,23 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function getDbHostInfo(): string {
+  const dbUrl = process.env.DATABASE_URL || '';
+  try {
+    const url = new URL(dbUrl);
+    return `${url.hostname} (${url.pathname.slice(1) || 'default'})`;
+  } catch {
+    return 'unknown';
+  }
+}
+
 export async function runMigrations(): Promise<void> {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const dbHost = getDbHostInfo();
+  
+  console.log(`[DB] Environment: ${isProduction ? 'production' : 'development'}`);
+  console.log(`[DB] Host: ${dbHost}`);
+  
   const migrationsFolder = path.resolve(__dirname, '../migrations');
   const journalPath = path.join(migrationsFolder, 'meta', '_journal.json');
   
@@ -30,8 +46,12 @@ export async function runMigrations(): Promise<void> {
     await migrate(db, { migrationsFolder });
     const duration = Date.now() - start;
     console.log(`[DB] Migrations completed in ${duration}ms`);
-  } catch (error) {
-    console.error('[DB] Migration failed:', error);
-    throw error;
+  } catch (error: any) {
+    if (error.message?.includes('already exists')) {
+      console.log('[DB] Tables already exist, skipping migration');
+    } else {
+      console.error('[DB] Migration failed:', error);
+      throw error;
+    }
   }
 }
