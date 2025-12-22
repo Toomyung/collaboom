@@ -18,9 +18,15 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
+// Clean the DATABASE_URL (remove any leading/trailing whitespace, newlines, or literal \n characters)
+const cleanDatabaseUrl = process.env.DATABASE_URL
+  .replace(/^\\n+/, '')  // Remove literal \n at start
+  .replace(/^\n+/, '')   // Remove actual newlines at start  
+  .trim();
+
 // Configure pool with connection settings
 export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
+  connectionString: cleanDatabaseUrl,
   max: 10,  // Maximum connections
   idleTimeoutMillis: 60000,  // Keep connections alive for 60 seconds
   connectionTimeoutMillis: 10000,  // Connection timeout
