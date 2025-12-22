@@ -490,7 +490,7 @@ export default function CampaignTypesPage() {
                     <th className="text-left py-3 px-4 font-semibold">Feature</th>
                     <th className="text-center py-3 px-4 font-semibold text-purple-600">
                       <Gift className="h-4 w-4 mx-auto mb-1" />
-                      Gifting
+                      Basic
                     </th>
                     <th className="text-center py-3 px-4 font-semibold text-emerald-600">
                       <ExternalLink className="h-4 w-4 mx-auto mb-1" />
@@ -505,7 +505,7 @@ export default function CampaignTypesPage() {
                 <tbody className="text-sm">
                   <tr className="border-b">
                     <td className="py-3 px-4">Cash Reward</td>
-                    <td className="text-center py-3 px-4">-</td>
+                    <td className="text-center py-3 px-4 font-semibold text-purple-600">$10</td>
                     <td className="text-center py-3 px-4 font-semibold text-emerald-600">$30</td>
                     <td className="text-center py-3 px-4 font-semibold text-amber-600">$30</td>
                   </tr>

@@ -1,7 +1,7 @@
 # Collaboom MVP
 
 ## Overview
-Collaboom is an influencer campaign management platform connecting US-based TikTok influencers (1,000+ followers) with K-Beauty, Food, and Lifestyle brands for free product seeding campaigns (UGC gifting). The platform provides influencers with a dashboard to browse campaigns, apply, track shipments, upload content, and build reputation. For brands and admins, it offers tools to manage applications, verify content, and track campaign performance. The MVP prioritizes a clean influencer experience and robust admin capabilities with a business vision to streamline influencer marketing and expand market reach for brands.
+Collaboom is an influencer campaign management platform connecting US-based TikTok influencers (1,000+ followers) with K-Beauty, Food, and Lifestyle brands for PAID product campaigns. ALL campaigns offer free products PLUS cash rewards ($10-$30). The platform provides influencers with a dashboard to browse campaigns, apply, track shipments, upload content, and build reputation. For brands and admins, it offers tools to manage applications, verify content, and track campaign performance. The MVP prioritizes a clean influencer experience and robust admin capabilities with a business vision to streamline influencer marketing and expand market reach for brands.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -41,23 +41,24 @@ Preferred communication style: Simple, everyday language.
 
 ## Campaign Types
 
-Collaboom offers three types of campaigns, plus a bonus earning opportunity. All campaigns follow a unified submission workflow where influencers submit all requirements together, and admins verify everything in a single Uploads tab.
+Collaboom offers three types of PAID campaigns, plus a bonus earning opportunity. ALL campaigns provide free products PLUS cash rewards. All campaigns follow a unified submission workflow where influencers submit all requirements together, and admins verify everything in a single Uploads tab.
 
 ### Unified Workflow (All Campaign Types)
 1. Apply to campaign
 2. Receive product at address (status: delivered)
 3. Submit all requirements together via dashboard:
-   - **Gifting:** TikTok video URL only
+   - **Basic:** TikTok video URL only
    - **Link in Bio:** Bio link URL + TikTok video URL
    - **Amazon Video Upload:** Amazon Storefront URL + TikTok video URL
 4. Admin verifies all requirements together in Uploads tab
 5. Campaign completed, points/rewards awarded
 
-### 1. Gifting Campaign
-- **Reward:** Free product (no cash)
+### 1. Basic Campaign
+- **Reward:** $10 cash + free product
 - **Platform:** TikTok only
 - **Submission Requirements:** TikTok video URL
-- **Description:** Brands send free products to influencers in exchange for UGC content.
+- **Description:** Simple campaign where brands send free products to influencers in exchange for UGC content. Entry-level paid opportunity for creators.
+- **Database Migration:** Formerly called "Gifting" - code supports both 'basic' and legacy 'gifting' values for backward compatibility.
 
 ### 2. Link in Bio Campaign
 - **Reward:** $30 cash + free product
@@ -82,7 +83,7 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity. All
 
 ### Influencer Payout Requests
 - **Balance Calculation:** Available Balance = Total Earned - Total Payouts Requested
-- **Reward Amounts:** $30 for Link in Bio campaigns, $30 for Amazon Video Upload campaigns
+- **Reward Amounts:** $10 for Basic campaigns, $30 for Link in Bio campaigns, $30 for Amazon Video Upload campaigns
 - **Requirements:** PayPal email must be set in influencer profile before requesting payouts
 - **Request Flow:**
   1. Influencer opens "Cash Earned" sheet from dashboard
@@ -122,7 +123,7 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity. All
 - **Tooltip:** "Video not submitted yet" shown when hovering disabled Verify button
 
 ### Campaign-Specific Requirements (Displayed in Uploads Tab)
-- **Gifting:** Video URL only
+- **Basic:** Video URL only
 - **Link in Bio:** Bio Link URL + Video URL (both displayed, both verified together)
 - **Amazon Video Upload:** Storefront URL + Video URL (both displayed, both verified together)
 - **Verification:** Single "Verify" button verifies all requirements at once
@@ -131,7 +132,7 @@ Collaboom offers three types of campaigns, plus a bonus earning opportunity. All
 
 ### Campaign Type Color Scheme
 Consistent color gradients used across the platform for campaign types:
-- **Gifting:** Purple-pink gradient (`from-purple-50 to-pink-50` / `from-purple-950 to-pink-950` for dark mode)
+- **Basic:** Purple-pink gradient (`from-purple-50 to-pink-50` / `from-purple-950 to-pink-950` for dark mode)
 - **Link in Bio:** Emerald-teal gradient (`from-emerald-50 to-teal-50` / `from-emerald-950 to-teal-950` for dark mode)
 - **Amazon Video Upload:** Amber-orange gradient (`from-amber-50 to-orange-50` / `from-amber-950 to-orange-950` for dark mode)
 
@@ -145,6 +146,13 @@ Consistent color gradients used across the platform for campaign types:
 
 ## Recent Changes
 
+### December 2024: All Campaigns Now Paid
+- **Campaign Type Rename:** "Gifting" renamed to "Basic" with $10 cash reward added
+- **All Campaigns Paid:** Every campaign now offers free products PLUS cash rewards ($10-$30)
+- **Reward Structure:** Basic ($10 + product), Link in Bio ($30 + product), Amazon Video ($30 + product)
+- **Backward Compatibility:** Code handles both 'basic' and legacy 'gifting' database values
+- **Active Campaign Types:** basic, link_in_bio, amazon_video_upload
+
 ### December 2024: Legacy Code Cleanup
 - **Removed Legacy Campaign Type:** `product_cost_covered` campaign type code and references completely removed
 - **Schema Cleanup:** Removed 14 unused database columns (13 from applications, 1 from campaigns):
@@ -152,7 +160,6 @@ Consistent color gradients used across the platform for campaign types:
   - `applications`: productCostSentAt, productCostSentByAdminId, productCostAmount, productCostPaypalTransactionId, purchaseScreenshotUrl, purchaseSubmittedAt, purchaseVerifiedAt, purchaseVerifiedByAdminId, amazonOrderId, reimbursementSentAt, reimbursementSentByAdminId, reimbursementAmount, reimbursementPaypalTransactionId
 - **API Cleanup:** Removed 4 unused endpoints: submit-purchase, verify-purchase, send-reimbursement, standalone submit-amazon-storefront
 - **Frontend Cleanup:** Removed legacy mutations from DashboardPage and AdminCampaignDetailPage
-- **Active Campaign Types:** gifting, link_in_bio, amazon_video_upload (no purchase-based campaigns)
 
 ## External Dependencies
 
