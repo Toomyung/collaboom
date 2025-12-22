@@ -588,14 +588,14 @@ export default function AdminCampaignFormPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Campaign Type *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "gifting"}>
+                      <Select onValueChange={field.onChange} value={field.value || "basic"}>
                         <FormControl>
                           <SelectTrigger data-testid="select-campaign-type">
                             <SelectValue placeholder="Select campaign type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="gifting">Gifting (Free Product Only)</SelectItem>
+                          <SelectItem value="basic">Basic (+$10 Reward)</SelectItem>
                           <SelectItem value="link_in_bio">Link in Bio (+$30 Reward)</SelectItem>
                           <SelectItem value="amazon_video_upload">Amazon Video Upload (+$30 Reward)</SelectItem>
                         </SelectContent>
@@ -603,7 +603,7 @@ export default function AdminCampaignFormPage() {
                       <FormDescription>
                         {field.value === "link_in_bio" && "Influencer receives product, adds purchase link to TikTok bio (Linktree/Beacons), and creates TikTok content for $30 reward."}
                         {field.value === "amazon_video_upload" && "Influencer receives product and posts on both TikTok AND Amazon Storefront for $30 reward. Requires Amazon Storefront."}
-                        {(!field.value || field.value === "gifting") && "Influencer receives free product and creates TikTok content."}
+                        {(!field.value || field.value === "basic" || field.value === "gifting") && "Influencer receives free product and creates TikTok content for $10 reward."}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

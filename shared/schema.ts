@@ -154,7 +154,8 @@ export type Influencer = typeof influencers.$inferSelect;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 
 // Campaign Types
-export const campaignTypeEnum = ['gifting', 'link_in_bio', 'amazon_video_upload'] as const;
+// Note: 'basic' was previously called 'gifting' - renamed Dec 2024 to reflect $10 reward addition
+export const campaignTypeEnum = ['basic', 'link_in_bio', 'amazon_video_upload'] as const;
 export type CampaignType = typeof campaignTypeEnum[number];
 
 // Campaigns
@@ -163,7 +164,7 @@ export const campaigns = pgTable("campaigns", {
   name: text("name").notNull(),
   brandName: text("brand_name").notNull(),
   productName: text("product_name"), // Product name for the campaign
-  campaignType: text("campaign_type").notNull().default("gifting"), // 'gifting' | 'link_in_bio' | 'amazon_video_upload'
+  campaignType: text("campaign_type").notNull().default("basic"), // 'basic' | 'link_in_bio' | 'amazon_video_upload'
   category: text("category").notNull(), // 'beauty' | 'food' | 'lifestyle'
   inventory: integer("inventory").notNull(),
   approvedCount: integer("approved_count").default(0),
