@@ -1,0 +1,40 @@
+2:55:49 PM [express] GET /api/config/auth 200 in 2ms :: {"url":"https://ihonpsbeebgriddemopf.supabas…
+2:55:49 PM [express] GET /api/auth/me 200 in 0ms :: {"user":null,"influencer":null,"admin":null}
+[Socket.IO] Failed to reload session: Error: failed to load session
+    at /opt/render/project/src/node_modules/express-session/session/session.js:94:26
+    at /opt/render/project/src/node_modules/connect-pg-simple/index.js:367:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+[SECURITY] 2025-12-22T14:55:59.746Z - admin_login_error: {"ip":"104.23.160.26","error":"relation \"admins\" does not exist"}
+2:55:59 PM [express] POST /api/auth/admin/login 500 in 70ms :: {"message":"Login failed"}
+[SECURITY] 2025-12-22T14:56:04.746Z - admin_login_error: {"ip":"104.23.160.84","error":"relation \"admins\" does not exist"}
+2:56:04 PM [express] POST /api/auth/admin/login 500 in 67ms :: {"message":"Login failed"}
+[Socket.IO] Failed to reload session: Error: failed to load session
+    at /opt/render/project/src/node_modules/express-session/session/session.js:94:26
+    at /opt/render/project/src/node_modules/connect-pg-simple/index.js:367:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Supabase callback error: error: relation "influencers" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getInfluencerBySupabaseId (file:///opt/render/project/src/dist/index.js:697:26)
+    at async file:///opt/render/project/src/dist/index.js:2202:24 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '473',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+2:56:29 PM [express] POST /api/auth/supabase/callback 500 in 348ms :: {"message":"relation \"influen…
+2:56:32 PM [express] GET /api/auth/me 304 in 1ms :: {"user":null,"influencer":null,"admin":null}
