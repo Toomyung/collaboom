@@ -101,10 +101,15 @@ export default function RegisterPage() {
               disabled={isLoading || authLoading || !supabaseReady}
               data-testid="button-google-signup"
             >
-              {isLoading || authLoading ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   {loadingMessage}
+                </>
+              ) : authLoading || !supabaseReady ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Loading...
                 </>
               ) : (
                 <>
