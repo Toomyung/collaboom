@@ -690,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: c.name,
             brandName: c.brandName,
             productName: c.productName,
-            campaignType: c.campaignType || 'gifting',
+            campaignType: c.campaignType || 'basic',
             category: c.category,
             inventory: c.inventory,
             approvedCount: c.approvedCount,
@@ -722,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: c.name,
           brandName: c.brandName,
           productName: c.productName,
-          campaignType: c.campaignType || 'gifting',
+          campaignType: c.campaignType || 'basic',
           category: c.category,
           inventory: c.inventory,
           approvedCount: c.approvedCount,
@@ -1351,7 +1351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Submit video URL for ALL campaign types (unified endpoint)
-  // - Gifting: Can submit after "delivered" status
+  // - Basic (was Gifting): Can submit after "delivered" status
   // - Link in Bio: Can submit after bio link is verified
   // - Amazon Video Upload: Can submit after Amazon storefront is verified
   app.post("/api/applications/:id/submit-video", requireAuth("influencer"), async (req, res) => {
@@ -1392,7 +1392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Your Amazon Storefront must be verified before submitting a video" });
         }
       }
-      // Gifting campaigns: No prerequisites, can submit right after delivered
+      // Basic campaigns (was Gifting): No prerequisites, can submit right after delivered
 
       const { videoUrl } = req.body;
       if (!videoUrl || typeof videoUrl !== 'string') {

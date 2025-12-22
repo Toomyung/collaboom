@@ -519,7 +519,7 @@ Congratulations on completing your first campaign! You've officially leveled up 
 What This Means For You:
 
 - Apply to up to 3 campaigns per day
-- Access all Paid & Gifting campaigns on Collaboom
+- Access all paid campaigns on Collaboom (Basic, Link in Bio, Amazon Video)
 - Full access to your personal dashboard
 - Forum support through your dashboard
 - Email notifications for all updates
