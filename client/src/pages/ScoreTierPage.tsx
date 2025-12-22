@@ -217,7 +217,7 @@ export default function ScoreTierPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <Star className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-                    <span><strong>Full Campaign Access</strong> — Access all Paid & Gifting campaigns on Collaboom</span>
+                    <span><strong>Full Campaign Access</strong> — Access all paid campaigns on Collaboom (Basic, Link in Bio, Amazon Video)</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />

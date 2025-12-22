@@ -954,7 +954,7 @@ export default function AdminCampaignDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Campaign Type</p>
                     <p className="font-medium capitalize">
-                      {((campaign as any).campaignType || "gifting").replace(/_/g, " ")}
+                      {(((campaign as any).campaignType || "basic") === "gifting" ? "basic" : (campaign as any).campaignType || "basic").replace(/_/g, " ")}
                     </p>
                   </div>
                   <div>
@@ -964,7 +964,7 @@ export default function AdminCampaignDetailPage() {
                         ? "Gift + $30 Reward"
                         : (campaign as any).campaignType === "amazon_video_upload"
                         ? "Gift + $30 Reward"
-                        : "Gift Only"}
+                        : "Gift + $10 Reward"}
                     </p>
                   </div>
                   <div>

@@ -160,7 +160,7 @@ export default function CampaignTypesPage() {
           <div className="bg-muted/50 rounded-lg p-6 max-w-3xl mx-auto text-left">
             <p className="text-muted-foreground leading-relaxed">
               Through ongoing collaborations with diverse brands, we help influencers build lasting partnerships. 
-              Brands get authentic storytelling from passionate creators, while influencers start with gifting campaigns 
+              Brands get authentic storytelling from passionate creators, while influencers earn cash rewards plus free products on every campaign 
               and grow into long-term <strong className="text-foreground">brand ambassadors</strong>. It's a win-win platform 
               where both sides thrive together.
             </p>
@@ -170,13 +170,13 @@ export default function CampaignTypesPage() {
         {/* Quick Overview Cards - Clickable Navigation */}
         <div className="grid sm:grid-cols-3 gap-4 mb-12">
           <button 
-            onClick={() => document.getElementById('section-gifting')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => document.getElementById('section-basic')?.scrollIntoView({ behavior: 'smooth' })}
             className="text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 hover-elevate cursor-pointer transition-all"
-            data-testid="button-nav-gifting"
+            data-testid="button-nav-basic"
           >
             <Gift className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-            <p className="font-bold text-purple-700 dark:text-purple-300">Gifting</p>
-            <p className="text-sm text-muted-foreground">Free Products</p>
+            <p className="font-bold text-purple-700 dark:text-purple-300">Basic</p>
+            <Badge className="bg-purple-500 text-white mt-1">+$10</Badge>
           </button>
           <button 
             onClick={() => document.getElementById('section-link-in-bio')?.scrollIntoView({ behavior: 'smooth' })}
@@ -198,9 +198,9 @@ export default function CampaignTypesPage() {
           </button>
         </div>
 
-        {/* Campaign Type 1: Gifting */}
-        <section id="section-gifting" className="mb-10 scroll-mt-20">
-          <Card className="border-2 border-purple-300 dark:border-purple-700 overflow-hidden" data-testid="card-campaign-gifting">
+        {/* Campaign Type 1: Basic */}
+        <section id="section-basic" className="mb-10 scroll-mt-20">
+          <Card className="border-2 border-purple-300 dark:border-purple-700 overflow-hidden" data-testid="card-campaign-basic">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/40">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="p-4 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 text-white w-fit">
@@ -208,16 +208,16 @@ export default function CampaignTypesPage() {
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <CardTitle className="text-2xl text-purple-700 dark:text-purple-300">Gifting Campaign</CardTitle>
-                    <Badge variant="outline" className="border-purple-500 text-purple-600">Most Popular</Badge>
+                    <CardTitle className="text-2xl text-purple-700 dark:text-purple-300">Basic Campaign</CardTitle>
+                    <Badge className="bg-purple-500 text-white">Paid Campaign</Badge>
                   </div>
                   <CardDescription className="text-base">
-                    Receive free products in exchange for TikTok content
+                    Receive free products + earn $10 for creating TikTok content
                   </CardDescription>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Reward</p>
-                  <p className="text-2xl font-bold text-purple-600">Free Product</p>
+                  <p className="text-3xl font-bold text-purple-600">$10</p>
                 </div>
               </div>
             </CardHeader>
@@ -234,7 +234,7 @@ export default function CampaignTypesPage() {
                     { icon: Package, label: "Receive" },
                     { icon: Video, label: "Create" },
                     { icon: Upload, label: "Submit" },
-                    { icon: Star, label: "Verified" },
+                    { icon: DollarSign, label: "Earn $10" },
                   ]} 
                 />
               </div>
@@ -243,6 +243,7 @@ export default function CampaignTypesPage() {
                 color="purple"
                 benefits={[
                   { text: "Free K-Beauty, Food, or Lifestyle products" },
+                  { text: "Earn $10 cash reward" },
                   { text: "Build your portfolio with brand collaborations" },
                   { text: "Earn points toward VIP status" },
                 ]}
@@ -250,6 +251,7 @@ export default function CampaignTypesPage() {
                   { text: "TikTok account with 1,000+ followers" },
                   { text: "US-based shipping address" },
                   { text: "Create TikTok video and submit link for verification" },
+                  { text: "PayPal account required for payment", highlight: true, link: { url: "https://www.paypal.com/us/webapps/mpp/account-selection", label: "Sign up" } },
                 ]}
               />
 

@@ -1374,8 +1374,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Gifting Campaign - Video Submission */}
-        {application.campaign.campaignType === "gifting" && 
+        {/* Basic Campaign (was Gifting) - Video Submission */}
+        {(application.campaign.campaignType === "basic" || application.campaign.campaignType === "gifting") && 
          application.status === "delivered" && (
           <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -1412,7 +1412,7 @@ export default function DashboardPage() {
                     value={videoUrlForms[application.id] || ""}
                     onChange={(e) => setVideoUrlForms(prev => ({ ...prev, [application.id]: e.target.value }))}
                     className="w-full"
-                    data-testid={`input-video-gifting-${application.id}`}
+                    data-testid={`input-video-basic-${application.id}`}
                   />
                 </div>
                 <Button
@@ -1427,7 +1427,7 @@ export default function DashboardPage() {
                   }}
                   disabled={!videoUrlForms[application.id] || submitVideoMutation.isPending}
                   className="w-full"
-                  data-testid={`button-submit-video-gifting-${application.id}`}
+                  data-testid={`button-submit-video-basic-${application.id}`}
                 >
                   {submitVideoMutation.isPending ? "Submitting..." : "Submit"}
                 </Button>

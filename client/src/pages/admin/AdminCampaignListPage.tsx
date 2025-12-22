@@ -368,7 +368,7 @@ export default function AdminCampaignListPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-xs text-muted-foreground capitalize">
-                          {((campaign as any).campaignType || "gifting").replace(/_/g, " ")}
+                          {(((campaign as any).campaignType || "basic") === "gifting" ? "basic" : (campaign as any).campaignType || "basic").replace(/_/g, " ")}
                         </span>
                       </TableCell>
                       <TableCell>{getStatusBadge(campaign.status)}</TableCell>

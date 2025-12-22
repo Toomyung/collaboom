@@ -148,8 +148,8 @@ export function ApplicationCard({
     !application.contentUrl &&
     onSubmitVideo &&
     (
-      // Gifting: Can submit immediately after delivered
-      campaign.campaignType === "gifting" ||
+      // Basic (was Gifting): Can submit immediately after delivered
+      campaign.campaignType === "basic" || campaign.campaignType === "gifting" ||
       // Link in Bio: Only after bio link is verified
       (campaign.campaignType === "link_in_bio" && application.bioLinkVerifiedAt) ||
       // Amazon: Only after storefront is verified
@@ -683,8 +683,8 @@ export function ApplicationCard({
               </div>
             )}
 
-            {/* Gifting Campaign - Video Submission */}
-            {(campaign as any).campaignType === "gifting" && 
+            {/* Basic Campaign (was Gifting) - Video Submission */}
+            {((campaign as any).campaignType === "basic" || (campaign as any).campaignType === "gifting") && 
              application.status === "delivered" && (
               <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 space-y-3">
                 <div className="flex items-center gap-2">
@@ -728,14 +728,14 @@ export function ApplicationCard({
                             value={videoUrlInput}
                             onChange={(e) => setVideoUrlInput(e.target.value)}
                             className="h-8 text-sm flex-1"
-                            data-testid={`input-video-gifting-${application.id}`}
+                            data-testid={`input-video-basic-${application.id}`}
                           />
                           <Button
                             size="sm"
                             onClick={handleSubmitVideo}
                             disabled={!videoUrlInput.trim() || isSubmittingVideo}
                             className="h-8"
-                            data-testid={`button-submit-video-gifting-${application.id}`}
+                            data-testid={`button-submit-video-basic-${application.id}`}
                           >
                             {isSubmittingVideo ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
