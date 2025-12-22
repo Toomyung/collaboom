@@ -1,0 +1,94 @@
+==> Available at your primary URL https://collaboom.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+3:11:35 PM [express] GET /api/config/auth 200 in 2ms :: {"url":"https://ihonpsbeebgriddemopf.supabas…
+3:11:35 PM [express] GET /api/auth/me 200 in 1ms :: {"user":null,"influencer":null,"admin":null}
+[Socket.IO] Failed to reload session: Error: failed to load session
+    at /opt/render/project/src/node_modules/express-session/session/session.js:94:26
+    at /opt/render/project/src/node_modules/connect-pg-simple/index.js:367:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+[SECURITY] 2025-12-22T15:11:43.920Z - admin_login_success: {"ip":"104.23.160.47","adminId":"cfed3077-3fc3-4ca5-be1d-5b590eb17531"}
+3:11:44 PM [express] POST /api/auth/admin/login 200 in 308ms :: {"success":true}
+3:11:44 PM [express] GET /api/auth/me 200 in 207ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+3:11:44 PM [express] GET /api/auth/me 304 in 201ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] Admin cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined admin room
+3:11:45 PM [express] GET /api/admin/activity 200 in 135ms :: []
+3:11:45 PM [express] GET /api/admin/issues 200 in 205ms :: []
+3:11:45 PM [express] GET /api/admin/support-tickets 200 in 208ms :: []
+3:11:45 PM [express] GET /api/admin/payout-requests 200 in 205ms :: []
+3:11:46 PM [express] GET /api/admin/stats 200 in 478ms :: {"activeCampaigns":0,"pendingApplicants":0…
+3:11:51 PM [express] GET /api/admin/campaigns 200 in 266ms :: {"items":[],"totalCount":0,"page":1,"p…
+[Storage] Bucket collaboom-campaign not found in list. Please create it manually in Supabase Dashboard.
+Upload error: StorageApiError: Bucket not found
+    at /opt/render/project/src/node_modules/@supabase/storage-js/dist/main/lib/fetch.js:27:20
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  __isStorageError: true,
+  status: 400,
+  statusCode: '404'
+}
+Failed to upload image 0: StorageApiError: Bucket not found
+    at /opt/render/project/src/node_modules/@supabase/storage-js/dist/main/lib/fetch.js:27:20
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  __isStorageError: true,
+  status: 400,
+  statusCode: '404'
+}
+[Storage] Failed to upload images: StorageApiError: Bucket not found
+    at /opt/render/project/src/node_modules/@supabase/storage-js/dist/main/lib/fetch.js:27:20
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  __isStorageError: true,
+  status: 400,
+  statusCode: '404'
+}
+3:12:29 PM [express] POST /api/admin/campaigns 500 in 1243ms :: {"message":"Failed to upload images:…
+[Storage] Bucket collaboom-campaign not found in list. Please create it manually in Supabase Dashboard.
+Upload error: StorageApiError: Bucket not found
+    at /opt/render/project/src/node_modules/@supabase/storage-js/dist/main/lib/fetch.js:27:20
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  __isStorageError: true,
+  status: 400,
+  statusCode: '404'
+}
+Failed to upload image 0: StorageApiError: Bucket not found
+    at /opt/render/project/src/node_modules/@supabase/storage-js/dist/main/lib/fetch.js:27:20
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  __isStorageError: true,
+  status: 400,
+  statusCode: '404'
+}
+[Storage] Failed to upload images: StorageApiError: Bucket not found
+    at /opt/render/project/src/node_modules/@supabase/storage-js/dist/main/lib/fetch.js:27:20
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  __isStorageError: true,
+  status: 400,
+  statusCode: '404'
+}
+3:12:40 PM [express] POST /api/admin/campaigns 500 in 745ms :: {"message":"Failed to upload images: …
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+3:20:44 PM [express] GET /api/auth/me 304 in 196ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+3:20:44 PM [express] GET /api/notifications/unread-count 403 in 129ms :: {"message":"Forbidden"}
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] Admin cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined admin room
+3:20:48 PM [express] GET /api/applications/detailed 403 in 136ms :: {"message":"Forbidden"}
+3:20:48 PM [express] GET /api/my-issues 403 in 136ms :: {"message":"Forbidden"}
+3:20:48 PM [express] GET /api/applications/all-history 403 in 135ms :: {"message":"Forbidden"}
+3:20:48 PM [express] GET /api/admin/activity 304 in 134ms :: []
+3:20:48 PM [express] GET /api/admin/payout-requests 304 in 198ms :: []
+3:20:48 PM [express] GET /api/admin/support-tickets 304 in 203ms :: []
+3:20:48 PM [express] GET /api/admin/issues 304 in 207ms :: []
+3:20:49 PM [express] GET /api/admin/stats 304 in 462ms :: {"activeCampaigns":0,"pendingApplicants":0…
+[Storage] Bucket collaboom-campaign not found in list. Please create it manually in Supabase Dashboard.
+[Storage] Uploaded 1 images for new campaign
+3:21:21 PM [express] POST /api/admin/campaigns 200 in 1410ms :: {"id":"4436c502-3005-49ee-97f7-ea97a…
+3:21:21 PM [express] GET /api/admin/campaigns/4436c502-3005-49ee-97f7-ea97abc49389 200 in 205ms :: {…
+3:21:21 PM [express] GET /api/admin/campaigns/4436c502-3005-49ee-97f7-ea97abc49389/applications 200 …
+3:21:23 PM [express] GET /api/notifications/unread-count 403 in 136ms :: {"message":"Forbidden"}
+3:21:34 PM [express] GET /api/applications/my-ids 403 in 137ms :: {"message":"Forbidden"}
+[PERF] GET /api/campaigns?minimal=true - 68ms, 1 items, 0.4KB
+3:21:34 PM [express] GET /api/campaigns 200 in 206ms :: [{"id":"4436c502-3005-49ee-97f7-ea97abc49389…
+3:21:40 PM [express] GET /api/applications/my-ids 403 in 136ms :: {"message":"Forbidden"}
+3:21:40 PM [express] GET /api/campaigns/4436c502-3005-49ee-97f7-ea97abc49389 200 in 203ms :: {"id":"…
