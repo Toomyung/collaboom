@@ -2175,6 +2175,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createShipping({ applicationId: id });
         }
         
+        // Send approval email (non-blocking)
+        const influencer = await storage.getInfluencer(application.influencerId);
+        if (influencer?.email) {
+          sendApplicationApprovedEmail(
+            influencer.email,
+            influencer.name || influencer.firstName || "Creator",
+            campaign.name,
+            campaign.brandName
+          ).then(async (result) => {
+            if (result.success && result.emailId) {
+              // Store email thread ID for future emails
+              await storage.updateApplication(id, {
+                emailThreadId: result.emailId,
+              });
+              console.log(`Approval email sent to ${influencer.email}, ID: ${result.emailId}`);
+            } else {
+              console.error(`Failed to send approval email to ${influencer.email}:`, result.error);
+            }
+          }).catch((err) => {
+            console.error(`Error sending approval email to ${influencer.email}:`, err);
+          });
+        }
+        
         approved++;
       }
 
