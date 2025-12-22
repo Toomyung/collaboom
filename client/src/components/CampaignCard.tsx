@@ -24,11 +24,12 @@ const getCampaignTypeInfo = (campaignType: string | undefined) => {
         icon: Store,
         color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
       };
-    case "gifting":
+    case "basic":
+    case "gifting": // Legacy support
     default:
       return {
-        label: "#Gifting",
-        anchor: "#gifting",
+        label: "#Basic",
+        anchor: "#basic",
         icon: Gift,
         color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
       };
@@ -69,7 +70,7 @@ export function CampaignCard({
   const isClosed = campaign.status === "closed" || campaign.status === "archived";
 
   const getCampaignTypeBadge = () => {
-    const campaignType = campaign.campaignType || 'gifting';
+    const campaignType = campaign.campaignType || 'basic';
     const typeInfo = getCampaignTypeInfo(campaignType);
     const TypeIcon = typeInfo.icon;
     
@@ -95,12 +96,12 @@ export function CampaignCard({
       );
     }
     
-    // Gifting
+    // Basic (was Gifting)
     return (
       <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
         <TypeIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-        <span className="hidden sm:inline">Gifting</span>
-        <span className="sm:hidden">Gift</span>
+        <span className="hidden sm:inline">Basic</span>
+        <span className="sm:hidden">Basic</span>
       </Badge>
     );
   };

@@ -11,7 +11,7 @@ import { SiGoogle } from "react-icons/si";
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Connecting to Google...");
-  const { signInWithGoogle, isAuthenticated, supabaseReady, supabaseError, isLoading: authLoading } = useAuth();
+  const { signInWithGoogle, isAuthenticated, supabaseReady, supabaseError } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -105,10 +105,10 @@ export default function LoginPage() {
             <Button
               onClick={handleGoogleSignIn}
               className="w-full h-12 text-base"
-              disabled={isLoading || authLoading || !supabaseReady}
+              disabled={isLoading || !supabaseReady}
               data-testid="button-google-signin"
             >
-              {isLoading || authLoading ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   {loadingMessage}

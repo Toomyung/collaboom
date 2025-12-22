@@ -343,7 +343,7 @@ export class DatabaseStorage implements IStorage {
       brandName: campaign.brandName,
       productName: campaign.productName || null,
       category: campaign.category,
-      campaignType: campaign.campaignType || 'gifting',
+      campaignType: campaign.campaignType || 'basic',
       inventory: campaign.inventory,
       approvedCount: 0,
       imageUrl: campaign.imageUrl || null,

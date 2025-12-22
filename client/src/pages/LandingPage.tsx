@@ -257,14 +257,14 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            {/* Gifting */}
+            {/* Basic */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0 }}
             >
-              <Card className="h-full overflow-hidden group hover:shadow-xl transition-all border-purple-500/20 hover:border-purple-500/50" data-testid="card-campaign-gifting">
+              <Card className="h-full overflow-hidden group hover:shadow-xl transition-all border-purple-500/20 hover:border-purple-500/50" data-testid="card-campaign-basic">
                 <div className="h-2 bg-gradient-to-r from-purple-500 to-pink-500" />
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -272,15 +272,15 @@ export default function LandingPage() {
                       <Gift className="h-7 w-7 text-white" />
                     </div>
                     <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-0">
-                      Free Product
+                      $10 + Gift
                     </Badge>
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Gifting</h3>
+                  <h3 className="text-2xl font-bold mb-2">Basic</h3>
                   <p className="text-muted-foreground text-sm mb-4">
-                    Receive free products and create authentic TikTok content
+                    Receive free products and earn $10 for TikTok content
                   </p>
                   <div className="space-y-2">
-                    {["Apply & get approved", "Receive product at home", "Create TikTok video", "Build your score"].map((step, i) => (
+                    {["Apply & get approved", "Receive product at home", "Create TikTok video", "Earn $10 + build score"].map((step, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-purple-500" />
                         <span>{step}</span>

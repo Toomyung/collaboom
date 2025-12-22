@@ -62,11 +62,12 @@ const getCampaignTypeInfo = (campaignType: string | undefined) => {
         icon: Store,
         color: "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0",
       };
-    case "gifting":
+    case "basic":
+    case "gifting": // Legacy support
     default:
       return {
-        label: "#Gifting",
-        anchor: "#gifting",
+        label: "#Basic",
+        anchor: "#basic",
         icon: Gift,
         color: "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0",
       };
@@ -306,7 +307,7 @@ export default function CampaignDetailPage() {
     !isApplicationClosed;
 
   const getRewardDisplay = () => {
-    const campaignType = (campaign as any).campaignType || 'gifting';
+    const campaignType = (campaign as any).campaignType || 'basic';
     
     // Link in Bio - $30 reward
     if (campaignType === "link_in_bio") {
@@ -318,8 +319,8 @@ export default function CampaignDetailPage() {
       return { label: "Free Product + $30", icon: DollarSign, color: "from-amber-500 to-orange-500" };
     }
     
-    // Gifting - Free Product only
-    return { label: "Free Product", icon: Gift, color: "from-purple-500 to-pink-500" };
+    // Basic - $10 reward (was Gifting with Free Product only)
+    return { label: "Free Product + $10", icon: DollarSign, color: "from-purple-500 to-pink-500" };
   };
 
   const reward = getRewardDisplay();
