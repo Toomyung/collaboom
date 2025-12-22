@@ -1,0 +1,98 @@
+==> Available at your primary URL https://collaboom.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] Admin cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined admin room
+3:44:08 PM [express] GET /api/auth/me 304 in 226ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+3:44:08 PM [express] GET /api/notifications/unread-count 403 in 431ms :: {"message":"Forbidden"}
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] Admin cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined admin room
+3:44:12 PM [express] GET /api/applications/all-history 403 in 135ms :: {"message":"Forbidden"}
+3:44:12 PM [express] GET /api/applications/detailed 403 in 132ms :: {"message":"Forbidden"}
+3:44:12 PM [express] GET /api/my-issues 403 in 403ms :: {"message":"Forbidden"}
+3:44:12 PM [express] GET /api/admin/activity 304 in 402ms :: []
+3:44:12 PM [express] GET /api/admin/payout-requests 304 in 475ms :: []
+3:44:12 PM [express] GET /api/admin/support-tickets 304 in 473ms :: []
+3:44:12 PM [express] GET /api/admin/issues 304 in 475ms :: []
+3:44:12 PM [express] GET /api/admin/stats 200 in 735ms :: {"activeCampaigns":3,"pendingApplicants":0…
+[Storage] Bucket collaboom-campaign not found in list. Please create it manually in Supabase Dashboard.
+[Storage] Uploaded 1 images for new campaign
+3:44:59 PM [express] POST /api/admin/campaigns 200 in 1396ms :: {"id":"cbd78802-d971-4b96-8981-a5fd8…
+3:44:59 PM [express] GET /api/campaigns/8aee94d7-2488-450e-9d21-2e916dbdcd3f 304 in 198ms :: {"id":"…
+3:44:59 PM [express] GET /api/admin/campaigns/cbd78802-d971-4b96-8981-a5fd82328557 200 in 199ms :: {…
+3:44:59 PM [express] GET /api/admin/campaigns/cbd78802-d971-4b96-8981-a5fd82328557/applications 200 …
+3:45:54 PM [express] GET /api/notifications/unread-count 403 in 133ms :: {"message":"Forbidden"}
+3:45:56 PM [express] GET /api/applications/my-ids 403 in 132ms :: {"message":"Forbidden"}
+[PERF] GET /api/campaigns?minimal=true - 65ms, 4 items, 1.8KB
+3:45:56 PM [express] GET /api/campaigns 200 in 198ms :: [{"id":"cbd78802-d971-4b96-8981-a5fd82328557…
+3:46:06 PM [express] GET /api/notifications/unread-count 403 in 134ms :: {"message":"Forbidden"}
+3:46:06 PM [express] GET /api/my-issues 403 in 133ms :: {"message":"Forbidden"}
+3:46:06 PM [express] GET /api/applications/all-history 403 in 133ms :: {"message":"Forbidden"}
+3:46:07 PM [express] GET /api/applications/detailed 403 in 434ms :: {"message":"Forbidden"}
+3:46:09 PM [express] POST /api/auth/logout 200 in 65ms :: {"success":true}
+3:46:09 PM [express] GET /api/auth/me 304 in 203ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+3:46:10 PM [express] GET /api/notifications/unread-count 401 in 69ms :: {"message":"Unauthorized"}
+3:46:10 PM [express] GET /api/auth/me 200 in 69ms :: {"user":null,"influencer":null,"admin":null}
+3:46:10 PM [express] GET /api/applications/all-history 401 in 66ms :: {"message":"Unauthorized"}
+3:46:10 PM [express] GET /api/my-issues 401 in 68ms :: {"message":"Unauthorized"}
+3:46:10 PM [express] GET /api/applications/detailed 401 in 66ms :: {"message":"Unauthorized"}
+3:46:10 PM [express] GET /api/auth/me 304 in 66ms :: {"user":null,"influencer":null,"admin":null}
+3:46:10 PM [express] GET /api/auth/me 304 in 66ms :: {"user":null,"influencer":null,"admin":null}
+[Socket.IO] Failed to reload session: Error: failed to load session
+    at /opt/render/project/src/node_modules/express-session/session/session.js:94:26
+    at /opt/render/project/src/node_modules/connect-pg-simple/index.js:367:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+[Auth Timing] getInfluencerBySupabaseId: 68ms
+[Auth Timing] session.save: 67ms
+[Auth Timing] TOTAL: 135ms
+3:46:34 PM [express] POST /api/auth/supabase/callback 200 in 201ms :: {"success":true,"influencer":{…
+3:46:34 PM [express] GET /api/auth/me 200 in 199ms :: {"user":{"id":"345d5bdd-058d-4645-b60f-230d7e2…
+[Socket.IO] User 345d5bdd-058d-4645-b60f-230d7e20596d joined room user:345d5bdd-058d-4645-b60f-230d7e20596d
+3:46:35 PM [express] GET /api/applications/detailed 200 in 199ms :: []
+3:46:35 PM [express] GET /api/my-issues 200 in 199ms :: []
+3:46:35 PM [express] GET /api/notifications/unread-count 200 in 206ms :: {"count":0}
+[Socket.IO] User 345d5bdd-058d-4645-b60f-230d7e20596d joined room user:345d5bdd-058d-4645-b60f-230d7e20596d
+3:46:35 PM [express] GET /api/applications/all-history 200 in 477ms :: []
+3:46:35 PM [express] GET /api/me/score-events/unseen 200 in 481ms :: []
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+[Profile] Address completion bonus +10 points awarded to brian.k@toomyungpeople.com
+3:46:58 PM [express] PUT /api/me 200 in 829ms :: {"id":"345d5bdd-058d-4645-b60f-230d7e20596d","supab…
+3:46:59 PM [express] GET /api/auth/me 200 in 205ms :: {"user":{"id":"345d5bdd-058d-4645-b60f-230d7e2…
+3:47:00 PM [express] GET /api/me/score-events/unseen 200 in 204ms :: [{"id":"0f87fd02-5d86-4657-9898…
+3:47:02 PM [express] POST /api/me/score-events/mark-seen 200 in 207ms :: {"success":true}
+3:47:02 PM [express] GET /api/me/score-events/unseen 200 in 205ms :: []
+[PERF] GET /api/campaigns?minimal=true - 68ms, 4 items, 1.8KB
+3:47:07 PM [express] GET /api/applications/my-ids 200 in 199ms :: []
+3:47:07 PM [express] GET /api/campaigns 304 in 205ms :: [{"id":"cbd78802-d971-4b96-8981-a5fd82328557…
+3:47:14 PM [express] POST /api/campaigns/cbd78802-d971-4b96-8981-a5fd82328557/apply 200 in 615ms :: …
+[PERF] GET /api/campaigns?minimal=true - 66ms, 4 items, 1.8KB
+3:47:14 PM [express] GET /api/campaigns 304 in 199ms :: [{"id":"cbd78802-d971-4b96-8981-a5fd82328557…
+3:47:14 PM [express] GET /api/applications/my-ids 200 in 205ms :: ["cbd78802-d971-4b96-8981-a5fd8232…
+3:47:18 PM [express] POST /api/auth/logout 200 in 68ms :: {"success":true}
+3:47:18 PM [express] GET /api/auth/me 304 in 197ms :: {"user":{"id":"345d5bdd-058d-4645-b60f-230d7e2…
+3:47:18 PM [express] GET /api/auth/me 200 in 67ms :: {"user":null,"influencer":null,"admin":null}
+3:47:18 PM [express] GET /api/auth/me 304 in 66ms :: {"user":null,"influencer":null,"admin":null}
+[SECURITY] 2025-12-22T15:47:24.139Z - admin_login_wrong_password: {"ip":"104.23.160.47","adminId":"cfed3077-3fc3-4ca5-be1d-5b590eb17531"}
+3:47:24 PM [express] POST /api/auth/admin/login 401 in 302ms :: {"message":"Invalid email or passwor…
+[SECURITY] 2025-12-22T15:47:25.721Z - admin_login_success: {"ip":"104.23.160.207","adminId":"cfed3077-3fc3-4ca5-be1d-5b590eb17531"}
+3:47:25 PM [express] POST /api/auth/admin/login 200 in 370ms :: {"success":true}
+3:47:26 PM [express] GET /api/auth/me 200 in 198ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+3:47:26 PM [express] GET /api/auth/me 304 in 199ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+3:47:27 PM [express] GET /api/admin/activity 304 in 132ms :: []
+3:47:27 PM [express] GET /api/admin/support-tickets 304 in 193ms :: []
+3:47:27 PM [express] GET /api/admin/payout-requests 304 in 198ms :: []
+3:47:27 PM [express] GET /api/admin/issues 304 in 206ms :: []
+3:47:27 PM [express] GET /api/admin/stats 200 in 459ms :: {"activeCampaigns":4,"pendingApplicants":1…
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] Admin cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined admin room
+3:47:29 PM [express] GET /api/admin/campaigns 200 in 265ms :: {"items":[{"id":"cbd78802-d971-4b96-89…
+3:47:33 PM [express] GET /api/admin/campaigns/cbd78802-d971-4b96-8981-a5fd82328557/applications 200 …
+3:47:33 PM [express] GET /api/admin/campaigns/cbd78802-d971-4b96-8981-a5fd82328557 304 in 204ms :: {…
+3:47:38 PM [express] POST /api/admin/applications/bulk-approve 200 in 617ms :: {"success":true,"appr…
+3:47:39 PM [express] GET /api/admin/campaigns/cbd78802-d971-4b96-8981-a5fd82328557/applications 200 …
+3:47:39 PM [express] GET /api/admin/campaigns/cbd78802-d971-4b96-8981-a5fd82328557 200 in 206ms :: {…
+3:47:39 PM [express] GET /api/admin/campaigns/cbd78802-d971-4b96-8981-a5fd82328557/applications 304 …
