@@ -1,0 +1,39 @@
+[DB] No migrations found (run db:generate to create initial migration)
+[DB] Connection warmed up in 420ms
+[Seed] Skipping seeding in production (set ALLOW_PROD_SEED=true to override)
+[Session] Using PostgreSQL session store
+[Socket.IO] Initialized
+3:32:15 PM [express] serving on port 10000
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://collaboom.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+3:32:34 PM [express] GET /api/auth/me 200 in 1ms :: {"user":null,"influencer":null,"admin":null}
+[Socket.IO] Failed to reload session: Error: failed to load session
+    at /opt/render/project/src/node_modules/express-session/session/session.js:94:26
+    at /opt/render/project/src/node_modules/connect-pg-simple/index.js:367:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+[SECURITY] 2025-12-22T15:32:42.299Z - admin_login_success: {"ip":"104.23.160.233","adminId":"cfed3077-3fc3-4ca5-be1d-5b590eb17531"}
+3:32:42 PM [express] POST /api/auth/admin/login 200 in 325ms :: {"success":true}
+3:32:42 PM [express] GET /api/auth/me 200 in 208ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+3:32:43 PM [express] GET /api/auth/me 304 in 200ms :: {"user":{"id":"cfed3077-3fc3-4ca5-be1d-5b590eb…
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+3:32:44 PM [express] GET /api/admin/activity 200 in 142ms :: []
+[Socket.IO] User cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined room user:cfed3077-3fc3-4ca5-be1d-5b590eb17531
+[Socket.IO] Admin cfed3077-3fc3-4ca5-be1d-5b590eb17531 joined admin room
+3:32:44 PM [express] GET /api/admin/payout-requests 200 in 214ms :: []
+3:32:44 PM [express] GET /api/admin/support-tickets 200 in 215ms :: []
+3:32:44 PM [express] GET /api/admin/issues 200 in 219ms :: []
+3:32:44 PM [express] GET /api/admin/stats 200 in 486ms :: {"activeCampaigns":2,"pendingApplicants":0…
+[Storage] Bucket collaboom-campaign not found in list. Please create it manually in Supabase Dashboard.
+[Storage] Uploaded 1 images for new campaign
+3:33:22 PM [express] POST /api/admin/campaigns 200 in 1567ms :: {"id":"8aee94d7-2488-450e-9d21-2e916…
+3:33:23 PM [express] GET /api/admin/campaigns/8aee94d7-2488-450e-9d21-2e916dbdcd3f/applications 200 …
+3:33:23 PM [express] GET /api/admin/campaigns/8aee94d7-2488-450e-9d21-2e916dbdcd3f 200 in 204ms :: {…
+3:33:24 PM [express] GET /api/notifications/unread-count 403 in 138ms :: {"message":"Forbidden"}
+[PERF] GET /api/campaigns?minimal=true - 69ms, 3 items, 1.3KB
+3:33:28 PM [express] GET /api/applications/my-ids 403 in 137ms :: {"message":"Forbidden"}
+3:33:28 PM [express] GET /api/campaigns 200 in 206ms :: [{"id":"8aee94d7-2488-450e-9d21-2e916dbdcd3f…
