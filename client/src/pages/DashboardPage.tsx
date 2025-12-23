@@ -73,6 +73,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
 
@@ -1343,8 +1344,8 @@ export default function DashboardPage() {
             
             {/* Confirm Delivery Button - Only shown when status is shipped */}
             {application.status === "shipped" && (
-              <div className="border-t border-blue-500/20 pt-3 mt-3 space-y-3">
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 space-y-2">
+              <div className="border-t border-blue-500/20 pt-4 mt-4 space-y-4">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-2">
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                     <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
@@ -1357,18 +1358,30 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                <Button
-                  onClick={() => {
-                    setApplicationToConfirmDelivery(application);
-                    setShowDeliveryConfirmDialog(true);
+                <motion.div
+                  initial={{ scale: 1 }}
+                  animate={{ 
+                    scale: [1, 1.02, 1],
                   }}
-                  className="w-full"
-                  variant="outline"
-                  data-testid={`button-confirm-delivery-${application.id}`}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
                 >
-                  <Package className="h-4 w-4 mr-2" />
-                  Confirm Delivery
-                </Button>
+                  <Button
+                    onClick={() => {
+                      setApplicationToConfirmDelivery(application);
+                      setShowDeliveryConfirmDialog(true);
+                    }}
+                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-lg shadow-emerald-500/25 dark:shadow-emerald-500/15"
+                    data-testid={`button-confirm-delivery-${application.id}`}
+                  >
+                    <Package className="h-5 w-5 mr-2" />
+                    Confirm Delivery
+                    <CheckCircle className="h-5 w-5 ml-2" />
+                  </Button>
+                </motion.div>
               </div>
             )}
           </div>
