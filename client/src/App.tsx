@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const LandingPage = lazy(() => import("@/pages/LandingPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const SignupPage = lazy(() => import("@/pages/SignupPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
 const AuthCallbackPage = lazy(() => import("@/pages/AuthCallbackPage"));
 const CampaignListPage = lazy(() => import("@/pages/CampaignListPage"));
@@ -75,6 +76,7 @@ function Router() {
         {/* Public routes */}
         <Route path="/" component={LandingPage} />
         <Route path="/login" component={LoginPage} />
+        <Route path="/signup" component={SignupPage} />
         <Route path="/register" component={RegisterPage} />
         <Route path="/auth/callback" component={AuthCallbackPage} />
         <Route path="/score-tier" component={ScoreTierPage} />
