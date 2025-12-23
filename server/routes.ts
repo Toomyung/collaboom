@@ -809,8 +809,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Campaign is not accepting applications" });
       }
 
-      // Check PayPal requirement for paid campaigns
-      const isPaidCampaign = campaign.campaignType === "link_in_bio" || campaign.campaignType === "amazon_video_upload";
+      // Check PayPal requirement for paid campaigns (ALL campaign types now offer cash rewards)
+      const isPaidCampaign = campaign.campaignType === "basic" || campaign.campaignType === "gifting" || campaign.campaignType === "link_in_bio" || campaign.campaignType === "amazon_video_upload";
       if (isPaidCampaign && !influencer.paypalEmail) {
         return res.status(400).json({ 
           message: "PayPal email required for paid campaigns. Please add your PayPal email in your profile to apply for this campaign.",
