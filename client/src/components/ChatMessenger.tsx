@@ -43,9 +43,27 @@ export function ChatMessenger() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { socket } = useSocket();
+
+  // Listen for external open-chat events (e.g., from notification clicks)
+  useEffect(() => {
+    const handleOpenChat = (e: CustomEvent<{ messageId?: string }>) => {
+      setIsOpen(true);
+      if (e.detail?.messageId) {
+        setHighlightMessageId(e.detail.messageId);
+        // Clear highlight after 3 seconds
+        setTimeout(() => setHighlightMessageId(null), 3000);
+      }
+    };
+    
+    window.addEventListener('open-chat', handleOpenChat as EventListener);
+    return () => {
+      window.removeEventListener('open-chat', handleOpenChat as EventListener);
+    };
+  }, []);
 
   const { data: room, isLoading: roomLoading } = useQuery<ChatRoom>({
     queryKey: ['/api/chat/room'],
@@ -106,9 +124,17 @@ export function ChatMessenger() {
 
   useEffect(() => {
     if (isOpen && messages.length > 0) {
+      // If there's a highlighted message, scroll to it; otherwise scroll to end
+      if (highlightMessageId) {
+        const messageEl = document.getElementById(`message-${highlightMessageId}`);
+        if (messageEl) {
+          messageEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+      }
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, highlightMessageId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -178,9 +204,11 @@ export function ChatMessenger() {
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
+                      id={`message-${msg.id}`}
                       className={cn(
-                        "flex gap-2",
-                        msg.senderType === "influencer" ? "justify-end" : "justify-start"
+                        "flex gap-2 transition-all duration-500",
+                        msg.senderType === "influencer" ? "justify-end" : "justify-start",
+                        highlightMessageId === msg.id && "bg-primary/10 -mx-2 px-2 py-1 rounded-lg"
                       )}
                       data-testid={`chat-message-${msg.id}`}
                     >
