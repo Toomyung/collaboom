@@ -287,6 +287,14 @@ export function ChatMessenger() {
         className="fixed bottom-4 right-4 z-50"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        animate={!isOpen && unreadCount > 0 ? {
+          y: [0, -8, 0, -4, 0],
+          transition: {
+            duration: 0.6,
+            repeat: Infinity,
+            repeatDelay: 2,
+          }
+        } : {}}
       >
         <Button
           size="lg"
@@ -300,9 +308,14 @@ export function ChatMessenger() {
             <MessageCircle className="h-6 w-6" />
           )}
           {!isOpen && unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+            <motion.span 
+              className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            >
               {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
+            </motion.span>
           )}
         </Button>
       </motion.div>
