@@ -4,7 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MessageCircle, X, Send, Loader2, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -31,8 +42,9 @@ interface ChatMessage {
 export function ChatMessenger() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { socket } = useSocket();
 
   const { data: room, isLoading: roomLoading } = useQuery<ChatRoom>({
@@ -100,19 +112,24 @@ export function ChatMessenger() {
 
   useEffect(() => {
     if (isOpen) {
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
     }
   }, [isOpen]);
 
-  const handleSend = () => {
+  const handleSendClick = () => {
     if (!message.trim() || !room?.canSend) return;
+    setShowConfirmDialog(true);
+  };
+
+  const confirmSend = () => {
+    setShowConfirmDialog(false);
     sendMutation.mutate(message.trim());
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      handleSendClick();
     }
   };
 
@@ -202,29 +219,35 @@ export function ChatMessenger() {
                   Please wait for a reply before sending another message.
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <Input
-                    ref={inputRef}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Type a message..."
-                    className="flex-1"
-                    disabled={sendMutation.isPending}
-                    data-testid="input-chat-message"
-                  />
-                  <Button
-                    size="icon"
-                    onClick={handleSend}
-                    disabled={!message.trim() || sendMutation.isPending}
-                    data-testid="button-send-message"
-                  >
-                    {sendMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Be detailed - you can only send one message until we reply.
+                  </p>
+                  <div className="flex gap-2">
+                    <Textarea
+                      ref={textareaRef}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      placeholder="Describe your question or issue in detail..."
+                      className="flex-1 min-h-[60px] resize-none text-sm"
+                      disabled={sendMutation.isPending}
+                      data-testid="input-chat-message"
+                    />
+                    <Button
+                      size="icon"
+                      onClick={handleSendClick}
+                      disabled={!message.trim() || sendMutation.isPending}
+                      className="self-end"
+                      data-testid="button-send-message"
+                    >
+                      {sendMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -255,6 +278,38 @@ export function ChatMessenger() {
           )}
         </Button>
       </motion.div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2 text-amber-600 mb-2">
+              <AlertTriangle className="h-5 w-5" />
+              <AlertDialogTitle className="text-base">Before you send...</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  After sending this message, you won't be able to send another one until our team replies.
+                </p>
+                <p className="font-medium text-foreground">
+                  Please make sure your message includes all the details we need to help you.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Response time: 1-2 business days
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel data-testid="button-cancel-send">
+              Go back and edit
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSend} data-testid="button-confirm-send">
+              Yes, send message
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
