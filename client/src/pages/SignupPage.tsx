@@ -245,21 +245,11 @@ export default function SignupPage() {
                   )}
                 </Button>
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">or sign up with email</span>
-                  </div>
+                <div className="text-center py-3 px-4 rounded-lg bg-muted/50 border border-dashed">
+                  <p className="text-xs text-muted-foreground">
+                    Collaboom currently supports Google sign-in only.
+                  </p>
                 </div>
-
-                <Link href="/register" data-testid="link-email-signup">
-                  <Button variant="outline" size="lg" className="w-full h-12" data-testid="button-email-signup">
-                    Sign up with Email
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
 
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
