@@ -16,6 +16,15 @@ const chatUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
+
+// Middleware to conditionally apply multer for multipart requests
+const conditionalChatUpload = (req: any, res: any, next: any) => {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    return chatUpload.single('attachment')(req, res, next);
+  }
+  next();
+};
 import {
   authLimiter,
   strictAuthLimiter,
@@ -4027,7 +4036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send chat message (influencer) - supports file attachments
-  app.post("/api/chat/room/:roomId/messages", requireAuth("influencer"), chatUpload.single('attachment'), async (req, res) => {
+  app.post("/api/chat/room/:roomId/messages", requireAuth("influencer"), conditionalChatUpload, async (req, res) => {
     try {
       const { roomId } = req.params;
       const content = req.body.content || '';
@@ -4170,7 +4179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send chat message (admin) - supports file attachments
-  app.post("/api/admin/chat/room/:roomId/messages", requireAuth("admin"), chatUpload.single('attachment'), async (req, res) => {
+  app.post("/api/admin/chat/room/:roomId/messages", requireAuth("admin"), conditionalChatUpload, async (req, res) => {
     try {
       const { roomId } = req.params;
       const content = req.body.content || '';
