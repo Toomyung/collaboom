@@ -12,6 +12,8 @@ import {
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
   type SupportTicket, type InsertSupportTicket, type SupportTicketWithDetails,
   type PayoutRequest, type InsertPayoutRequest, type PayoutRequestWithDetails,
+  type ChatRoom, type InsertChatRoom, type ChatRoomWithDetails,
+  type ChatMessage, type InsertChatMessage,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as bcrypt from 'bcryptjs';
@@ -170,6 +172,19 @@ export interface IStorage {
   getPayoutRequest(id: string): Promise<PayoutRequest | undefined>;
   updatePayoutRequest(id: string, data: Partial<PayoutRequest>): Promise<PayoutRequest | undefined>;
   getTotalPayoutsByInfluencer(influencerId: string): Promise<number>;
+  
+  // Chat
+  getOrCreateChatRoom(influencerId: string): Promise<ChatRoom>;
+  getChatRoom(id: string): Promise<ChatRoom | undefined>;
+  getChatRoomByInfluencer(influencerId: string): Promise<ChatRoom | undefined>;
+  getChatMessages(roomId: string, options?: { limit?: number; before?: Date }): Promise<ChatMessage[]>;
+  getLastChatMessage(roomId: string): Promise<ChatMessage | undefined>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  updateChatRoomLastMessage(roomId: string): Promise<void>;
+  markChatMessagesAsRead(roomId: string, readerType: 'influencer' | 'admin'): Promise<void>;
+  getUnreadChatCount(influencerId: string): Promise<number>;
+  getAllChatRoomsWithUnread(): Promise<ChatRoomWithDetails[]>;
+  canInfluencerSendMessage(roomId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {

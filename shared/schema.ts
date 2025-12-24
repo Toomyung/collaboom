@@ -522,3 +522,47 @@ export type PayoutRequest = typeof payoutRequests.$inferSelect;
 export type PayoutRequestWithDetails = PayoutRequest & {
   influencer?: Influencer;
 };
+
+// Chat Rooms (1:1 chat between influencer and admin team)
+export const chatRooms = pgTable("chat_rooms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull().unique(),
+  lastMessageAt: timestamp("last_message_at"),
+  lastAdminReadAt: timestamp("last_admin_read_at"),
+  lastInfluencerReadAt: timestamp("last_influencer_read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChatRoomSchema = createInsertSchema(chatRooms).pick({
+  influencerId: true,
+});
+
+export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
+export type ChatRoom = typeof chatRooms.$inferSelect;
+
+// Chat Messages
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id").notNull(),
+  senderType: text("sender_type").notNull(), // 'influencer' | 'admin'
+  senderId: varchar("sender_id").notNull(),
+  body: text("body").notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
+  roomId: true,
+  senderType: true,
+  senderId: true,
+  body: true,
+});
+
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export type ChatRoomWithDetails = ChatRoom & {
+  influencer?: Influencer;
+  lastMessage?: ChatMessage;
+  unreadCount?: number;
+};
