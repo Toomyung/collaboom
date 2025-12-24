@@ -76,6 +76,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
+import { PointsAwardPopup } from "@/components/PointsAwardPopup";
 
 const statusConfig: Record<
   string,
@@ -248,6 +249,8 @@ export default function DashboardPage() {
   const [showPayoutConfirmDialog, setShowPayoutConfirmDialog] = useState(false);
   const [showDeliveryConfirmDialog, setShowDeliveryConfirmDialog] = useState(false);
   const [applicationToConfirmDelivery, setApplicationToConfirmDelivery] = useState<ApplicationWithDetails | null>(null);
+  const [showPointsPopup, setShowPointsPopup] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(0);
 
   // Function to scroll to a specific application by ID
   const scrollToApplication = (applicationId: string) => {
@@ -477,16 +480,13 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/payout-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/influencer/me"] });
       
-      const pointsMessage = data.pointsAwarded 
-        ? `You earned +${data.pointsAwarded} points for confirming delivery!`
-        : "Thank you for confirming.";
-      
-      toast({
-        title: "Delivery confirmed! +2 Points",
-        description: `${pointsMessage} Now it's time to create amazing content!`,
-      });
       setShowDeliveryConfirmDialog(false);
       setApplicationToConfirmDelivery(null);
+      
+      if (data.pointsAwarded) {
+        setPointsAwarded(data.pointsAwarded);
+        setShowPointsPopup(true);
+      }
     },
     onError: (error: Error) => {
       setShowDeliveryConfirmDialog(false);
@@ -1386,7 +1386,7 @@ export default function DashboardPage() {
                   >
                     <Package className="h-5 w-5 mr-2" />
                     Confirm Delivery
-                    <CheckCircle className="h-5 w-5 ml-2" />
+                    <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs font-bold">+2 pts</span>
                   </Button>
                 </motion.div>
               </div>
@@ -2756,6 +2756,14 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Points Award Popup with Confetti */}
+      <PointsAwardPopup
+        points={pointsAwarded}
+        reason="delivery_confirmed"
+        open={showPointsPopup}
+        onClose={() => setShowPointsPopup(false)}
+      />
     </MainLayout>
   );
 }
