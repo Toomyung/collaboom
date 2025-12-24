@@ -1658,20 +1658,32 @@ export default function AdminCampaignDetailPage() {
                                 )}
                               </TableCell>
                               <TableCell className="p-2">
-                                <Badge
-                                  className={cn(
-                                    "text-xs",
-                                    app.status === "shipped"
-                                      ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
-                                      : app.status === "delivered"
-                                      ? "bg-purple-500/10 text-purple-600 border-purple-500/30"
-                                      : app.status === "uploaded"
-                                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
-                                      : "bg-yellow-500/10 text-yellow-600 border-yellow-500/30"
+                                <div className="flex flex-col gap-0.5">
+                                  <Badge
+                                    className={cn(
+                                      "text-xs",
+                                      app.status === "shipped"
+                                        ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
+                                        : app.status === "delivered"
+                                        ? "bg-purple-500/10 text-purple-600 border-purple-500/30"
+                                        : app.status === "uploaded"
+                                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                                        : "bg-yellow-500/10 text-yellow-600 border-yellow-500/30"
+                                    )}
+                                  >
+                                    {app.status}
+                                  </Badge>
+                                  {(app.status === "delivered" || app.status === "uploaded") && app.deliveryConfirmedBy && (
+                                    <span className={cn(
+                                      "text-[10px] whitespace-nowrap",
+                                      app.deliveryConfirmedBy === "influencer" 
+                                        ? "text-amber-600" 
+                                        : "text-blue-600"
+                                    )}>
+                                      by {app.deliveryConfirmedBy === "influencer" ? "Creator" : "Admin"}
+                                    </span>
                                   )}
-                                >
-                                  {app.status}
-                                </Badge>
+                                </div>
                               </TableCell>
                               <TableCell className="p-2">
                                 {app.status === "shipped" ? (

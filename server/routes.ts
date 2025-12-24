@@ -1819,9 +1819,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Can only mark shipped applications as delivered" });
       }
 
+      const now = new Date();
       await storage.updateApplication(application.id, {
         status: "delivered",
-        deliveredAt: new Date(),
+        deliveredAt: now,
+        deliveryConfirmedBy: "admin",
       });
 
       // Update shipping record if exists
@@ -1829,7 +1831,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (shipping) {
         await storage.updateShipping(shipping.id, {
           status: "delivered",
-          deliveredAt: new Date(),
+          deliveredAt: now,
+          deliveryConfirmedBy: "admin",
         });
       }
 
@@ -1879,6 +1882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateApplication(application.id, {
         status: "delivered",
         deliveredAt: now,
+        deliveryConfirmedBy: "influencer",
       });
 
       // Update shipping record if exists
@@ -1887,6 +1891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateShipping(shipping.id, {
           status: "delivered",
           deliveredAt: now,
+          deliveryConfirmedBy: "influencer",
         });
       }
 
@@ -1917,6 +1922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateApplication(application.id, {
         status: "shipped",
         deliveredAt: null,
+        deliveryConfirmedBy: null,
       });
 
       // Update shipping record if exists
@@ -1925,6 +1931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateShipping(shipping.id, {
           status: "shipped",
           deliveredAt: null,
+          deliveryConfirmedBy: null,
         });
       }
 

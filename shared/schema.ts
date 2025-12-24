@@ -235,6 +235,7 @@ export const applications = pgTable("applications", {
   dismissedAt: timestamp("dismissed_at"), // When user dismissed the rejection notification
   shippedAt: timestamp("shipped_at"),
   deliveredAt: timestamp("delivered_at"),
+  deliveryConfirmedBy: text("delivery_confirmed_by"), // 'admin' | 'influencer' - tracks who confirmed delivery
   uploadedAt: timestamp("uploaded_at"),
   deadlineMissedAt: timestamp("deadline_missed_at"),
   firstTime: boolean("first_time").default(false),
@@ -288,6 +289,7 @@ export const shipping = pgTable("shipping", {
   courier: text("courier"),
   shippedAt: timestamp("shipped_at"),
   deliveredAt: timestamp("delivered_at"),
+  deliveryConfirmedBy: text("delivery_confirmed_by"), // 'admin' | 'influencer' - tracks who confirmed delivery
   createdAt: timestamp("created_at").defaultNow(),
 });
 
