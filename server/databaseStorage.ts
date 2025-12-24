@@ -5,7 +5,7 @@ import { deleteImagesFromStorage } from "./supabaseStorage";
 import {
   admins, influencers, campaigns, applications, shipping, uploads,
   scoreEvents, penaltyEvents, adminNotes, notifications, shippingIssues, supportTickets,
-  bannedEmails, payoutRequests,
+  bannedEmails, payoutRequests, chatRooms, chatMessages,
   type Admin, type InsertAdmin,
   type Influencer, type InsertInfluencer,
   type Campaign, type InsertCampaign,
@@ -19,6 +19,8 @@ import {
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
   type SupportTicket, type InsertSupportTicket, type SupportTicketWithDetails,
   type PayoutRequest, type InsertPayoutRequest, type PayoutRequestWithDetails,
+  type ChatRoom, type InsertChatRoom, type ChatRoomWithDetails,
+  type ChatMessage, type InsertChatMessage,
 } from "@shared/schema";
 import { IStorage, GetCampaignsOptions, PaginatedCampaignsResult } from "./storage";
 
@@ -1097,5 +1099,132 @@ export class DatabaseStorage implements IStorage {
         sql`${payoutRequests.status} != 'rejected'`
       ));
     return result?.total ?? 0;
+  }
+
+  // Chat methods
+  async getOrCreateChatRoom(influencerId: string): Promise<ChatRoom> {
+    const existing = await this.getChatRoomByInfluencer(influencerId);
+    if (existing) return existing;
+    
+    const [room] = await db.insert(chatRooms).values({
+      influencerId,
+    }).returning();
+    return room;
+  }
+
+  async getChatRoom(id: string): Promise<ChatRoom | undefined> {
+    const [room] = await db.select().from(chatRooms).where(eq(chatRooms.id, id));
+    return room;
+  }
+
+  async getChatRoomByInfluencer(influencerId: string): Promise<ChatRoom | undefined> {
+    const [room] = await db.select().from(chatRooms).where(eq(chatRooms.influencerId, influencerId));
+    return room;
+  }
+
+  async getChatMessages(roomId: string, options?: { limit?: number; before?: Date }): Promise<ChatMessage[]> {
+    const limit = options?.limit || 50;
+    
+    if (options?.before) {
+      return db.select()
+        .from(chatMessages)
+        .where(and(
+          eq(chatMessages.roomId, roomId),
+          sql`${chatMessages.createdAt} < ${options.before}`
+        ))
+        .orderBy(desc(chatMessages.createdAt))
+        .limit(limit);
+    }
+    
+    return db.select()
+      .from(chatMessages)
+      .where(eq(chatMessages.roomId, roomId))
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+  }
+
+  async getLastChatMessage(roomId: string): Promise<ChatMessage | undefined> {
+    const [message] = await db.select()
+      .from(chatMessages)
+      .where(eq(chatMessages.roomId, roomId))
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(1);
+    return message;
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [newMessage] = await db.insert(chatMessages).values(message).returning();
+    await this.updateChatRoomLastMessage(message.roomId);
+    return newMessage;
+  }
+
+  async updateChatRoomLastMessage(roomId: string): Promise<void> {
+    await db.update(chatRooms)
+      .set({ lastMessageAt: new Date() })
+      .where(eq(chatRooms.id, roomId));
+  }
+
+  async markChatMessagesAsRead(roomId: string, readerType: 'influencer' | 'admin'): Promise<void> {
+    const now = new Date();
+    if (readerType === 'influencer') {
+      await db.update(chatRooms)
+        .set({ lastInfluencerReadAt: now })
+        .where(eq(chatRooms.id, roomId));
+    } else {
+      await db.update(chatRooms)
+        .set({ lastAdminReadAt: now })
+        .where(eq(chatRooms.id, roomId));
+    }
+  }
+
+  async getUnreadChatCount(influencerId: string): Promise<number> {
+    const room = await this.getChatRoomByInfluencer(influencerId);
+    if (!room || !room.lastMessageAt) return 0;
+    
+    const lastRead = room.lastInfluencerReadAt || new Date(0);
+    
+    const [result] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(chatMessages)
+      .where(and(
+        eq(chatMessages.roomId, room.id),
+        eq(chatMessages.senderType, 'admin'),
+        sql`${chatMessages.createdAt} > ${lastRead}`
+      ));
+    
+    return result?.count ?? 0;
+  }
+
+  async getAllChatRoomsWithUnread(): Promise<ChatRoomWithDetails[]> {
+    const rooms = await db.select().from(chatRooms).orderBy(desc(chatRooms.lastMessageAt));
+    
+    const result: ChatRoomWithDetails[] = [];
+    for (const room of rooms) {
+      const influencer = await this.getInfluencer(room.influencerId);
+      const lastMessage = await this.getLastChatMessage(room.id);
+      
+      const lastRead = room.lastAdminReadAt || new Date(0);
+      const [countResult] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(chatMessages)
+        .where(and(
+          eq(chatMessages.roomId, room.id),
+          eq(chatMessages.senderType, 'influencer'),
+          sql`${chatMessages.createdAt} > ${lastRead}`
+        ));
+      
+      result.push({
+        ...room,
+        influencer: influencer || undefined,
+        lastMessage: lastMessage || undefined,
+        unreadCount: countResult?.count ?? 0,
+      });
+    }
+    
+    return result;
+  }
+
+  async canInfluencerSendMessage(roomId: string): Promise<boolean> {
+    const lastMessage = await this.getLastChatMessage(roomId);
+    if (!lastMessage) return true;
+    return lastMessage.senderType !== 'influencer';
   }
 }
