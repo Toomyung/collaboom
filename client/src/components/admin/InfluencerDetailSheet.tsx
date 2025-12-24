@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -70,9 +70,12 @@ import {
   ShieldX,
   Trash2,
   Mail,
+  MessageCircle,
+  Loader2,
 } from "lucide-react";
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useSocket } from "@/lib/socket";
 import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -239,6 +242,9 @@ export function InfluencerDetailSheet({
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [chatMessage, setChatMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { socket } = useSocket();
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -271,6 +277,82 @@ export function InfluencerDetailSheet({
     queryKey: ["/api/admin/influencers", influencerId, "applications"],
     enabled: !!influencerId && open,
   });
+
+  // Chat room for this specific influencer
+  interface ChatRoom {
+    id: string;
+    influencerId: string;
+    lastMessageAt: string | null;
+  }
+  
+  interface ChatMessage {
+    id: string;
+    roomId: string;
+    senderType: 'influencer' | 'admin';
+    senderId: string;
+    body: string;
+    createdAt: string;
+  }
+
+  const { data: chatRoom, isLoading: chatRoomLoading } = useQuery<ChatRoom>({
+    queryKey: [`/api/admin/chat/room/${influencerId}`],
+    enabled: !!influencerId && open && activeTab === "messages",
+  });
+
+  const { data: chatMessages = [], isLoading: chatMessagesLoading } = useQuery<ChatMessage[]>({
+    queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`],
+    enabled: !!chatRoom?.id && activeTab === "messages",
+  });
+
+  const sendChatMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const res = await apiRequest("POST", `/api/admin/chat/room/${chatRoom?.id}/messages`, { content });
+      return res.json();
+    },
+    onSuccess: () => {
+      setChatMessage("");
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to send message", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Socket listener for real-time chat updates
+  useEffect(() => {
+    if (!socket || !chatRoom?.id) return;
+
+    const handleNewMessage = (data: { roomId: string; message: ChatMessage }) => {
+      if (data.roomId === chatRoom.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom.id}/messages`], refetchType: 'active' });
+      }
+    };
+
+    socket.on("chat:message:new", handleNewMessage);
+    return () => {
+      socket.off("chat:message:new", handleNewMessage);
+    };
+  }, [socket, chatRoom?.id]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (activeTab === "messages" && chatMessages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, activeTab]);
+
+  const handleSendChatMessage = () => {
+    if (!chatMessage.trim()) return;
+    sendChatMutation.mutate(chatMessage.trim());
+  };
+
+  const handleChatKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendChatMessage();
+    }
+  };
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ 
@@ -1064,7 +1146,7 @@ export function InfluencerDetailSheet({
               </div>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-6">
                   <TabsTrigger value="dashboard" data-testid="tab-dashboard">
                     <LayoutDashboard className="h-4 w-4" />
                   </TabsTrigger>
@@ -1073,6 +1155,9 @@ export function InfluencerDetailSheet({
                   </TabsTrigger>
                   <TabsTrigger value="history" data-testid="tab-history">
                     <History className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger value="messages" data-testid="tab-messages">
+                    <MessageCircle className="h-4 w-4" />
                   </TabsTrigger>
                   <TabsTrigger value="notes" data-testid="tab-notes">
                     <MessageSquare className="h-4 w-4" />
@@ -1491,6 +1576,93 @@ export function InfluencerDetailSheet({
                         <p>No history yet</p>
                       </div>
                     )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="messages" className="mt-4">
+                  <div className="flex flex-col h-[400px]">
+                    <div className="flex items-center gap-2 pb-3 border-b mb-3">
+                      <MessageCircle className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Chat with {getInfluencerDisplayName(selectedInfluencer, "Influencer")}</span>
+                    </div>
+                    
+                    <ScrollArea className="flex-1 pr-4">
+                      {chatRoomLoading || chatMessagesLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : chatMessages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
+                          <MessageCircle className="h-10 w-10 mb-2 opacity-50" />
+                          <p className="text-sm">No messages yet</p>
+                          <p className="text-xs mt-1">Send a message to start the conversation</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {chatMessages.map((msg) => (
+                            <div
+                              key={msg.id}
+                              className={cn(
+                                "flex gap-2",
+                                msg.senderType === "admin" ? "justify-end" : "justify-start"
+                              )}
+                              data-testid={`chat-msg-${msg.id}`}
+                            >
+                              {msg.senderType === "influencer" && (
+                                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-medium text-primary">
+                                    {selectedInfluencer?.name?.[0]?.toUpperCase() || "I"}
+                                  </span>
+                                </div>
+                              )}
+                              <div
+                                className={cn(
+                                  "max-w-[75%] rounded-lg px-3 py-2 text-sm",
+                                  msg.senderType === "admin"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
+                                )}
+                              >
+                                <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                                <p className={cn(
+                                  "text-xs mt-1 opacity-70",
+                                  msg.senderType === "admin" ? "text-right" : "text-left"
+                                )}>
+                                  {format(new Date(msg.createdAt), "h:mm a")}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          <div ref={messagesEndRef} />
+                        </div>
+                      )}
+                    </ScrollArea>
+
+                    <div className="border-t pt-3 mt-3">
+                      <div className="flex gap-2">
+                        <Input
+                          value={chatMessage}
+                          onChange={(e) => setChatMessage(e.target.value)}
+                          onKeyDown={handleChatKeyPress}
+                          placeholder={chatRoom ? "Type a message..." : "Loading chat..."}
+                          className="flex-1"
+                          disabled={!chatRoom || sendChatMutation.isPending}
+                          data-testid="input-chat-admin"
+                        />
+                        <Button
+                          size="icon"
+                          onClick={handleSendChatMessage}
+                          disabled={!chatRoom || !chatMessage.trim() || sendChatMutation.isPending}
+                          data-testid="button-send-chat"
+                        >
+                          {sendChatMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
 
