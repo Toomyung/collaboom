@@ -40,7 +40,7 @@ export function ChatMessenger() {
   });
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<ChatMessage[]>({
-    queryKey: ['/api/chat/room', room?.id, 'messages'],
+    queryKey: [`/api/chat/room/${room?.id}/messages`],
     enabled: !!room?.id && isOpen,
   });
 
@@ -55,7 +55,7 @@ export function ChatMessenger() {
     },
     onSuccess: () => {
       setMessage("");
-      queryClient.invalidateQueries({ queryKey: ['/api/chat/room', room?.id, 'messages'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chat/room/${room?.id}/messages`] });
       queryClient.invalidateQueries({ queryKey: ['/api/chat/room'] });
     },
   });
@@ -74,7 +74,7 @@ export function ChatMessenger() {
     
     const handleNewMessage = (data: { roomId: string; message: ChatMessage }) => {
       if (data.roomId === room?.id) {
-        queryClient.invalidateQueries({ queryKey: ['/api/chat/room', room?.id, 'messages'], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: [`/api/chat/room/${room?.id}/messages`], refetchType: 'active' });
         queryClient.invalidateQueries({ queryKey: ['/api/chat/room'], refetchType: 'active' });
         queryClient.invalidateQueries({ queryKey: ['/api/chat/unread-count'], refetchType: 'active' });
       }

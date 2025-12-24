@@ -155,6 +155,13 @@ Manages transitions for:
 ## Recent Changes
 
 ### December 2024
+- **Real-time Chat System:** Messenger-style chat between influencers and admins
+  - Floating chat button on influencer dashboard
+  - Message gating: influencers can only send one message, then must wait for admin reply
+  - Admin chat page (/admin/chat) with conversation list and unread badges
+  - Email notifications when admin sends a message
+  - Socket.IO for real-time message delivery
+  - Database tables: `chat_rooms`, `chat_messages`
 - Added delivery confirmation tracking with `deliveryConfirmedBy` field
 - Implemented +2 points reward for influencer delivery confirmation
 - Created celebration popup with confetti animation (replaces toast)
