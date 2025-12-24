@@ -41,7 +41,9 @@ import {
   emitNotificationCreated,
   emitToUser,
   emitToAdmins,
+  emitChatMessage,
 } from "./socket";
+import { sendChatMessageNotificationEmail } from "./emailService";
 
 // Session types
 declare module "express-session" {
@@ -3969,6 +3971,224 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(updated);
     } catch (error: any) {
       console.error('[Update Payout Request] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ========== Chat API ==========
+  
+  // Get or create chat room for influencer
+  app.get("/api/chat/room", requireAuth("influencer"), async (req, res) => {
+    try {
+      const influencerId = req.session.userId!;
+      const room = await storage.getOrCreateChatRoom(influencerId);
+      const canSend = await storage.canInfluencerSendMessage(room.id);
+      const unreadCount = await storage.getUnreadChatCount(influencerId);
+      return res.json({ ...room, canSend, unreadCount });
+    } catch (error: any) {
+      console.error('[Get Chat Room] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get chat messages for a room
+  app.get("/api/chat/room/:roomId/messages", requireAuth(), async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const { limit, before } = req.query;
+      
+      const room = await storage.getChatRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Chat room not found" });
+      }
+      
+      // Verify access
+      if (req.session.userType === "influencer" && room.influencerId !== req.session.userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const messages = await storage.getChatMessages(roomId, {
+        limit: limit ? parseInt(limit as string) : 50,
+        before: before ? new Date(before as string) : undefined,
+      });
+      
+      return res.json(messages.reverse());
+    } catch (error: any) {
+      console.error('[Get Chat Messages] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Send chat message (influencer)
+  app.post("/api/chat/room/:roomId/messages", requireAuth("influencer"), async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const { content } = req.body;
+      const influencerId = req.session.userId!;
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+      
+      const room = await storage.getChatRoom(roomId);
+      if (!room || room.influencerId !== influencerId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Check if influencer can send (message gating)
+      const canSend = await storage.canInfluencerSendMessage(roomId);
+      if (!canSend) {
+        return res.status(400).json({ message: "Please wait for admin reply before sending another message" });
+      }
+      
+      const message = await storage.createChatMessage({
+        roomId,
+        senderType: 'influencer',
+        senderId: influencerId,
+        content: content.trim(),
+      });
+      
+      // Emit socket event
+      emitChatMessage(roomId, {
+        id: message.id,
+        roomId: message.roomId,
+        senderType: message.senderType as 'influencer' | 'admin',
+        senderId: message.senderId,
+        content: message.content,
+        createdAt: message.createdAt,
+      }, influencerId);
+      
+      return res.json(message);
+    } catch (error: any) {
+      console.error('[Send Chat Message] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mark messages as read (influencer)
+  app.post("/api/chat/room/:roomId/read", requireAuth("influencer"), async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const influencerId = req.session.userId!;
+      
+      const room = await storage.getChatRoom(roomId);
+      if (!room || room.influencerId !== influencerId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.markChatMessagesAsRead(roomId, 'influencer');
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Mark Chat Read] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get unread chat count (influencer)
+  app.get("/api/chat/unread-count", requireAuth("influencer"), async (req, res) => {
+    try {
+      const influencerId = req.session.userId!;
+      const count = await storage.getUnreadChatCount(influencerId);
+      return res.json({ count });
+    } catch (error: any) {
+      console.error('[Get Unread Chat Count] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ========== Admin Chat API ==========
+
+  // Get all chat rooms with unread counts
+  app.get("/api/admin/chat/rooms", requireAuth("admin"), async (req, res) => {
+    try {
+      const rooms = await storage.getAllChatRoomsWithUnread();
+      return res.json(rooms);
+    } catch (error: any) {
+      console.error('[Get Admin Chat Rooms] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get or create chat room for specific influencer (admin)
+  app.get("/api/admin/chat/room/:influencerId", requireAuth("admin"), async (req, res) => {
+    try {
+      const { influencerId } = req.params;
+      const room = await storage.getOrCreateChatRoom(influencerId);
+      return res.json(room);
+    } catch (error: any) {
+      console.error('[Get Admin Chat Room] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Send chat message (admin)
+  app.post("/api/admin/chat/room/:roomId/messages", requireAuth("admin"), async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const { content } = req.body;
+      const adminId = req.session.userId!;
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+      
+      const room = await storage.getChatRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Chat room not found" });
+      }
+      
+      const message = await storage.createChatMessage({
+        roomId,
+        senderType: 'admin',
+        senderId: adminId,
+        content: content.trim(),
+      });
+      
+      // Emit socket event
+      emitChatMessage(roomId, {
+        id: message.id,
+        roomId: message.roomId,
+        senderType: message.senderType as 'influencer' | 'admin',
+        senderId: message.senderId,
+        content: message.content,
+        createdAt: message.createdAt,
+      }, room.influencerId);
+      
+      // Send email notification to influencer
+      const influencer = await storage.getInfluencer(room.influencerId);
+      if (influencer?.email) {
+        try {
+          await sendChatMessageNotificationEmail(influencer.email, influencer.name || 'Creator', content.trim());
+        } catch (emailError) {
+          console.error('[Chat Email] Failed to send notification:', emailError);
+        }
+      }
+      
+      // Create in-app notification
+      await storage.createNotification({
+        influencerId: room.influencerId,
+        type: 'chat_message',
+        title: 'New message from Collaboom',
+        message: content.trim().length > 50 ? content.trim().substring(0, 50) + '...' : content.trim(),
+        channel: 'in_app',
+      });
+      emitNotificationCreated(room.influencerId);
+      
+      return res.json(message);
+    } catch (error: any) {
+      console.error('[Admin Send Chat Message] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Mark messages as read (admin)
+  app.post("/api/admin/chat/room/:roomId/read", requireAuth("admin"), async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      await storage.markChatMessagesAsRead(roomId, 'admin');
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Admin Mark Chat Read] Error:', error);
       return res.status(500).json({ message: error.message });
     }
   });

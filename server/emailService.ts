@@ -584,3 +584,44 @@ Learn more about VIP benefits: https://collaboom.io/score-tier
     return { success: false, error: (err as Error).message };
   }
 }
+
+export async function sendChatMessageNotificationEmail(
+  to: string,
+  influencerName: string,
+  messagePreview: string
+): Promise<{ success: boolean; error?: string; emailId?: string }> {
+  try {
+    const recipient = TEST_EMAIL_OVERRIDE || to;
+    const truncatedMessage = messagePreview.length > 100 
+      ? messagePreview.substring(0, 100) + '...' 
+      : messagePreview;
+    
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [recipient],
+      subject: "[Collaboom] New Message from Collaboom Team",
+      text: `Hi ${influencerName},
+
+You have a new message from the Collaboom team:
+
+"${truncatedMessage}"
+
+Log in to your dashboard to view and reply to this message.
+
+Visit: https://collaboom.io/dashboard
+
+- The Collaboom Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send chat notification email:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Chat notification email sent to ${to}, ID: ${data?.id}`);
+    return { success: true, emailId: data?.id };
+  } catch (err) {
+    console.error("Error sending chat notification email:", err);
+    return { success: false, error: (err as Error).message };
+  }
+}
