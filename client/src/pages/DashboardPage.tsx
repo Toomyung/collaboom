@@ -483,7 +483,7 @@ export default function DashboardPage() {
       setShowDeliveryConfirmDialog(false);
       setApplicationToConfirmDelivery(null);
       
-      if (data.pointsAwarded) {
+      if (data.pointsAwarded && !showPointsPopup) {
         setPointsAwarded(data.pointsAwarded);
         setShowPointsPopup(true);
       }
@@ -880,6 +880,23 @@ export default function DashboardPage() {
               <span className="font-medium text-emerald-600">Submission</span>
             </div>
             
+            {/* Deadline Warning - only show when status is delivered */}
+            {application.status === "delivered" && (
+              <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/40 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+                      Deadline: {format(deadline, "MMM d, yyyy")} PST
+                    </p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400">
+                      Please submit before the deadline to keep your score safe. Late submissions may result in -20 points.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Status: uploaded - Content submitted, waiting for verification */}
             {application.status === "uploaded" && (application as any).bioLinkUrl && application.contentUrl ? (
               <div className="space-y-4">
@@ -1101,6 +1118,23 @@ export default function DashboardPage() {
               <Upload className="h-4 w-4 text-amber-600" />
               <span className="font-medium text-amber-600">Submission</span>
             </div>
+            
+            {/* Deadline Warning - only show when status is delivered */}
+            {application.status === "delivered" && (
+              <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/40 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+                      Deadline: {format(deadline, "MMM d, yyyy")} PST
+                    </p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400">
+                      Please submit before the deadline to keep your score safe. Late submissions may result in -20 points.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Status: uploaded - Content submitted, waiting for verification */}
             {application.status === "uploaded" && (application as any).amazonStorefrontUrl && application.contentUrl ? (
@@ -1401,6 +1435,21 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-purple-600" />
               <span className="font-medium text-purple-600">Submission</span>
+            </div>
+            
+            {/* Deadline Warning */}
+            <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/40 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Clock className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+                    Deadline: {format(deadline, "MMM d, yyyy")} PST
+                  </p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400">
+                    Please submit before the deadline to keep your score safe. Late submissions may result in -20 points.
+                  </p>
+                </div>
+              </div>
             </div>
             
             {/* Already submitted - show status */}
