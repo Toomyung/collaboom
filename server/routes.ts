@@ -3579,6 +3579,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Create notification for influencer
+      await storage.createNotification({
+        influencerId: existingTicket.influencerId,
+        type: "admin_reply",
+        title: "Support Response",
+        message: `Admin responded to your support ticket: "${existingTicket.subject}"`,
+        channel: "in_app",
+      });
+      
+      // Emit real-time notification
+      emitNotificationCreated(existingTicket.influencerId);
+      
       return res.json({ success: true, ticket });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
