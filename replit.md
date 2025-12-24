@@ -162,6 +162,11 @@ Manages transitions for:
   - Email notifications when admin sends a message
   - Socket.IO for real-time message delivery
   - Database tables: `chat_rooms`, `chat_messages`
+  - **File Attachments:** Support for file uploads in chat (10MB limit)
+    - Allowed types: Images (JPG, PNG, GIF, WEBP), PDF, CSV, Excel (XLS, XLSX), ZIP, MP4
+    - Files stored in Supabase Storage under `chat/{roomId}/` directory
+    - Inline image preview, download links for other file types
+    - Schema fields: `attachmentUrl`, `attachmentName`, `attachmentType`, `attachmentSize`
 - Added delivery confirmation tracking with `deliveryConfirmedBy` field
 - Implemented +2 points reward for influencer delivery confirmation
 - Created celebration popup with confetti animation (replaces toast)
