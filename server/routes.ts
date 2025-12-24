@@ -1895,12 +1895,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Award +2 points for confirming delivery
+      const DELIVERY_CONFIRMATION_POINTS = 2;
+      await storage.addScoreEvent({
+        influencerId: application.influencerId,
+        campaignId: application.campaignId,
+        applicationId: application.id,
+        delta: DELIVERY_CONFIRMATION_POINTS,
+        reason: "delivery_confirmed",
+        displayReason: "Confirmed package delivery",
+      });
+
       // Emit real-time event for admin to see (with confirmation source)
       emitApplicationUpdated(application.campaignId, application.id, "delivered");
       
-      console.log(`[Delivery] Influencer confirmed delivery for application ${application.id} at ${now.toISOString()}`);
+      console.log(`[Delivery] Influencer confirmed delivery for application ${application.id} at ${now.toISOString()}, awarded +${DELIVERY_CONFIRMATION_POINTS} points`);
 
-      return res.json({ success: true });
+      return res.json({ 
+        success: true, 
+        pointsAwarded: DELIVERY_CONFIRMATION_POINTS 
+      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

@@ -468,15 +468,22 @@ export default function DashboardPage() {
 
   const confirmDeliveryMutation = useMutation({
     mutationFn: async (applicationId: string) => {
-      await apiRequest("POST", `/api/applications/${applicationId}/confirm-delivery`);
+      const response = await apiRequest("POST", `/api/applications/${applicationId}/confirm-delivery`);
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: { success: boolean; pointsAwarded?: number }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications/all-history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payout-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/influencer/me"] });
+      
+      const pointsMessage = data.pointsAwarded 
+        ? `You earned +${data.pointsAwarded} points for confirming delivery!`
+        : "Thank you for confirming.";
+      
       toast({
-        title: "Delivery confirmed!",
-        description: "Thank you for confirming. Now it's time to create amazing content!",
+        title: "Delivery confirmed! +2 Points",
+        description: `${pointsMessage} Now it's time to create amazing content!`,
       });
       setShowDeliveryConfirmDialog(false);
       setApplicationToConfirmDelivery(null);
