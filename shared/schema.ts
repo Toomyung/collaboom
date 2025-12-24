@@ -547,6 +547,10 @@ export const chatMessages = pgTable("chat_messages", {
   senderType: text("sender_type").notNull(), // 'influencer' | 'admin'
   senderId: varchar("sender_id").notNull(),
   body: text("body").notNull(),
+  attachmentUrl: text("attachment_url"),
+  attachmentName: text("attachment_name"),
+  attachmentType: text("attachment_type"), // MIME type
+  attachmentSize: integer("attachment_size"), // bytes
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -556,6 +560,10 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
   senderType: true,
   senderId: true,
   body: true,
+  attachmentUrl: true,
+  attachmentName: true,
+  attachmentType: true,
+  attachmentSize: true,
 });
 
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;

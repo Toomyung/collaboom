@@ -26,6 +26,10 @@ export interface ChatMessageData {
   senderId: string;
   content: string;
   createdAt: Date;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
+  attachmentSize?: number;
 }
 
 export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any): SocketIOServer {

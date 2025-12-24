@@ -8,7 +8,14 @@ import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail, sendAccountSuspendedEmail, sendAccountUnsuspendedEmail, sendAccountBlockedEmail, sendDirectAdminEmail, sendTierUpgradeEmail } from "./emailService";
-import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl } from "./supabaseStorage";
+import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl, uploadChatAttachment, validateChatAttachment } from "./supabaseStorage";
+import multer from "multer";
+
+// Multer configuration for chat attachments (10MB limit)
+const chatUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
 import {
   authLimiter,
   strictAuthLimiter,
@@ -4019,15 +4026,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Send chat message (influencer)
-  app.post("/api/chat/room/:roomId/messages", requireAuth("influencer"), async (req, res) => {
+  // Send chat message (influencer) - supports file attachments
+  app.post("/api/chat/room/:roomId/messages", requireAuth("influencer"), chatUpload.single('attachment'), async (req, res) => {
     try {
       const { roomId } = req.params;
-      const { content } = req.body;
+      const content = req.body.content || '';
       const influencerId = req.session.userId!;
+      const file = req.file;
       
-      if (!content || content.trim().length === 0) {
-        return res.status(400).json({ message: "Message content is required" });
+      // Require either content or file
+      if (!content.trim() && !file) {
+        return res.status(400).json({ message: "Message content or attachment is required" });
       }
       
       const room = await storage.getChatRoom(roomId);
@@ -4041,11 +4050,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please wait for admin reply before sending another message" });
       }
       
+      // Handle file attachment
+      let attachmentUrl: string | undefined;
+      let attachmentName: string | undefined;
+      let attachmentType: string | undefined;
+      let attachmentSize: number | undefined;
+      
+      if (file) {
+        const validation = validateChatAttachment(file);
+        if (!validation.valid) {
+          return res.status(400).json({ message: validation.error });
+        }
+        
+        try {
+          attachmentUrl = await uploadChatAttachment(
+            file.buffer,
+            roomId,
+            file.originalname,
+            file.mimetype
+          );
+          attachmentName = file.originalname;
+          attachmentType = file.mimetype;
+          attachmentSize = file.size;
+        } catch (uploadError: any) {
+          console.error('[Chat Upload] Failed:', uploadError);
+          return res.status(500).json({ message: "Failed to upload attachment. Please try again." });
+        }
+      }
+      
       const message = await storage.createChatMessage({
         roomId,
         senderType: 'influencer',
         senderId: influencerId,
-        body: content.trim(),
+        body: content.trim() || (file ? `Sent an attachment: ${file.originalname}` : ''),
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
+        attachmentSize,
       });
       
       // Emit socket event
@@ -4056,11 +4097,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         senderId: message.senderId,
         content: message.body,
         createdAt: message.createdAt!,
+        attachmentUrl: message.attachmentUrl || undefined,
+        attachmentName: message.attachmentName || undefined,
+        attachmentType: message.attachmentType || undefined,
+        attachmentSize: message.attachmentSize || undefined,
       }, influencerId);
       
       return res.json(message);
     } catch (error: any) {
       console.error('[Send Chat Message] Error:', error);
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ message: "File too large. Maximum size is 10MB." });
+      }
       return res.status(500).json({ message: error.message });
     }
   });
@@ -4121,15 +4169,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Send chat message (admin)
-  app.post("/api/admin/chat/room/:roomId/messages", requireAuth("admin"), async (req, res) => {
+  // Send chat message (admin) - supports file attachments
+  app.post("/api/admin/chat/room/:roomId/messages", requireAuth("admin"), chatUpload.single('attachment'), async (req, res) => {
     try {
       const { roomId } = req.params;
-      const { content } = req.body;
+      const content = req.body.content || '';
       const adminId = req.session.userId!;
+      const file = req.file;
       
-      if (!content || content.trim().length === 0) {
-        return res.status(400).json({ message: "Message content is required" });
+      // Require either content or file
+      if (!content.trim() && !file) {
+        return res.status(400).json({ message: "Message content or attachment is required" });
       }
       
       const room = await storage.getChatRoom(roomId);
@@ -4137,11 +4187,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Chat room not found" });
       }
       
+      // Handle file attachment
+      let attachmentUrl: string | undefined;
+      let attachmentName: string | undefined;
+      let attachmentType: string | undefined;
+      let attachmentSize: number | undefined;
+      
+      if (file) {
+        const validation = validateChatAttachment(file);
+        if (!validation.valid) {
+          return res.status(400).json({ message: validation.error });
+        }
+        
+        try {
+          attachmentUrl = await uploadChatAttachment(
+            file.buffer,
+            roomId,
+            file.originalname,
+            file.mimetype
+          );
+          attachmentName = file.originalname;
+          attachmentType = file.mimetype;
+          attachmentSize = file.size;
+        } catch (uploadError: any) {
+          console.error('[Chat Upload] Failed:', uploadError);
+          return res.status(500).json({ message: "Failed to upload attachment. Please try again." });
+        }
+      }
+      
+      const messageBody = content.trim() || (file ? `Sent an attachment: ${file.originalname}` : '');
+      
       const message = await storage.createChatMessage({
         roomId,
         senderType: 'admin',
         senderId: adminId,
-        body: content.trim(),
+        body: messageBody,
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
+        attachmentSize,
       });
       
       // Emit socket event
@@ -4152,13 +4236,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         senderId: message.senderId,
         content: message.body,
         createdAt: message.createdAt!,
+        attachmentUrl: message.attachmentUrl || undefined,
+        attachmentName: message.attachmentName || undefined,
+        attachmentType: message.attachmentType || undefined,
+        attachmentSize: message.attachmentSize || undefined,
       }, room.influencerId);
       
       // Send email notification to influencer
       const influencer = await storage.getInfluencer(room.influencerId);
       if (influencer?.email) {
         try {
-          await sendChatMessageNotificationEmail(influencer.email, influencer.name || 'Creator', content.trim());
+          await sendChatMessageNotificationEmail(influencer.email, influencer.name || 'Creator', messageBody);
         } catch (emailError) {
           console.error('[Chat Email] Failed to send notification:', emailError);
         }
@@ -4169,7 +4257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         influencerId: room.influencerId,
         type: 'chat_message',
         title: 'New message from Collaboom',
-        message: content.trim().length > 50 ? content.trim().substring(0, 50) + '...' : content.trim(),
+        message: messageBody.length > 50 ? messageBody.substring(0, 50) + '...' : messageBody,
         channel: 'in_app',
       });
       emitNotificationCreated(room.influencerId);
@@ -4177,6 +4265,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(message);
     } catch (error: any) {
       console.error('[Admin Send Chat Message] Error:', error);
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ message: "File too large. Maximum size is 10MB." });
+      }
       return res.status(500).json({ message: error.message });
     }
   });
