@@ -4045,7 +4045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roomId,
         senderType: 'influencer',
         senderId: influencerId,
-        content: content.trim(),
+        body: content.trim(),
       });
       
       // Emit socket event
@@ -4054,8 +4054,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roomId: message.roomId,
         senderType: message.senderType as 'influencer' | 'admin',
         senderId: message.senderId,
-        content: message.content,
-        createdAt: message.createdAt,
+        content: message.body,
+        createdAt: message.createdAt!,
       }, influencerId);
       
       return res.json(message);
@@ -4141,7 +4141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roomId,
         senderType: 'admin',
         senderId: adminId,
-        content: content.trim(),
+        body: content.trim(),
       });
       
       // Emit socket event
@@ -4150,8 +4150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roomId: message.roomId,
         senderType: message.senderType as 'influencer' | 'admin',
         senderId: message.senderId,
-        content: message.content,
-        createdAt: message.createdAt,
+        content: message.body,
+        createdAt: message.createdAt!,
       }, room.influencerId);
       
       // Send email notification to influencer

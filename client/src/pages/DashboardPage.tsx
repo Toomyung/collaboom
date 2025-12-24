@@ -73,6 +73,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { ChatMessenger } from "@/components/ChatMessenger";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
@@ -2813,6 +2814,9 @@ export default function DashboardPage() {
         open={showPointsPopup}
         onClose={() => setShowPointsPopup(false)}
       />
+
+      {/* Floating Chat Messenger */}
+      <ChatMessenger />
     </MainLayout>
   );
 }
