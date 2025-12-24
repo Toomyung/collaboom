@@ -138,16 +138,17 @@ export default function SignupPage() {
             <div className="space-y-4">
               <Badge className="px-4 py-1.5 text-sm bg-primary/10 text-primary border-primary/20">
                 <Zap className="h-3 w-3 mr-1" />
-                100% Free to Join
+                Only 1,000 Followers Required
               </Badge>
               <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight">
-                Turn Your TikTok Into{" "}
+                Your First{" "}
                 <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                  Income
+                  Brand Deal
                 </span>
+                {" "}Starts Here
               </h1>
               <p className="text-lg text-muted-foreground">
-                Join 500+ creators earning free products and up to <span className="font-bold text-foreground">$30 per campaign</span> from top K-Beauty, Food & Lifestyle brands.
+                No 10K followers? No problem. Get real brand partnerships, free products, and paid campaigns — starting at just 1,000 followers.
               </p>
             </div>
 
@@ -222,9 +223,9 @@ export default function SignupPage() {
             <Card className="border-2 shadow-xl">
               <CardContent className="p-6 sm:p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-bold">Start Earning Today</h2>
+                  <h2 className="text-2xl font-bold">Get Your First Brand Deal</h2>
                   <p className="text-muted-foreground text-sm">
-                    Create your free account and apply to campaigns
+                    Create your free account in seconds
                   </p>
                 </div>
 
