@@ -15,12 +15,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageCircle, X, Send, Loader2, AlertTriangle } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, AlertTriangle, Paperclip, FileText, Image, Film, File, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useSocket } from "@/lib/socket";
 import { cn } from "@/lib/utils";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/pdf',
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip', 'application/x-zip-compressed',
+  'video/mp4',
+];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(mimeType: string) {
+  if (mimeType.startsWith('image/')) return Image;
+  if (mimeType.startsWith('video/')) return Film;
+  if (mimeType === 'application/pdf') return FileText;
+  return File;
+}
 
 interface ChatRoom {
   id: string;
@@ -37,6 +61,10 @@ interface ChatMessage {
   senderId: string;
   body: string;
   createdAt: string;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
+  attachmentType?: string | null;
+  attachmentSize?: number | null;
 }
 
 export function ChatMessenger() {
@@ -44,8 +72,11 @@ export function ChatMessenger() {
   const [message, setMessage] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { socket } = useSocket();
 
   // Listen for external open-chat events (e.g., from notification clicks)
@@ -79,14 +110,32 @@ export function ChatMessenger() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const res = await apiRequest("POST", `/api/chat/room/${room?.id}/messages`, { content });
+    mutationFn: async ({ content, file }: { content: string; file: File | null }) => {
+      const formData = new FormData();
+      formData.append('content', content);
+      if (file) {
+        formData.append('attachment', file);
+      }
+      const res = await fetch(`/api/chat/room/${room?.id}/messages`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Failed to send message');
+      }
       return res.json();
     },
     onSuccess: () => {
       setMessage("");
+      setSelectedFile(null);
+      setFileError(null);
       queryClient.invalidateQueries({ queryKey: [`/api/chat/room/${room?.id}/messages`] });
       queryClient.invalidateQueries({ queryKey: ['/api/chat/room'] });
+    },
+    onError: (error: Error) => {
+      setFileError(error.message);
     },
   });
 
@@ -142,14 +191,42 @@ export function ChatMessenger() {
     }
   }, [isOpen]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setFileError(null);
+    
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(`File too large. Maximum size is 10MB. (Current: ${formatFileSize(file.size)})`);
+      return;
+    }
+    
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setFileError('File type not supported. Allowed: images, PDF, CSV, Excel, ZIP, MP4');
+      return;
+    }
+    
+    setSelectedFile(file);
+    // Clear input to allow re-selecting same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    setFileError(null);
+  };
+
   const handleSendClick = () => {
-    if (!message.trim() || !room?.canSend) return;
+    if ((!message.trim() && !selectedFile) || !room?.canSend) return;
     setShowConfirmDialog(true);
   };
 
   const confirmSend = () => {
     setShowConfirmDialog(false);
-    sendMutation.mutate(message.trim());
+    sendMutation.mutate({ content: message.trim(), file: selectedFile });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -226,7 +303,48 @@ export function ChatMessenger() {
                             : "bg-muted"
                         )}
                       >
-                        <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                        {/* Attachment preview */}
+                        {msg.attachmentUrl && (
+                          <div className="mb-2">
+                            {msg.attachmentType?.startsWith('image/') ? (
+                              <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                                <img 
+                                  src={msg.attachmentUrl} 
+                                  alt={msg.attachmentName || 'Image'} 
+                                  className="max-w-full rounded-md max-h-[200px] object-cover"
+                                />
+                              </a>
+                            ) : (
+                              <a 
+                                href={msg.attachmentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className={cn(
+                                  "flex items-center gap-2 p-2 rounded-md",
+                                  msg.senderType === "influencer"
+                                    ? "bg-primary-foreground/10"
+                                    : "bg-background"
+                                )}
+                              >
+                                {(() => {
+                                  const FileIcon = getFileIcon(msg.attachmentType || '');
+                                  return <FileIcon className="h-4 w-4 flex-shrink-0" />;
+                                })()}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs truncate">{msg.attachmentName}</p>
+                                  {msg.attachmentSize && (
+                                    <p className="text-xs opacity-70">{formatFileSize(msg.attachmentSize)}</p>
+                                  )}
+                                </div>
+                                <Download className="h-3 w-3 flex-shrink-0 opacity-70" />
+                              </a>
+                            )}
+                          </div>
+                        )}
+                        {/* Message body - hide if it's just the default attachment message */}
+                        {msg.body && !msg.body.startsWith('Sent an attachment:') && (
+                          <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                        )}
                         <p className={cn(
                           "text-xs mt-1 opacity-70",
                           msg.senderType === "influencer" ? "text-right" : "text-left"
@@ -251,30 +369,83 @@ export function ChatMessenger() {
                   <p className="text-xs text-muted-foreground">
                     Be detailed - you can only send one message until we reply.
                   </p>
+                  
+                  {/* File error message */}
+                  {fileError && (
+                    <div className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
+                      {fileError}
+                    </div>
+                  )}
+                  
+                  {/* Selected file preview */}
+                  {selectedFile && (
+                    <div className="flex items-center gap-2 bg-muted px-2 py-1.5 rounded-md text-sm">
+                      {(() => {
+                        const FileIcon = getFileIcon(selectedFile.type);
+                        return <FileIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />;
+                      })()}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={removeSelectedFile}
+                        data-testid="button-remove-attachment"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  
                   <div className="flex gap-2">
-                    <Textarea
-                      ref={textareaRef}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                      placeholder="Describe your question or issue in detail..."
-                      className="flex-1 min-h-[60px] resize-none text-sm"
-                      disabled={sendMutation.isPending}
-                      data-testid="input-chat-message"
-                    />
-                    <Button
-                      size="icon"
-                      onClick={handleSendClick}
-                      disabled={!message.trim() || sendMutation.isPending}
-                      className="self-end"
-                      data-testid="button-send-message"
-                    >
-                      {sendMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </Button>
+                    <div className="flex-1 flex gap-1">
+                      <Textarea
+                        ref={textareaRef}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder="Describe your question or issue in detail..."
+                        className="flex-1 min-h-[60px] resize-none text-sm"
+                        disabled={sendMutation.isPending}
+                        data-testid="input-chat-message"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 self-end">
+                      {/* Hidden file input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.csv,.xls,.xlsx,.zip,.mp4"
+                        onChange={handleFileSelect}
+                        data-testid="input-file-attachment"
+                      />
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={sendMutation.isPending}
+                        title="Attach file (max 10MB)"
+                        data-testid="button-attach-file"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        onClick={handleSendClick}
+                        disabled={(!message.trim() && !selectedFile) || sendMutation.isPending}
+                        data-testid="button-send-message"
+                      >
+                        {sendMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
