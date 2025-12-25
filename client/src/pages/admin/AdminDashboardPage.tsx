@@ -149,7 +149,7 @@ export default function AdminDashboardPage() {
       icon: HelpCircle,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
-      link: "/admin/support",
+      link: "/admin/support-tickets",
       urgent: (stats?.openTickets ?? 0) > 0,
     },
     {
