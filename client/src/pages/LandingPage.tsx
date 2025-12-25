@@ -113,9 +113,9 @@ export default function LandingPage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="/campaigns" data-testid="link-browse-campaigns">
+                <Link href={user ? "/dashboard" : "/campaigns"} data-testid="link-browse-campaigns">
                   <Button size="lg" variant="outline" className="h-14 px-8 text-lg w-full sm:w-auto" data-testid="button-browse-campaigns">
-                    See Active Campaigns
+                    {user ? "View My Dashboard" : "See Active Campaigns"}
                   </Button>
                 </Link>
               </div>
