@@ -315,7 +315,12 @@ export function InfluencerDetailSheet({
     id: string;
     influencerId: string;
     lastMessageAt: string | null;
+    status: 'active' | 'ended' | 'expired';
+    firstMessageAt?: string | null;
+    expiresAt?: string | null;
   }
+  
+  const [showEndChatDialog, setShowEndChatDialog] = useState(false);
   
   interface ChatMessage {
     id: string;
@@ -368,6 +373,22 @@ export function InfluencerDetailSheet({
     onError: (error: Error) => {
       setChatFileError(error.message);
       toast({ title: "Failed to send message", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const endChatMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/admin/chat/room/${chatRoom?.id}/end`);
+    },
+    onSuccess: () => {
+      setShowEndChatDialog(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+      toast({ title: "Chat ended", description: "All messages have been deleted." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to end chat", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1660,9 +1681,29 @@ export function InfluencerDetailSheet({
 
                 <TabsContent value="messages" className="mt-4">
                   <div className="flex flex-col h-[400px]">
-                    <div className="flex items-center gap-2 pb-3 border-b mb-3">
-                      <MessageCircle className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Chat with {getInfluencerDisplayName(selectedInfluencer, "Influencer")}</span>
+                    <div className="flex items-center justify-between pb-3 border-b mb-3">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Chat with {getInfluencerDisplayName(selectedInfluencer, "Influencer")}</span>
+                        {chatRoom?.status === 'ended' && (
+                          <Badge variant="secondary" className="text-xs">Ended</Badge>
+                        )}
+                        {chatRoom?.status === 'expired' && (
+                          <Badge variant="secondary" className="text-xs">Expired</Badge>
+                        )}
+                      </div>
+                      {chatRoom && chatRoom.status === 'active' && chatMessages.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                          onClick={() => setShowEndChatDialog(true)}
+                          data-testid="button-end-chat"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          End chat
+                        </Button>
+                      )}
                     </div>
                     
                     <ScrollArea className="flex-1 pr-4">
@@ -2178,6 +2219,47 @@ export function InfluencerDetailSheet({
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* End Chat Confirmation Dialog */}
+      <AlertDialog open={showEndChatDialog} onOpenChange={setShowEndChatDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              End this chat?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                This will permanently delete all chat messages and attached files with <strong>{getInfluencerDisplayName(selectedInfluencer, "this influencer")}</strong>.
+              </p>
+              <p className="font-medium text-destructive">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-end-chat">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => endChatMutation.mutate()}
+              disabled={endChatMutation.isPending}
+              data-testid="button-confirm-end-chat"
+            >
+              {endChatMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Ending...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  End Chat
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
