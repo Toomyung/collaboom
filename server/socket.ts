@@ -49,7 +49,6 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
 
     if (session?.userId) {
       socket.join(`user:${session.userId}`);
-      console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
       
       if (session.userType === "admin") {
         socket.join("admin");
@@ -79,11 +78,8 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
           const session: SessionData = req.session;
           if (session?.userId) {
             socket.join(`user:${session.userId}`);
-            console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
-            
             if (session.userType === "admin") {
               socket.join("admin");
-              console.log(`[Socket.IO] Admin ${session.userId} joined admin room`);
             }
           }
         });
@@ -91,11 +87,8 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
         const session: SessionData = req.session;
         if (session?.userId) {
           socket.join(`user:${session.userId}`);
-          console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
-          
           if (session.userType === "admin") {
             socket.join("admin");
-            console.log(`[Socket.IO] Admin ${session.userId} joined admin room`);
           }
         }
       }
@@ -174,9 +167,6 @@ export function emitNotificationCreated(influencerId: string): void {
 // Generic emit to a specific user
 export function emitToUser(userId: string, event: string, data: any): void {
   if (!io) return;
-  const room = io.sockets.adapter.rooms.get(`user:${userId}`);
-  const socketCount = room ? room.size : 0;
-  console.log(`[Socket.IO] Emitting ${event} to user:${userId} (${socketCount} sockets in room)`, JSON.stringify(data));
   io.to(`user:${userId}`).emit(event, data);
 }
 
@@ -188,22 +178,8 @@ export function emitToAdmins(event: string, data: any): void {
 
 // Chat events
 export function emitChatMessage(roomId: string, message: ChatMessageData, influencerId: string): void {
-  if (!io) {
-    console.log('[Socket.IO Chat] io is null, cannot emit');
-    return;
-  }
+  if (!io) return;
   const data = { roomId, message };
-  
-  // Debug: Check how many sockets are in each room
-  const adminRoom = io.sockets.adapter.rooms.get('admin');
-  const userRoom = io.sockets.adapter.rooms.get(`user:${influencerId}`);
-  const chatRoom = io.sockets.adapter.rooms.get(`chat:${roomId}`);
-  
-  console.log(`[Socket.IO Chat] Emitting chat:message:new for room ${roomId}`);
-  console.log(`[Socket.IO Chat] - admin room: ${adminRoom?.size || 0} sockets`);
-  console.log(`[Socket.IO Chat] - user:${influencerId} room: ${userRoom?.size || 0} sockets`);
-  console.log(`[Socket.IO Chat] - chat:${roomId} room: ${chatRoom?.size || 0} sockets`);
-  console.log(`[Socket.IO Chat] - message sender: ${message.senderType}`);
   
   io.to(`chat:${roomId}`).emit("chat:message:new", data);
   io.to(`user:${influencerId}`).emit("chat:message:new", data);
