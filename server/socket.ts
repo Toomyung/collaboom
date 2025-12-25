@@ -188,8 +188,23 @@ export function emitToAdmins(event: string, data: any): void {
 
 // Chat events
 export function emitChatMessage(roomId: string, message: ChatMessageData, influencerId: string): void {
-  if (!io) return;
+  if (!io) {
+    console.log('[Socket.IO Chat] io is null, cannot emit');
+    return;
+  }
   const data = { roomId, message };
+  
+  // Debug: Check how many sockets are in each room
+  const adminRoom = io.sockets.adapter.rooms.get('admin');
+  const userRoom = io.sockets.adapter.rooms.get(`user:${influencerId}`);
+  const chatRoom = io.sockets.adapter.rooms.get(`chat:${roomId}`);
+  
+  console.log(`[Socket.IO Chat] Emitting chat:message:new for room ${roomId}`);
+  console.log(`[Socket.IO Chat] - admin room: ${adminRoom?.size || 0} sockets`);
+  console.log(`[Socket.IO Chat] - user:${influencerId} room: ${userRoom?.size || 0} sockets`);
+  console.log(`[Socket.IO Chat] - chat:${roomId} room: ${chatRoom?.size || 0} sockets`);
+  console.log(`[Socket.IO Chat] - message sender: ${message.senderType}`);
+  
   io.to(`chat:${roomId}`).emit("chat:message:new", data);
   io.to(`user:${influencerId}`).emit("chat:message:new", data);
   io.to("admin").emit("chat:message:new", data);
