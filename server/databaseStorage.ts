@@ -1004,6 +1004,9 @@ export class DatabaseStorage implements IStorage {
     shippingPending: number;
     uploadPending: number;
     openIssues: number;
+    pendingPayouts: number;
+    openTickets: number;
+    unreadChats: number;
   }> {
     const [activeCampaignsResult] = await db.select({ count: sql<number>`count(*)::int` })
       .from(campaigns).where(eq(campaigns.status, 'active'));
@@ -1020,13 +1023,161 @@ export class DatabaseStorage implements IStorage {
     const [openIssuesResult] = await db.select({ count: sql<number>`count(*)::int` })
       .from(shippingIssues).where(eq(shippingIssues.status, 'open'));
 
+    const [pendingPayoutsResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(payoutRequests).where(eq(payoutRequests.status, 'pending'));
+
+    const [openTicketsResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(supportTickets).where(eq(supportTickets.status, 'open'));
+
+    const [unreadChatsResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(chatMessages)
+      .innerJoin(chatRooms, eq(chatMessages.roomId, chatRooms.id))
+      .where(and(
+        eq(chatMessages.senderType, 'influencer'),
+        sql`${chatMessages.readAt} IS NULL`,
+        eq(chatRooms.status, 'active')
+      ));
+
     return {
       activeCampaigns: activeCampaignsResult?.count ?? 0,
       pendingApplicants: pendingApplicantsResult?.count ?? 0,
       shippingPending: shippingPendingResult?.count ?? 0,
       uploadPending: uploadPendingResult?.count ?? 0,
       openIssues: openIssuesResult?.count ?? 0,
+      pendingPayouts: pendingPayoutsResult?.count ?? 0,
+      openTickets: openTicketsResult?.count ?? 0,
+      unreadChats: unreadChatsResult?.count ?? 0,
     };
+  }
+
+  async getRecentActivity(limit: number = 10): Promise<Array<{
+    id: string;
+    type: 'application' | 'upload' | 'payout' | 'ticket' | 'chat';
+    message: string;
+    timestamp: Date;
+    link?: string;
+  }>> {
+    const activities: Array<{
+      id: string;
+      type: 'application' | 'upload' | 'payout' | 'ticket' | 'chat';
+      message: string;
+      timestamp: Date;
+      link?: string;
+    }> = [];
+
+    // Recent pending applications (last 24 hours)
+    const recentApps = await db.select({
+      id: applications.id,
+      createdAt: applications.createdAt,
+      influencerId: applications.influencerId,
+      campaignId: applications.campaignId,
+    })
+      .from(applications)
+      .where(eq(applications.status, 'pending'))
+      .orderBy(desc(applications.createdAt))
+      .limit(5);
+
+    for (const app of recentApps) {
+      const [influencer] = await db.select({ firstName: influencers.firstName, lastName: influencers.lastName, tiktokHandle: influencers.tiktokHandle })
+        .from(influencers).where(eq(influencers.id, app.influencerId));
+      const [campaign] = await db.select({ name: campaigns.name })
+        .from(campaigns).where(eq(campaigns.id, app.campaignId));
+      
+      const name = influencer?.firstName ? `${influencer.firstName} ${influencer.lastName || ''}`.trim() : influencer?.tiktokHandle || 'Unknown';
+      activities.push({
+        id: app.id,
+        type: 'application',
+        message: `${name} applied to "${campaign?.name || 'Unknown Campaign'}"`,
+        timestamp: app.createdAt || new Date(),
+        link: `/admin/influencers?search=${influencer?.tiktokHandle || ''}`,
+      });
+    }
+
+    // Recent uploads awaiting verification
+    const recentUploads = await db.select({
+      id: uploads.id,
+      createdAt: uploads.createdAt,
+      applicationId: uploads.applicationId,
+    })
+      .from(uploads)
+      .where(and(
+        eq(uploads.status, 'uploaded'),
+        sql`${uploads.verifiedAt} IS NULL`
+      ))
+      .orderBy(desc(uploads.createdAt))
+      .limit(5);
+
+    for (const upload of recentUploads) {
+      const [app] = await db.select({ influencerId: applications.influencerId, campaignId: applications.campaignId })
+        .from(applications).where(eq(applications.id, upload.applicationId));
+      if (app) {
+        const [influencer] = await db.select({ firstName: influencers.firstName, lastName: influencers.lastName, tiktokHandle: influencers.tiktokHandle })
+          .from(influencers).where(eq(influencers.id, app.influencerId));
+        const name = influencer?.firstName ? `${influencer.firstName} ${influencer.lastName || ''}`.trim() : influencer?.tiktokHandle || 'Unknown';
+        activities.push({
+          id: upload.id,
+          type: 'upload',
+          message: `${name} submitted content for verification`,
+          timestamp: upload.createdAt || new Date(),
+          link: `/admin/campaigns?tab=uploads`,
+        });
+      }
+    }
+
+    // Recent payout requests
+    const recentPayouts = await db.select({
+      id: payoutRequests.id,
+      createdAt: payoutRequests.createdAt,
+      influencerId: payoutRequests.influencerId,
+      amount: payoutRequests.amount,
+    })
+      .from(payoutRequests)
+      .where(eq(payoutRequests.status, 'pending'))
+      .orderBy(desc(payoutRequests.createdAt))
+      .limit(5);
+
+    for (const payout of recentPayouts) {
+      const [influencer] = await db.select({ firstName: influencers.firstName, lastName: influencers.lastName, tiktokHandle: influencers.tiktokHandle })
+        .from(influencers).where(eq(influencers.id, payout.influencerId));
+      const name = influencer?.firstName ? `${influencer.firstName} ${influencer.lastName || ''}`.trim() : influencer?.tiktokHandle || 'Unknown';
+      activities.push({
+        id: payout.id,
+        type: 'payout',
+        message: `${name} requested $${payout.amount} payout`,
+        timestamp: payout.createdAt || new Date(),
+        link: `/admin/payouts`,
+      });
+    }
+
+    // Recent support tickets
+    const recentTickets = await db.select({
+      id: supportTickets.id,
+      createdAt: supportTickets.createdAt,
+      influencerId: supportTickets.influencerId,
+      subject: supportTickets.subject,
+    })
+      .from(supportTickets)
+      .where(eq(supportTickets.status, 'open'))
+      .orderBy(desc(supportTickets.createdAt))
+      .limit(5);
+
+    for (const ticket of recentTickets) {
+      const [influencer] = await db.select({ firstName: influencers.firstName, lastName: influencers.lastName, tiktokHandle: influencers.tiktokHandle })
+        .from(influencers).where(eq(influencers.id, ticket.influencerId));
+      const name = influencer?.firstName ? `${influencer.firstName} ${influencer.lastName || ''}`.trim() : influencer?.tiktokHandle || 'Unknown';
+      activities.push({
+        id: ticket.id,
+        type: 'ticket',
+        message: `${name}: "${ticket.subject}"`,
+        timestamp: ticket.createdAt || new Date(),
+        link: `/admin/support`,
+      });
+    }
+
+    // Sort by timestamp and limit
+    return activities
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, limit);
   }
 
   async verifyAdminPassword(id: string, password: string): Promise<boolean> {

@@ -154,7 +154,17 @@ export interface IStorage {
     shippingPending: number;
     uploadPending: number;
     openIssues: number;
+    pendingPayouts: number;
+    openTickets: number;
+    unreadChats: number;
   }>;
+  getRecentActivity(limit?: number): Promise<Array<{
+    id: string;
+    type: 'application' | 'upload' | 'payout' | 'ticket' | 'chat';
+    message: string;
+    timestamp: Date;
+    link?: string;
+  }>>;
   
   // Auth
   verifyAdminPassword(id: string, password: string): Promise<boolean>;
@@ -1171,10 +1181,15 @@ export class MemStorage implements IStorage {
     shippingPending: number;
     uploadPending: number;
     openIssues: number;
+    pendingPayouts: number;
+    openTickets: number;
+    unreadChats: number;
   }> {
     const campaigns = Array.from(this.campaigns.values());
     const applications = Array.from(this.applications.values());
     const issues = Array.from(this.shippingIssues.values());
+    const payouts = Array.from(this.payoutRequests.values());
+    const tickets = Array.from(this.supportTickets.values());
     
     return {
       activeCampaigns: campaigns.filter(c => c.status === 'active').length,
@@ -1182,7 +1197,21 @@ export class MemStorage implements IStorage {
       shippingPending: applications.filter(a => a.status === 'approved').length,
       uploadPending: applications.filter(a => a.status === 'delivered').length,
       openIssues: issues.filter(i => i.status === 'open').length,
+      pendingPayouts: payouts.filter(p => p.status === 'pending').length,
+      openTickets: tickets.filter(t => t.status === 'open').length,
+      unreadChats: 0, // MemStorage doesn't track chat messages
     };
+  }
+
+  async getRecentActivity(limit: number = 10): Promise<Array<{
+    id: string;
+    type: 'application' | 'upload' | 'payout' | 'ticket' | 'chat';
+    message: string;
+    timestamp: Date;
+    link?: string;
+  }>> {
+    // MemStorage stub - returns empty array
+    return [];
   }
 
   // Auth helpers

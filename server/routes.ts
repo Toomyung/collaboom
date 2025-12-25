@@ -1453,9 +1453,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(stats);
   });
 
-  // Admin activity (mock)
+  // Admin activity - real data
   app.get("/api/admin/activity", requireAuth("admin"), async (req, res) => {
-    return res.json([]);
+    try {
+      const activity = await storage.getRecentActivity(10);
+      return res.json(activity);
+    } catch (error: any) {
+      console.error('[Admin Activity] Error:', error);
+      return res.json([]);
+    }
   });
 
   // Get all campaigns (admin)
