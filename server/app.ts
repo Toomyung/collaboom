@@ -11,6 +11,7 @@ import { registerRoutes } from "./routes";
 import { seedDatabase } from "./seed";
 import { setupSecurityMiddleware, apiLimiter } from "./security";
 import { runMigrations } from "./migrate";
+import { startChatLifecycleService } from "./chatLifecycleService";
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -102,5 +103,6 @@ export default async function runApp(
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    startChatLifecycleService();
   });
 }
