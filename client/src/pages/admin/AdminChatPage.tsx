@@ -15,7 +15,18 @@ import {
   Send,
   Loader2,
   ArrowLeft,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -52,6 +63,7 @@ export default function AdminChatPage() {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomWithDetails | null>(null);
   const [message, setMessage] = useState("");
   const [selectedInfluencerId, setSelectedInfluencerId] = useState<string | null>(null);
+  const [showEndChatDialog, setShowEndChatDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -72,8 +84,8 @@ export default function AdminChatPage() {
     },
     onSuccess: () => {
       setMessage("");
-      queryClient.invalidateQueries({ queryKey: [`/api/chat/room/${selectedRoom?.id}/messages`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chat/room/${selectedRoom?.id}/messages`], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"], refetchType: 'active' });
     },
     onError: (error: Error) => {
       toast({
@@ -90,6 +102,21 @@ export default function AdminChatPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+    },
+  });
+
+  const endChatMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/admin/chat/room/${selectedRoom?.id}/end`);
+    },
+    onSuccess: () => {
+      setShowEndChatDialog(false);
+      setSelectedRoom(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"], refetchType: 'active' });
+      toast({ title: "Chat ended", description: "All messages have been deleted." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to end chat", description: error.message, variant: "destructive" });
     },
   });
 
@@ -281,6 +308,18 @@ export default function AdminChatPage() {
                       </p>
                     )}
                   </div>
+                  {messages.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                      onClick={() => setShowEndChatDialog(true)}
+                      data-testid="button-end-chat"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      End chat
+                    </Button>
+                  )}
                 </div>
 
                 <ScrollArea className="flex-1 p-4">
@@ -374,6 +413,46 @@ export default function AdminChatPage() {
         open={!!selectedInfluencerId}
         onClose={() => setSelectedInfluencerId(null)}
       />
+
+      <AlertDialog open={showEndChatDialog} onOpenChange={setShowEndChatDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              End this chat?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                This will permanently delete all chat messages and attached files with <strong>{getInfluencerDisplayName(selectedRoom?.influencer, "this influencer")}</strong>.
+              </p>
+              <p className="font-medium text-destructive">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-end-chat">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => endChatMutation.mutate()}
+              disabled={endChatMutation.isPending}
+              data-testid="button-confirm-end-chat"
+            >
+              {endChatMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Ending...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  End Chat
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
