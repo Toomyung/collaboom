@@ -482,19 +482,25 @@ export function InfluencerDetailSheet({
     if (!socket || !influencerId) return;
 
     const handleNewMessage = (data: { roomId: string; message: ChatMessage }) => {
-      // Update messages if this is the currently open chat
-      if (chatRoom?.id && data.roomId === chatRoom.id) {
-        queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom.id}/messages`], refetchType: 'active' });
-      }
-      // Always refresh the chat room data to update unread badge on Messages tab
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`], refetchType: 'active' });
+      console.log('[Chat Socket] Admin received message:', { roomId: data.roomId, sender: data.message?.senderType });
+      // ALWAYS invalidate the messages for the incoming roomId (avoid stale closure issue)
+      // This ensures new messages appear regardless of chatRoom loading state
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/admin/chat/room/${data.roomId}/messages`], 
+        refetchType: 'active' 
+      });
+      // Also refresh the chat room data to update unread badge on Messages tab
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/admin/chat/room/${influencerId}`], 
+        refetchType: 'active' 
+      });
     };
 
     socket.on("chat:message:new", handleNewMessage);
     return () => {
       socket.off("chat:message:new", handleNewMessage);
     };
-  }, [socket, chatRoom?.id, influencerId]);
+  }, [socket, influencerId]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
