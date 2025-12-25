@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useSocket } from "@/lib/socket";
+import { queryClient } from "@/lib/queryClient";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -60,6 +62,36 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["Campaigns"]);
+  const { socket } = useSocket();
+
+  // Global socket listener for real-time chat notifications
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewChatMessage = (data: { roomId: string; message: { senderType: string } }) => {
+      // Only refresh when influencer sends a message (admin already sees their own messages)
+      if (data.message.senderType === 'influencer') {
+        // Refresh unread count badge
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/admin/chat/unread-count"], 
+          refetchType: 'active' 
+        });
+        // Refresh influencers list to update unread badges and sorting
+        queryClient.invalidateQueries({ 
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.startsWith('/api/admin/influencers');
+          },
+          refetchType: 'active'
+        });
+      }
+    };
+
+    socket.on("chat:message:new", handleNewChatMessage);
+    return () => {
+      socket.off("chat:message:new", handleNewChatMessage);
+    };
+  }, [socket]);
 
   // Fetch all issues, support tickets, payout requests, and unread chat count for badges
   const { data: allIssues } = useQuery<any[]>({

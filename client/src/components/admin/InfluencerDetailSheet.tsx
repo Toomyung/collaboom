@@ -336,9 +336,10 @@ export function InfluencerDetailSheet({
     attachmentSize?: number | null;
   }
 
+  // Fetch chat room whenever sheet is open (for unread badge on Messages tab)
   const { data: chatRoom, isLoading: chatRoomLoading } = useQuery<ChatRoom>({
     queryKey: [`/api/admin/chat/room/${influencerId}`],
-    enabled: !!influencerId && open && activeTab === "messages",
+    enabled: !!influencerId && open,
   });
 
   const { data: chatMessages = [], isLoading: chatMessagesLoading } = useQuery<ChatMessage[]>({
@@ -478,19 +479,22 @@ export function InfluencerDetailSheet({
 
   // Socket listener for real-time chat updates
   useEffect(() => {
-    if (!socket || !chatRoom?.id) return;
+    if (!socket || !influencerId) return;
 
     const handleNewMessage = (data: { roomId: string; message: ChatMessage }) => {
-      if (data.roomId === chatRoom.id) {
+      // Update messages if this is the currently open chat
+      if (chatRoom?.id && data.roomId === chatRoom.id) {
         queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom.id}/messages`], refetchType: 'active' });
       }
+      // Always refresh the chat room data to update unread badge on Messages tab
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`], refetchType: 'active' });
     };
 
     socket.on("chat:message:new", handleNewMessage);
     return () => {
       socket.off("chat:message:new", handleNewMessage);
     };
-  }, [socket, chatRoom?.id]);
+  }, [socket, chatRoom?.id, influencerId]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -1340,8 +1344,13 @@ export function InfluencerDetailSheet({
                   <TabsTrigger value="history" data-testid="tab-history">
                     <History className="h-4 w-4" />
                   </TabsTrigger>
-                  <TabsTrigger value="messages" data-testid="tab-messages">
+                  <TabsTrigger value="messages" data-testid="tab-messages" className="relative">
                     <MessageCircle className="h-4 w-4" />
+                    {(chatRoom?.adminUnreadCount ?? 0) > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
+                        {chatRoom?.adminUnreadCount}
+                      </span>
+                    )}
                   </TabsTrigger>
                   <TabsTrigger value="notes" data-testid="tab-notes">
                     <MessageSquare className="h-4 w-4" />
