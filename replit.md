@@ -155,13 +155,15 @@ Manages transitions for:
 ## Recent Changes
 
 ### December 2024
-- **Real-time Chat System:** Messenger-style chat between influencers and admins
+- **Real-time Chat System:** Messenger-style 1:1 chat between influencers and admins
   - Floating chat button on influencer dashboard
   - Message gating: influencers can only send one message, then must wait for admin reply
-  - Admin chat page (/admin/chat) with conversation list and unread badges
+  - Chat accessed through InfluencerDetailSheet (Messages tab), NOT a separate page
+  - Real-time message delivery via Socket.IO with global handler in `socket.tsx`
   - Email notifications when admin sends a message
-  - Socket.IO for real-time message delivery
   - Database tables: `chat_rooms`, `chat_messages`
+  - **Chat Room Auto-Reactivation:** Ended rooms automatically reactivate when influencer sends message
+  - **Unread Badge System:** Red badge on Influencers tab and individual influencer cards
   - **File Attachments:** Support for file uploads in chat (10MB limit)
     - Allowed types: Images (JPG, PNG, GIF, WEBP), PDF, CSV, Excel (XLS, XLSX), ZIP, MP4
     - Files stored in Supabase Storage under `chat/{roomId}/` directory

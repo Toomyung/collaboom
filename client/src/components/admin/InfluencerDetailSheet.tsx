@@ -104,7 +104,6 @@ function getFileIcon(mimeType: string) {
 }
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useSocket } from "@/lib/socket";
 import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -276,7 +275,6 @@ export function InfluencerDetailSheet({
   const [chatFileError, setChatFileError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatFileInputRef = useRef<HTMLInputElement>(null);
-  const { socket } = useSocket();
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -476,9 +474,6 @@ export function InfluencerDetailSheet({
       toast({ title: "Failed to end chat", description: error.message, variant: "destructive" });
     },
   });
-
-  // Note: chat:message:new is now handled globally in socket.tsx
-  // This ensures messages are refreshed regardless of component mount state
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,8 +24,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useSocket } from "@/lib/socket";
-import { queryClient } from "@/lib/queryClient";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -62,10 +60,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["Campaigns"]);
-  const { socket } = useSocket();
-
-  // Note: chat:message:new is now handled globally in socket.tsx
-  // This ensures messages are refreshed regardless of which component is mounted
 
   // Fetch all issues, support tickets, payout requests, and unread chat count for badges
   const { data: allIssues } = useQuery<any[]>({

@@ -132,7 +132,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     // Global chat message handler - ensures messages are ALWAYS refreshed
     socketInstance.on("chat:message:new", (data: { roomId: string; message: { senderType: string } }) => {
-      console.log("[Socket] Chat message received:", { roomId: data.roomId, sender: data.message?.senderType });
       // Invalidate the specific room's messages query
       queryClient.invalidateQueries({ 
         queryKey: [`/api/admin/chat/room/${data.roomId}/messages`], 
