@@ -212,7 +212,8 @@ export class DatabaseStorage implements IStorage {
       OFFSET ${offset}
     `;
     
-    const influencerResults = await db.execute(cteQuery) as any[];
+    const cteResult = await db.execute(cteQuery);
+    const influencerResults = (cteResult.rows || cteResult) as any[];
 
     // Get total count - handle empty conditions separately to avoid where(undefined)
     let countResult;
