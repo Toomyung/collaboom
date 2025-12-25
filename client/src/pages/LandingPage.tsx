@@ -107,9 +107,9 @@ export default function LandingPage() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/signup" data-testid="link-hero-signup">
+                <Link href={user ? "/campaigns" : "/signup"} data-testid="link-hero-signup">
                   <Button size="lg" className="h-14 px-8 text-lg w-full sm:w-auto" data-testid="button-hero-cta">
-                    Get Your First Brand Deal
+                    {user ? "Browse Campaigns" : "Get Your First Brand Deal"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
@@ -620,9 +620,9 @@ export default function LandingPage() {
               Don't wait for 10K followers. Start building your brand portfolio today — free products, paid campaigns, and real experience.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup" data-testid="link-final-cta">
+              <Link href={user ? "/campaigns" : "/signup"} data-testid="link-final-cta">
                 <Button size="lg" className="h-16 px-12 text-xl" data-testid="button-final-cta">
-                  Get Your First Brand Deal
+                  {user ? "Browse Campaigns" : "Get Your First Brand Deal"}
                   <ArrowRight className="ml-2 h-6 w-6" />
                 </Button>
               </Link>
