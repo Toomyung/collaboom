@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -524,6 +524,8 @@ export type PayoutRequestWithDetails = PayoutRequest & {
 };
 
 // Chat Rooms (1:1 chat between influencer and admin team)
+export const chatRoomStatusEnum = pgEnum("chat_room_status", ["active", "ended", "expired"]);
+
 export const chatRooms = pgTable("chat_rooms", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   influencerId: varchar("influencer_id").notNull().unique(),
@@ -531,6 +533,11 @@ export const chatRooms = pgTable("chat_rooms", {
   lastAdminReadAt: timestamp("last_admin_read_at"),
   lastInfluencerReadAt: timestamp("last_influencer_read_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  firstMessageAt: timestamp("first_message_at"),
+  expiresAt: timestamp("expires_at"),
+  status: chatRoomStatusEnum("status").default("active").notNull(),
+  endedBy: varchar("ended_by"),
+  endedAt: timestamp("ended_at"),
 });
 
 export const insertChatRoomSchema = createInsertSchema(chatRooms).pick({
