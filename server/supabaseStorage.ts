@@ -270,3 +270,43 @@ export async function uploadChatAttachment(
   console.log('[Chat Upload] Uploaded:', filePath);
   return publicUrl;
 }
+
+// Delete all files in a chat room directory
+export async function deleteChatRoomFiles(roomId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const folderPath = `chat/${roomId}`;
+  
+  try {
+    // List all files in the chat room folder
+    const { data: files, error: listError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list(folderPath);
+    
+    if (listError) {
+      console.error('[Chat Cleanup] Error listing files:', listError);
+      return;
+    }
+    
+    if (!files || files.length === 0) {
+      console.log('[Chat Cleanup] No files to delete for room:', roomId);
+      return;
+    }
+    
+    // Build array of file paths to delete
+    const filePaths = files.map(file => `${folderPath}/${file.name}`);
+    
+    // Delete all files
+    const { error: deleteError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove(filePaths);
+    
+    if (deleteError) {
+      console.error('[Chat Cleanup] Error deleting files:', deleteError);
+      return;
+    }
+    
+    console.log('[Chat Cleanup] Deleted', filePaths.length, 'files for room:', roomId);
+  } catch (error) {
+    console.error('[Chat Cleanup] Unexpected error:', error);
+  }
+}

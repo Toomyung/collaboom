@@ -1155,6 +1155,8 @@ export class DatabaseStorage implements IStorage {
   async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
     const [newMessage] = await db.insert(chatMessages).values(message).returning();
     await this.updateChatRoomLastMessage(message.roomId);
+    // Set first message timestamp for 14-day expiry tracking
+    await this.setFirstMessageTimestamp(message.roomId);
     return newMessage;
   }
 
@@ -1226,5 +1228,50 @@ export class DatabaseStorage implements IStorage {
     const lastMessage = await this.getLastChatMessage(roomId);
     if (!lastMessage) return true;
     return lastMessage.senderType !== 'influencer';
+  }
+
+  // Chat Lifecycle Management
+  async endChatRoom(roomId: string, adminId: string): Promise<void> {
+    const now = new Date();
+    await db.update(chatRooms)
+      .set({
+        status: 'ended',
+        endedBy: adminId,
+        endedAt: now,
+      })
+      .where(eq(chatRooms.id, roomId));
+    
+    // Delete all messages in the room
+    await this.deleteChatMessagesByRoom(roomId);
+  }
+
+  async getExpiredChatRooms(): Promise<ChatRoom[]> {
+    const now = new Date();
+    const expiredRooms = await db.select()
+      .from(chatRooms)
+      .where(and(
+        eq(chatRooms.status, 'active'),
+        sql`${chatRooms.expiresAt} IS NOT NULL AND ${chatRooms.expiresAt} <= ${now}`
+      ));
+    return expiredRooms;
+  }
+
+  async deleteChatMessagesByRoom(roomId: string): Promise<void> {
+    await db.delete(chatMessages).where(eq(chatMessages.roomId, roomId));
+  }
+
+  async setFirstMessageTimestamp(roomId: string): Promise<void> {
+    const room = await this.getChatRoom(roomId);
+    if (!room || room.firstMessageAt) return; // Already set
+    
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
+    
+    await db.update(chatRooms)
+      .set({
+        firstMessageAt: now,
+        expiresAt: expiresAt,
+      })
+      .where(eq(chatRooms.id, roomId));
   }
 }
