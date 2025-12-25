@@ -367,8 +367,9 @@ export function InfluencerDetailSheet({
       setChatMessage("");
       setSelectedChatFile(null);
       setChatFileError(null);
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`], refetchType: 'active' });
     },
     onError: (error: Error) => {
       setChatFileError(error.message);
@@ -382,9 +383,9 @@ export function InfluencerDetailSheet({
     },
     onSuccess: () => {
       setShowEndChatDialog(false);
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"], refetchType: 'active' });
       toast({ title: "Chat ended", description: "All messages have been deleted." });
     },
     onError: (error: Error) => {
