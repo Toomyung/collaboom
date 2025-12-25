@@ -41,13 +41,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     socketInstance.on("campaign:created", (data: { campaignId: string }) => {
-      console.log("[Socket] Campaign created:", data.campaignId);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"], refetchType: 'active' });
     });
 
     socketInstance.on("campaign:updated", (data: { campaignId: string }) => {
-      console.log("[Socket] Campaign updated:", data.campaignId);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"], refetchType: 'active' });
@@ -55,34 +53,27 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     socketInstance.on("campaign:deleted", (data: { campaignId: string }) => {
-      console.log("[Socket] Campaign deleted:", data.campaignId);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"], refetchType: 'active' });
     });
 
     socketInstance.on("comment:created", (data: { campaignId: string; applicationId: string }) => {
-      console.log("[Socket] Comment created:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId, "comments"], refetchType: 'active' });
-      // Invalidate admin issues list for real-time updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/issues"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId, "applications"], refetchType: 'active' });
     });
 
     socketInstance.on("comment:updated", (data: { campaignId: string; applicationId: string; issueId: string; status: string }) => {
-      console.log("[Socket] Comment updated:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId, "comments"], refetchType: 'active' });
-      // Invalidate influencer's issues list
       queryClient.invalidateQueries({ queryKey: ["/api/my-issues"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"], refetchType: 'active' });
-      // Invalidate admin issues list
       queryClient.invalidateQueries({ queryKey: ["/api/admin/issues"], refetchType: 'active' });
     });
 
     socketInstance.on("comment:deleted", (data: { campaignId: string; applicationId: string }) => {
-      console.log("[Socket] Comment deleted:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/applications", data.applicationId, "comments"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/issues"], refetchType: 'active' });
@@ -90,14 +81,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     socketInstance.on("application:created", (data: { campaignId: string; applicationId: string }) => {
-      console.log("[Socket] Application created:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", data.campaignId], refetchType: 'active' });
     });
 
     socketInstance.on("application:updated", (data: { campaignId: string; applicationId: string; status?: string }) => {
-      console.log("[Socket] Application updated:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns", data.campaignId], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/applications/my-ids"], refetchType: 'active' });
@@ -112,20 +101,17 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     socketInstance.on("influencer:updated", (data: { influencerId: string }) => {
-      console.log("[Socket] Influencer updated:", data.influencerId);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/profile"], refetchType: 'active' });
     });
 
     socketInstance.on("score:updated", (data: { influencerId: string; newScore: number; tier: string }) => {
-      console.log("[Socket] Score updated:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/profile"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"], refetchType: 'active' });
     });
 
     socketInstance.on("notification:created", (data: { influencerId: string }) => {
-      console.log("[Socket] Notification created:", data.influencerId);
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"], refetchType: 'active' });
     });
@@ -187,8 +173,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   const joinUserRoom = useCallback(() => {
     if (socket) {
-      // Disconnect and reconnect to get fresh session cookie
-      console.log("[Socket] Reconnecting to refresh session...");
       socket.disconnect();
       socket.connect();
     }

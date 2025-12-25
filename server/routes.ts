@@ -4356,7 +4356,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // End the chat room (sets status and deletes messages)
       await storage.endChatRoom(roomId, adminId);
       
-      console.log('[Chat End] Room ended by admin:', adminId, 'Room:', roomId);
       return res.json({ success: true, message: "Chat room ended successfully" });
     } catch (error: any) {
       console.error('[Admin End Chat] Error:', error);
