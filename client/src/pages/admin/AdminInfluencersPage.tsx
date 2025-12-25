@@ -239,20 +239,18 @@ export default function AdminInfluencersPage() {
                       key={inf.id}
                       className={cn(
                         "cursor-pointer",
-                        inf.unreadChatCount && inf.unreadChatCount > 0 && "bg-red-50 dark:bg-red-950/20"
+                        (inf.unreadChatCount ?? 0) > 0 && "bg-red-50 dark:bg-red-950/20"
                       )}
                       onClick={() => handleOpenDrawer(inf)}
                       data-testid={`row-influencer-${inf.id}`}
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {inf.unreadChatCount && inf.unreadChatCount > 0 && (
-                            <div className="relative flex-shrink-0">
-                              <MessageCircle className="h-4 w-4 text-red-500" />
-                              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-3.5 min-w-[14px] flex items-center justify-center px-0.5">
-                                {inf.unreadChatCount}
-                              </span>
-                            </div>
+                          {(inf.unreadChatCount ?? 0) > 0 && (
+                            <Badge className="bg-red-500 hover:bg-red-600 text-white border-red-600 gap-1 flex-shrink-0">
+                              <MessageCircle className="h-3 w-3" />
+                              <span>{inf.unreadChatCount}</span>
+                            </Badge>
                           )}
                           <div>
                             <p className="font-medium text-primary hover:underline">{getInfluencerDisplayName(inf, "Unnamed")}</p>
