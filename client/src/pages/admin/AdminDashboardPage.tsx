@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
       link: "/admin/influencers",
-      urgent: (stats?.unreadChats ?? 0) > 0,
+      urgent: false, // Not urgent - admin reads messages in influencer detail to clear
     },
     {
       title: "Shipping Issues",
