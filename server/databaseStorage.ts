@@ -1208,7 +1208,25 @@ export class DatabaseStorage implements IStorage {
     await this.updateChatRoomLastMessage(message.roomId);
     // Set first message timestamp for 14-day expiry tracking
     await this.setFirstMessageTimestamp(message.roomId);
+    // Reactivate room if it was ended and influencer sends a message
+    if (message.senderType === 'influencer') {
+      await this.reactivateChatRoomIfEnded(message.roomId);
+    }
     return newMessage;
+  }
+
+  async reactivateChatRoomIfEnded(roomId: string): Promise<void> {
+    const room = await this.getChatRoom(roomId);
+    if (room && room.status === 'ended') {
+      await db.update(chatRooms)
+        .set({ 
+          status: 'active',
+          firstMessageAt: new Date(), // Reset expiry timer
+          expiresAt: null // Will be set by lifecycle service
+        })
+        .where(eq(chatRooms.id, roomId));
+      console.log(`[Chat] Reactivated ended chat room ${roomId}`);
+    }
   }
 
   async updateChatRoomLastMessage(roomId: string): Promise<void> {
