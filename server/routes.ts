@@ -4178,6 +4178,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get chat messages for a room (admin)
+  app.get("/api/admin/chat/room/:roomId/messages", requireAuth("admin"), async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const { limit, before } = req.query;
+      
+      const room = await storage.getChatRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Chat room not found" });
+      }
+      
+      const messages = await storage.getChatMessages(roomId, {
+        limit: limit ? parseInt(limit as string) : 50,
+        before: before ? new Date(before as string) : undefined,
+      });
+      
+      return res.json(messages.reverse());
+    } catch (error: any) {
+      console.error('[Get Admin Chat Messages] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Send chat message (admin) - supports file attachments
   app.post("/api/admin/chat/room/:roomId/messages", requireAuth("admin"), conditionalChatUpload, async (req, res) => {
     try {
