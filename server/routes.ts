@@ -8,7 +8,7 @@ import { updateProfileSchema, insertCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail, sendApplicationApprovedEmail, sendShippingNotificationEmail, sendAdminReplyEmail, sendUploadVerifiedEmail, sendSupportTicketResponseEmail, sendAccountSuspendedEmail, sendAccountUnsuspendedEmail, sendAccountBlockedEmail, sendDirectAdminEmail, sendTierUpgradeEmail } from "./emailService";
-import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl, uploadChatAttachment, validateChatAttachment } from "./supabaseStorage";
+import { ensureBucketExists, uploadMultipleImages, isBase64Image, listAllStorageImages, deleteImagesFromStorage, extractFilePathFromUrl, uploadChatAttachment, validateChatAttachment, deleteChatRoomFiles } from "./supabaseStorage";
 import multer from "multer";
 
 // Multer configuration for chat attachments (10MB limit)
@@ -4289,6 +4289,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('[Admin Mark Chat Read] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // End chat room (admin) - deletes all messages and files
+  app.post("/api/admin/chat/room/:roomId/end", requireAuth("admin"), async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const adminId = req.session.userId!;
+      
+      const room = await storage.getChatRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Chat room not found" });
+      }
+      
+      if (room.status !== 'active') {
+        return res.status(400).json({ message: "Chat room is already ended" });
+      }
+      
+      // Delete files from Supabase storage
+      await deleteChatRoomFiles(roomId);
+      
+      // End the chat room (sets status and deletes messages)
+      await storage.endChatRoom(roomId, adminId);
+      
+      console.log('[Chat End] Room ended by admin:', adminId, 'Room:', roomId);
+      return res.json({ success: true, message: "Chat room ended successfully" });
+    } catch (error: any) {
+      console.error('[Admin End Chat] Error:', error);
       return res.status(500).json({ message: error.message });
     }
   });
