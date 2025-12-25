@@ -130,6 +130,36 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"], refetchType: 'active' });
     });
 
+    // Global chat message handler - ensures messages are ALWAYS refreshed
+    socketInstance.on("chat:message:new", (data: { roomId: string; message: { senderType: string } }) => {
+      console.log("[Socket] Chat message received:", { roomId: data.roomId, sender: data.message?.senderType });
+      // Invalidate the specific room's messages query
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/admin/chat/room/${data.roomId}/messages`], 
+        refetchType: 'active' 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/chat/room/${data.roomId}/messages`], 
+        refetchType: 'active' 
+      });
+      // Invalidate chat room data for both admin and influencer views
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && (
+            key.startsWith('/api/admin/chat/room/') || 
+            key === '/api/chat/room'
+          );
+        },
+        refetchType: 'active'
+      });
+      // Invalidate unread counts
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/unread-count"], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/unread-count"], refetchType: 'active' });
+      // Invalidate influencers list for admin (updates unread badge on influencer cards)
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers"], refetchType: 'active' });
+    });
+
     setSocket(socketInstance);
 
     return () => {
