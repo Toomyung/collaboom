@@ -157,7 +157,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/unread-count"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/chat/unread-count"], refetchType: 'active' });
       // Invalidate influencers list for admin (updates unread badge on influencer cards)
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/influencers"], refetchType: 'active' });
+      // Use predicate to match all influencers queries (includes pagination params)
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/admin/influencers');
+        },
+        refetchType: 'active' 
+      });
     });
 
     setSocket(socketInstance);
