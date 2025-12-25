@@ -37,7 +37,7 @@ interface NavItem {
   subItems?: { href: string; label: string; icon: any }[];
 }
 
-const getNavItems = (openIssuesCount?: number, openTicketsCount?: number, pendingPayoutsCount?: number): NavItem[] => [
+const getNavItems = (openIssuesCount?: number, openTicketsCount?: number, pendingPayoutsCount?: number, unreadChatCount?: number): NavItem[] => [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { 
     href: "/admin/campaigns", 
@@ -49,7 +49,7 @@ const getNavItems = (openIssuesCount?: number, openTicketsCount?: number, pendin
       { href: "/admin/campaigns/archived", label: "Archived", icon: Archive },
     ]
   },
-  { href: "/admin/influencers", label: "Influencers", icon: Users },
+  { href: "/admin/influencers", label: "Influencers", icon: Users, badge: unreadChatCount },
   { href: "/admin/issues", label: "Reported Issues", icon: AlertCircle, badge: openIssuesCount },
   { href: "/admin/support-tickets", label: "Support Tickets", icon: Headphones, badge: openTicketsCount },
   { href: "/admin/payouts", label: "Payouts", icon: DollarSign, badge: pendingPayoutsCount },
@@ -61,7 +61,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["Campaigns"]);
 
-  // Fetch all issues, support tickets, and payout requests, count only open/pending ones for badges
+  // Fetch all issues, support tickets, payout requests, and unread chat count for badges
   const { data: allIssues } = useQuery<any[]>({
     queryKey: ["/api/admin/issues"],
   });
@@ -71,13 +71,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { data: allPayouts } = useQuery<any[]>({
     queryKey: ["/api/admin/payout-requests"],
   });
+  const { data: unreadChatData } = useQuery<{ count: number }>({
+    queryKey: ["/api/admin/chat/unread-count"],
+  });
   const openIssuesCount = allIssues?.filter((i: any) => i.status === "open").length || 0;
   const openTicketsCount = allTickets?.filter((t: any) => t.status === "open").length || 0;
   const pendingPayoutsCount = allPayouts?.filter((p: any) => p.status === "pending" || p.status === "processing").length || 0;
+  const unreadChatCount = unreadChatData?.count || 0;
   const navItems = getNavItems(
     openIssuesCount > 0 ? openIssuesCount : undefined,
     openTicketsCount > 0 ? openTicketsCount : undefined,
-    pendingPayoutsCount > 0 ? pendingPayoutsCount : undefined
+    pendingPayoutsCount > 0 ? pendingPayoutsCount : undefined,
+    unreadChatCount > 0 ? unreadChatCount : undefined
   );
 
   const isActive = (href: string) => {

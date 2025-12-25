@@ -33,6 +33,7 @@ import {
   ChevronRight,
   ShieldX,
   Ban,
+  MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ type InfluencerWithStats = Influencer & {
   appliedCount: number;
   acceptedCount: number;
   completedCount: number;
+  unreadChatCount?: number;
 };
 
 type PaginatedResponse = {
@@ -235,14 +237,27 @@ export default function AdminInfluencersPage() {
                   {influencers.map((inf) => (
                     <TableRow
                       key={inf.id}
-                      className="cursor-pointer"
+                      className={cn(
+                        "cursor-pointer",
+                        inf.unreadChatCount && inf.unreadChatCount > 0 && "bg-red-50 dark:bg-red-950/20"
+                      )}
                       onClick={() => handleOpenDrawer(inf)}
                       data-testid={`row-influencer-${inf.id}`}
                     >
                       <TableCell>
-                        <div>
-                          <p className="font-medium text-primary hover:underline">{getInfluencerDisplayName(inf, "Unnamed")}</p>
-                          <p className="text-xs text-muted-foreground">{inf.email}</p>
+                        <div className="flex items-center gap-2">
+                          {inf.unreadChatCount && inf.unreadChatCount > 0 && (
+                            <div className="relative flex-shrink-0">
+                              <MessageCircle className="h-4 w-4 text-red-500" />
+                              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-3.5 min-w-[14px] flex items-center justify-center px-0.5">
+                                {inf.unreadChatCount}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium text-primary hover:underline">{getInfluencerDisplayName(inf, "Unnamed")}</p>
+                            <p className="text-xs text-muted-foreground">{inf.email}</p>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">

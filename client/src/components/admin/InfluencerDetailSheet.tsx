@@ -318,6 +318,7 @@ export function InfluencerDetailSheet({
     status: 'active' | 'ended' | 'expired';
     firstMessageAt?: string | null;
     expiresAt?: string | null;
+    adminUnreadCount?: number;
   }
   
   const [showEndChatDialog, setShowEndChatDialog] = useState(false);
@@ -345,6 +346,69 @@ export function InfluencerDetailSheet({
     enabled: !!chatRoom?.id && activeTab === "messages",
   });
 
+  // Mark messages as read when admin opens the Messages tab
+  const markReadMutation = useMutation({
+    mutationFn: async (roomId: string) => {
+      await apiRequest("POST", `/api/admin/chat/room/${roomId}/read`, {});
+    },
+    onSuccess: () => {
+      // Invalidate unread count for sidebar badge
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/unread-count"], refetchType: 'active' });
+      // Invalidate influencers list to update red indicators
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/admin/influencers');
+        },
+        refetchType: 'active'
+      });
+    },
+  });
+
+  // Mark messages as read when Messages tab is opened and there are unread messages
+  // We track if we've already marked this room as read to prevent redundant calls
+  const [hasMarkedRead, setHasMarkedRead] = useState<string | null>(null);
+  const [isMarkingRead, setIsMarkingRead] = useState(false);
+  
+  useEffect(() => {
+    // Reset when sheet closes or influencer changes
+    if (!open || !influencerId) {
+      setHasMarkedRead(null);
+      setIsMarkingRead(false);
+    }
+  }, [open, influencerId]);
+
+  useEffect(() => {
+    // Only mark as read if:
+    // 1. Messages tab is active
+    // 2. Chat room exists with live unread count
+    // 3. We haven't already marked this room as read in this session
+    // 4. Not currently marking as read (prevent duplicate calls)
+    // 5. There are actually unread messages (based on live adminUnreadCount from API)
+    const liveUnreadCount = chatRoom?.adminUnreadCount || 0;
+    if (
+      activeTab === "messages" && 
+      chatRoom?.id && 
+      hasMarkedRead !== chatRoom.id &&
+      !isMarkingRead &&
+      liveUnreadCount > 0
+    ) {
+      setIsMarkingRead(true);
+      markReadMutation.mutate(chatRoom.id, {
+        onSuccess: () => {
+          setHasMarkedRead(chatRoom.id);
+          setIsMarkingRead(false);
+          // Invalidate the chat room query to update the live unread count
+          queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`], refetchType: 'active' });
+        },
+        onError: () => {
+          // On error, allow retry by not setting hasMarkedRead
+          setIsMarkingRead(false);
+        }
+      });
+    }
+  }, [activeTab, chatRoom?.id, chatRoom?.adminUnreadCount, hasMarkedRead, isMarkingRead, influencerId]);
+
   const sendChatMutation = useMutation({
     mutationFn: async ({ content, file }: { content: string; file: File | null }) => {
       const formData = new FormData();
@@ -370,6 +434,16 @@ export function InfluencerDetailSheet({
       queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`], refetchType: 'active' });
+      // Invalidate unread count since admin replied (unlocks influencer to send more)
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/unread-count"], refetchType: 'active' });
+      // Invalidate influencers list to update red indicators
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/admin/influencers');
+        },
+        refetchType: 'active'
+      });
     },
     onError: (error: Error) => {
       setChatFileError(error.message);
@@ -386,6 +460,15 @@ export function InfluencerDetailSheet({
       queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"], refetchType: 'active' });
+      // Invalidate unread count and influencers list when chat ends
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/unread-count"], refetchType: 'active' });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/admin/influencers');
+        },
+        refetchType: 'active'
+      });
       toast({ title: "Chat ended", description: "All messages have been deleted." });
     },
     onError: (error: Error) => {

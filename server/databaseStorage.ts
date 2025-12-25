@@ -138,7 +138,7 @@ export class DatabaseStorage implements IStorage {
     campaignId?: string;
     status?: "suspended" | "blocked";
   }): Promise<{
-    items: Array<Influencer & { appliedCount: number; acceptedCount: number; completedCount: number }>;
+    items: Array<Influencer & { appliedCount: number; acceptedCount: number; completedCount: number; unreadChatCount?: number }>;
     totalCount: number;
     page: number;
     pageSize: number;
@@ -146,9 +146,6 @@ export class DatabaseStorage implements IStorage {
     const page = Math.max(1, options.page || 1);
     const pageSize = Math.min(50, Math.max(1, options.pageSize || 20));
     const offset = (page - 1) * pageSize;
-
-    let baseQuery = db.select().from(influencers);
-    let countQuery = db.select({ count: sql<number>`count(*)` }).from(influencers);
 
     const conditions: any[] = [];
 
@@ -179,39 +176,60 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    let influencerResults: Influencer[];
-    let totalCount: number;
+    // Use CTE (WITH clause) to compute unread counts once, then sort by the alias
+    // This avoids re-evaluating the subquery multiple times per row in ORDER BY
+    const buildWhereClause = () => {
+      if (conditions.length === 0) return sql`TRUE`;
+      if (conditions.length === 1) return conditions[0];
+      return and(...conditions);
+    };
+    
+    const whereClause = buildWhereClause();
+    
+    // Raw SQL query with CTE for efficient unread count computation and sorting
+    const cteQuery = sql`
+      WITH influencer_unread AS (
+        SELECT 
+          i.*,
+          COALESCE((
+            SELECT COUNT(*)::int
+            FROM ${chatMessages} cm
+            INNER JOIN ${chatRooms} cr ON cm.room_id = cr.id
+            WHERE cr.influencer_id = i.id
+              AND cr.status = 'active'
+              AND cm.sender_type = 'influencer'
+              AND cm.created_at > COALESCE(cr.last_admin_read_at, '1970-01-01'::timestamp)
+          ), 0) as unread_chat_count
+        FROM ${influencers} i
+        WHERE ${whereClause}
+      )
+      SELECT * FROM influencer_unread
+      ORDER BY 
+        unread_chat_count DESC,
+        LOWER(COALESCE(name, email)) ASC,
+        id ASC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `;
+    
+    const influencerResults = await db.execute(cteQuery) as any[];
 
+    // Get total count - handle empty conditions separately to avoid where(undefined)
+    let countResult;
     if (conditions.length > 0) {
-      const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
-      influencerResults = await db
-        .select()
-        .from(influencers)
-        .where(whereClause)
-        .orderBy(desc(influencers.createdAt))
-        .limit(pageSize)
-        .offset(offset);
-      
-      const countResult = await db
+      const countWhereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+      countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(influencers)
-        .where(whereClause);
-      totalCount = Number(countResult[0]?.count || 0);
+        .where(countWhereClause);
     } else {
-      influencerResults = await db
-        .select()
-        .from(influencers)
-        .orderBy(desc(influencers.createdAt))
-        .limit(pageSize)
-        .offset(offset);
-      
-      const countResult = await db
+      countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(influencers);
-      totalCount = Number(countResult[0]?.count || 0);
     }
+    const totalCount = Number(countResult[0]?.count || 0);
 
-    // Fetch application stats in a single aggregated query instead of N+1 queries
+    // Fetch application stats for the paginated results
     const influencerIds = influencerResults.map(inf => inf.id);
     
     let statsMap: Map<string, { appliedCount: number; acceptedCount: number; completedCount: number }> = new Map();
@@ -239,6 +257,8 @@ export class DatabaseStorage implements IStorage {
 
     const itemsWithStats = influencerResults.map(inf => ({
       ...inf,
+      // Map snake_case from raw SQL to camelCase
+      unreadChatCount: Number(inf.unread_chat_count) || 0,
       appliedCount: statsMap.get(inf.id)?.appliedCount || 0,
       acceptedCount: statsMap.get(inf.id)?.acceptedCount || 0,
       completedCount: statsMap.get(inf.id)?.completedCount || 0,
@@ -1194,6 +1214,59 @@ export class DatabaseStorage implements IStorage {
       ));
     
     return result?.count ?? 0;
+  }
+
+  async getAdminTotalUnreadChatCount(): Promise<number> {
+    // Get total unread messages from all influencers for admin
+    const rooms = await db.select().from(chatRooms).where(eq(chatRooms.status, 'active'));
+    
+    let totalUnread = 0;
+    for (const room of rooms) {
+      totalUnread += await this.getAdminUnreadCountForRoom(room.id);
+    }
+    
+    return totalUnread;
+  }
+
+  async getAdminUnreadCountForRoom(roomId: string): Promise<number> {
+    const room = await this.getChatRoom(roomId);
+    if (!room) return 0;
+    
+    const lastRead = room.lastAdminReadAt || new Date(0);
+    const [result] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(chatMessages)
+      .where(and(
+        eq(chatMessages.roomId, room.id),
+        eq(chatMessages.senderType, 'influencer'),
+        sql`${chatMessages.createdAt} > ${lastRead}`
+      ));
+    
+    return result?.count ?? 0;
+  }
+
+  async getInfluencerUnreadChatCounts(): Promise<Map<string, number>> {
+    // Get unread message count per influencer for sorting
+    const rooms = await db.select().from(chatRooms).where(eq(chatRooms.status, 'active'));
+    
+    const unreadMap = new Map<string, number>();
+    
+    for (const room of rooms) {
+      const lastRead = room.lastAdminReadAt || new Date(0);
+      const [result] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(chatMessages)
+        .where(and(
+          eq(chatMessages.roomId, room.id),
+          eq(chatMessages.senderType, 'influencer'),
+          sql`${chatMessages.createdAt} > ${lastRead}`
+        ));
+      
+      const unreadCount = result?.count ?? 0;
+      if (unreadCount > 0) {
+        unreadMap.set(room.influencerId, unreadCount);
+      }
+    }
+    
+    return unreadMap;
   }
 
   async getAllChatRoomsWithUnread(): Promise<ChatRoomWithDetails[]> {

@@ -4155,6 +4155,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ========== Admin Chat API ==========
 
+  // Get total unread chat count (admin) - for sidebar badge
+  app.get("/api/admin/chat/unread-count", requireAuth("admin"), async (req, res) => {
+    try {
+      const count = await storage.getAdminTotalUnreadChatCount();
+      return res.json({ count });
+    } catch (error: any) {
+      console.error('[Get Admin Unread Chat Count] Error:', error);
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get all chat rooms with unread counts
   app.get("/api/admin/chat/rooms", requireAuth("admin"), async (req, res) => {
     try {
@@ -4171,7 +4182,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { influencerId } = req.params;
       const room = await storage.getOrCreateChatRoom(influencerId);
-      return res.json(room);
+      
+      // Calculate admin unread count using SQL for accuracy (no message limit)
+      let adminUnreadCount = 0;
+      if (room && room.status === 'active') {
+        // Use the existing storage method that counts directly in SQL
+        adminUnreadCount = await storage.getAdminUnreadCountForRoom(room.id);
+      }
+      
+      return res.json({ ...room, adminUnreadCount });
     } catch (error: any) {
       console.error('[Get Admin Chat Room] Error:', error);
       return res.status(500).json({ message: error.message });

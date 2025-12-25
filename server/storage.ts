@@ -22,6 +22,7 @@ export interface InfluencerWithStats extends Influencer {
   appliedCount: number;
   acceptedCount: number;
   completedCount: number;
+  unreadChatCount?: number;
 }
 
 export interface PaginatedInfluencersResult {
@@ -183,6 +184,9 @@ export interface IStorage {
   updateChatRoomLastMessage(roomId: string): Promise<void>;
   markChatMessagesAsRead(roomId: string, readerType: 'influencer' | 'admin'): Promise<void>;
   getUnreadChatCount(influencerId: string): Promise<number>;
+  getAdminTotalUnreadChatCount(): Promise<number>;
+  getAdminUnreadCountForRoom(roomId: string): Promise<number>;
+  getInfluencerUnreadChatCounts(): Promise<Map<string, number>>;
   getAllChatRoomsWithUnread(): Promise<ChatRoomWithDetails[]>;
   canInfluencerSendMessage(roomId: string): Promise<boolean>;
   
@@ -1300,6 +1304,15 @@ export class MemStorage implements IStorage {
   async markChatMessagesAsRead(_roomId: string, _readerType: 'influencer' | 'admin'): Promise<void> {}
   async getUnreadChatCount(_influencerId: string): Promise<number> {
     return 0;
+  }
+  async getAdminTotalUnreadChatCount(): Promise<number> {
+    return 0;
+  }
+  async getAdminUnreadCountForRoom(_roomId: string): Promise<number> {
+    return 0;
+  }
+  async getInfluencerUnreadChatCounts(): Promise<Map<string, number>> {
+    return new Map();
   }
   async getAllChatRoomsWithUnread(): Promise<ChatRoomWithDetails[]> {
     return [];
