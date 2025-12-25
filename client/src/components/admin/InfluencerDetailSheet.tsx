@@ -70,10 +70,41 @@ import {
   ShieldX,
   Trash2,
   Mail,
+  MessageCircle,
   Loader2,
+  Paperclip,
+  Image,
+  Film,
+  File,
+  Download,
 } from "lucide-react";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/pdf',
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip', 'application/x-zip-compressed',
+  'video/mp4',
+];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(mimeType: string) {
+  if (mimeType.startsWith('image/')) return Image;
+  if (mimeType.startsWith('video/')) return Film;
+  if (mimeType === 'application/pdf') return FileText;
+  return File;
+}
 import { SiTiktok, SiInstagram } from "react-icons/si";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useSocket } from "@/lib/socket";
 import { getInfluencerDisplayName } from "@/lib/influencer-utils";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -240,6 +271,12 @@ export function InfluencerDetailSheet({
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [chatMessage, setChatMessage] = useState("");
+  const [selectedChatFile, setSelectedChatFile] = useState<File | null>(null);
+  const [chatFileError, setChatFileError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const { socket } = useSocket();
 
   const { data: influencer } = useQuery<InfluencerWithStats>({
     queryKey: ["/api/admin/influencers", influencerId],
@@ -272,6 +309,150 @@ export function InfluencerDetailSheet({
     queryKey: ["/api/admin/influencers", influencerId, "applications"],
     enabled: !!influencerId && open,
   });
+
+  // Chat room for this specific influencer
+  interface ChatRoom {
+    id: string;
+    influencerId: string;
+    lastMessageAt: string | null;
+    status: 'active' | 'ended' | 'expired';
+    firstMessageAt?: string | null;
+    expiresAt?: string | null;
+  }
+  
+  const [showEndChatDialog, setShowEndChatDialog] = useState(false);
+  
+  interface ChatMessage {
+    id: string;
+    roomId: string;
+    senderType: 'influencer' | 'admin';
+    senderId: string;
+    body: string;
+    createdAt: string;
+    attachmentUrl?: string | null;
+    attachmentName?: string | null;
+    attachmentType?: string | null;
+    attachmentSize?: number | null;
+  }
+
+  const { data: chatRoom, isLoading: chatRoomLoading } = useQuery<ChatRoom>({
+    queryKey: [`/api/admin/chat/room/${influencerId}`],
+    enabled: !!influencerId && open && activeTab === "messages",
+  });
+
+  const { data: chatMessages = [], isLoading: chatMessagesLoading } = useQuery<ChatMessage[]>({
+    queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`],
+    enabled: !!chatRoom?.id && activeTab === "messages",
+  });
+
+  const sendChatMutation = useMutation({
+    mutationFn: async ({ content, file }: { content: string; file: File | null }) => {
+      const formData = new FormData();
+      formData.append('content', content);
+      if (file) {
+        formData.append('attachment', file);
+      }
+      const res = await fetch(`/api/admin/chat/room/${chatRoom?.id}/messages`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setChatMessage("");
+      setSelectedChatFile(null);
+      setChatFileError(null);
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+    },
+    onError: (error: Error) => {
+      setChatFileError(error.message);
+      toast({ title: "Failed to send message", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const endChatMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/admin/chat/room/${chatRoom?.id}/end`);
+    },
+    onSuccess: () => {
+      setShowEndChatDialog(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${influencerId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom?.id}/messages`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat/rooms"] });
+      toast({ title: "Chat ended", description: "All messages have been deleted." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to end chat", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Socket listener for real-time chat updates
+  useEffect(() => {
+    if (!socket || !chatRoom?.id) return;
+
+    const handleNewMessage = (data: { roomId: string; message: ChatMessage }) => {
+      if (data.roomId === chatRoom.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/admin/chat/room/${chatRoom.id}/messages`], refetchType: 'active' });
+      }
+    };
+
+    socket.on("chat:message:new", handleNewMessage);
+    return () => {
+      socket.off("chat:message:new", handleNewMessage);
+    };
+  }, [socket, chatRoom?.id]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (activeTab === "messages" && chatMessages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, activeTab]);
+
+  const handleChatFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setChatFileError(null);
+    
+    if (file.size > MAX_FILE_SIZE) {
+      setChatFileError(`File too large. Maximum size is 10MB. (Current: ${formatFileSize(file.size)})`);
+      return;
+    }
+    
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setChatFileError('File type not supported. Allowed: images, PDF, CSV, Excel, ZIP, MP4');
+      return;
+    }
+    
+    setSelectedChatFile(file);
+    if (chatFileInputRef.current) {
+      chatFileInputRef.current.value = '';
+    }
+  };
+
+  const removeChatFile = () => {
+    setSelectedChatFile(null);
+    setChatFileError(null);
+  };
+
+  const handleSendChatMessage = () => {
+    if (!chatMessage.trim() && !selectedChatFile) return;
+    sendChatMutation.mutate({ content: chatMessage.trim(), file: selectedChatFile });
+  };
+
+  const handleChatKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendChatMessage();
+    }
+  };
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ 
@@ -1065,7 +1246,7 @@ export function InfluencerDetailSheet({
               </div>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-6">
                   <TabsTrigger value="dashboard" data-testid="tab-dashboard">
                     <LayoutDashboard className="h-4 w-4" />
                   </TabsTrigger>
@@ -1074,6 +1255,9 @@ export function InfluencerDetailSheet({
                   </TabsTrigger>
                   <TabsTrigger value="history" data-testid="tab-history">
                     <History className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger value="messages" data-testid="tab-messages">
+                    <MessageCircle className="h-4 w-4" />
                   </TabsTrigger>
                   <TabsTrigger value="notes" data-testid="tab-notes">
                     <MessageSquare className="h-4 w-4" />
@@ -1495,6 +1679,203 @@ export function InfluencerDetailSheet({
                   </div>
                 </TabsContent>
 
+                <TabsContent value="messages" className="mt-4">
+                  <div className="flex flex-col h-[400px]">
+                    <div className="flex items-center justify-between pb-3 border-b mb-3">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Chat with {getInfluencerDisplayName(selectedInfluencer, "Influencer")}</span>
+                        {chatRoom?.status === 'ended' && (
+                          <Badge variant="secondary" className="text-xs">Ended</Badge>
+                        )}
+                        {chatRoom?.status === 'expired' && (
+                          <Badge variant="secondary" className="text-xs">Expired</Badge>
+                        )}
+                      </div>
+                      {chatRoom && chatRoom.status === 'active' && chatMessages.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                          onClick={() => setShowEndChatDialog(true)}
+                          data-testid="button-end-chat"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          End chat
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <ScrollArea className="flex-1 pr-4">
+                      {chatRoomLoading || chatMessagesLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : chatMessages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
+                          <MessageCircle className="h-10 w-10 mb-2 opacity-50" />
+                          <p className="text-sm">No messages yet</p>
+                          <p className="text-xs mt-1">Send a message to start the conversation</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {chatMessages.map((msg) => (
+                            <div
+                              key={msg.id}
+                              className={cn(
+                                "flex gap-2",
+                                msg.senderType === "admin" ? "justify-end" : "justify-start"
+                              )}
+                              data-testid={`chat-msg-${msg.id}`}
+                            >
+                              {msg.senderType === "influencer" && (
+                                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-medium text-primary">
+                                    {selectedInfluencer?.name?.[0]?.toUpperCase() || "I"}
+                                  </span>
+                                </div>
+                              )}
+                              <div
+                                className={cn(
+                                  "max-w-[75%] rounded-lg px-3 py-2 text-sm",
+                                  msg.senderType === "admin"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
+                                )}
+                              >
+                                {/* Attachment preview */}
+                                {msg.attachmentUrl && (
+                                  <div className="mb-2">
+                                    {msg.attachmentType?.startsWith('image/') ? (
+                                      <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                                        <img 
+                                          src={msg.attachmentUrl} 
+                                          alt={msg.attachmentName || 'Image'} 
+                                          className="max-w-full rounded-md max-h-[200px] object-cover"
+                                        />
+                                      </a>
+                                    ) : (
+                                      <a 
+                                        href={msg.attachmentUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className={cn(
+                                          "flex items-center gap-2 p-2 rounded-md",
+                                          msg.senderType === "admin"
+                                            ? "bg-primary-foreground/10"
+                                            : "bg-background"
+                                        )}
+                                      >
+                                        {(() => {
+                                          const FileIcon = getFileIcon(msg.attachmentType || '');
+                                          return <FileIcon className="h-4 w-4 flex-shrink-0" />;
+                                        })()}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs truncate">{msg.attachmentName}</p>
+                                          {msg.attachmentSize && (
+                                            <p className="text-xs opacity-70">{formatFileSize(msg.attachmentSize)}</p>
+                                          )}
+                                        </div>
+                                        <Download className="h-3 w-3 flex-shrink-0 opacity-70" />
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                                {/* Message body - hide if it's just the default attachment message */}
+                                {msg.body && !msg.body.startsWith('Sent an attachment:') && (
+                                  <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                                )}
+                                <p className={cn(
+                                  "text-xs mt-1 opacity-70",
+                                  msg.senderType === "admin" ? "text-right" : "text-left"
+                                )}>
+                                  {format(new Date(msg.createdAt), "h:mm a")}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          <div ref={messagesEndRef} />
+                        </div>
+                      )}
+                    </ScrollArea>
+
+                    <div className="border-t pt-3 mt-3 space-y-2">
+                      {/* File error message */}
+                      {chatFileError && (
+                        <div className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
+                          {chatFileError}
+                        </div>
+                      )}
+                      
+                      {/* Selected file preview */}
+                      {selectedChatFile && (
+                        <div className="flex items-center gap-2 bg-muted px-2 py-1.5 rounded-md text-sm">
+                          {(() => {
+                            const FileIcon = getFileIcon(selectedChatFile.type);
+                            return <FileIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />;
+                          })()}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs truncate">{selectedChatFile.name}</p>
+                            <p className="text-xs text-muted-foreground">{formatFileSize(selectedChatFile.size)}</p>
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            onClick={removeChatFile}
+                            data-testid="button-remove-chat-attachment"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        {/* Hidden file input */}
+                        <input
+                          ref={chatFileInputRef}
+                          type="file"
+                          className="hidden"
+                          accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.csv,.xls,.xlsx,.zip,.mp4"
+                          onChange={handleChatFileSelect}
+                          data-testid="input-chat-file-admin"
+                        />
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => chatFileInputRef.current?.click()}
+                          disabled={!chatRoom || sendChatMutation.isPending}
+                          title="Attach file (max 10MB)"
+                          data-testid="button-attach-chat-file"
+                        >
+                          <Paperclip className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          value={chatMessage}
+                          onChange={(e) => setChatMessage(e.target.value)}
+                          onKeyDown={handleChatKeyPress}
+                          placeholder={chatRoom ? "Type a message..." : "Loading chat..."}
+                          className="flex-1"
+                          disabled={!chatRoom || sendChatMutation.isPending}
+                          data-testid="input-chat-admin"
+                        />
+                        <Button
+                          size="icon"
+                          onClick={handleSendChatMessage}
+                          disabled={!chatRoom || (!chatMessage.trim() && !selectedChatFile) || sendChatMutation.isPending}
+                          data-testid="button-send-chat"
+                        >
+                          {sendChatMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
                 <TabsContent value="notes" className="mt-4">
                   <div className="space-y-4">
                     <div className="flex gap-2">
@@ -1838,6 +2219,47 @@ export function InfluencerDetailSheet({
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* End Chat Confirmation Dialog */}
+      <AlertDialog open={showEndChatDialog} onOpenChange={setShowEndChatDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              End this chat?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                This will permanently delete all chat messages and attached files with <strong>{getInfluencerDisplayName(selectedInfluencer, "this influencer")}</strong>.
+              </p>
+              <p className="font-medium text-destructive">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-end-chat">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => endChatMutation.mutate()}
+              disabled={endChatMutation.isPending}
+              data-testid="button-confirm-end-chat"
+            >
+              {endChatMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Ending...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  End Chat
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
