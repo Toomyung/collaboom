@@ -421,9 +421,9 @@ export default function LandingPage() {
               </div>
 
               <div className="mt-8">
-                <Link href="/signup" data-testid="link-dashboard-cta">
+                <Link href={user ? "/dashboard" : "/signup"} data-testid="link-dashboard-cta">
                   <Button size="lg" className="h-12 px-6" data-testid="button-dashboard-cta">
-                    Create Your Dashboard
+                    {user ? "Go to Dashboard" : "Create Your Dashboard"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>

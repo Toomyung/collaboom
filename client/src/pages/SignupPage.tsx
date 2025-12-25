@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,8 +29,18 @@ import { SiGoogle, SiTiktok } from "react-icons/si";
 export default function SignupPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { signInWithGoogle, isLoading: authLoading } = useAuth();
+  const { signInWithGoogle, isLoading: authLoading, isAuthenticated } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocation("/dashboard");
+    }
+  }, [isAuthenticated, setLocation]);
+
+  if (isAuthenticated) {
+    return null;
+  }
 
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
