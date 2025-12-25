@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MessageCircle, X, Send, Loader2, AlertTriangle, Paperclip, FileText, Image, Film, File, Download } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, AlertTriangle, Paperclip, FileText, Image, Film, File, Download, Info, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -52,6 +52,9 @@ interface ChatRoom {
   lastMessageAt: string | null;
   canSend: boolean;
   unreadCount: number;
+  status: 'active' | 'ended' | 'expired';
+  firstMessageAt?: string | null;
+  expiresAt?: string | null;
 }
 
 interface ChatMessage {
@@ -71,6 +74,7 @@ export function ChatMessenger() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showPolicyDialog, setShowPolicyDialog] = useState(false);
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -264,6 +268,23 @@ export function ChatMessenger() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
+            {/* 14-day policy info banner */}
+            {room && room.expiresAt && room.status === 'active' && (
+              <button
+                onClick={() => setShowPolicyDialog(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b text-xs text-muted-foreground hover:bg-muted/80 transition-colors w-full text-left"
+                data-testid="button-chat-policy-info"
+              >
+                <Clock className="h-3 w-3 flex-shrink-0" />
+                <span>
+                  {room.expiresAt && (
+                    <>Chat expires {format(new Date(room.expiresAt), "MMM d, yyyy")}</>
+                  )}
+                </span>
+                <Info className="h-3 w-3 ml-auto opacity-60" />
+              </button>
+            )}
 
             <ScrollArea className="h-[300px] p-4">
               {messagesLoading ? (
@@ -518,6 +539,44 @@ export function ChatMessenger() {
             </AlertDialogCancel>
             <AlertDialogAction onClick={confirmSend} data-testid="button-confirm-send">
               Yes, send message
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 14-day policy info dialog */}
+      <AlertDialog open={showPolicyDialog} onOpenChange={setShowPolicyDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2 text-primary mb-2">
+              <Clock className="h-5 w-5" />
+              <AlertDialogTitle className="text-base">Chat Policy</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  To keep your data safe and maintain privacy, chat conversations are automatically deleted <strong>14 days</strong> after the first message.
+                </p>
+                {room?.expiresAt && (
+                  <div className="bg-muted rounded-lg p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">This chat will expire on</p>
+                    <p className="font-medium text-foreground">
+                      {format(new Date(room.expiresAt), "MMMM d, yyyy")}
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Please save any important information before the conversation expires.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={() => setShowPolicyDialog(false)}
+              data-testid="button-close-policy-dialog"
+            >
+              Got it
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
