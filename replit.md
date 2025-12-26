@@ -1,195 +1,219 @@
 # Collaboom MVP
 
-## Overview
-Collaboom is an influencer campaign management platform connecting US-based TikTok influencers (1,000+ followers) with K-Beauty, Food, and Lifestyle brands for PAID product campaigns. ALL campaigns offer free products PLUS cash rewards ($10-$30). The platform provides influencers with a dashboard to browse campaigns, apply, track shipments, upload content, and build reputation. For brands and admins, it offers tools to manage applications, verify content, and track campaign performance. The MVP prioritizes a clean influencer experience and robust admin capabilities with a business vision to streamline influencer marketing and expand market reach for brands.
+## Vision & Positioning
+
+Collaboom is the **growth platform for nano-influencers** (1,000-10,000 TikTok followers) — positioned as "where small creators become brand partners." Unlike traditional influencer platforms requiring 10K+ followers, Collaboom addresses three key pain points:
+
+1. **No 10K Follower Requirement** - Open to creators with just 1,000+ followers
+2. **First Brand Deal Access** - Help nano-influencers land their first paid collaborations
+3. **Portfolio Building** - Build credibility and reputation through completed campaigns
+
+The platform connects US-based TikTok influencers with K-Beauty, Food, and Lifestyle brands for **PAID product campaigns** offering free products plus cash rewards ($10-$30).
 
 ## User Preferences
-Preferred communication style: Simple, everyday language.
+
+- **Communication Style:** Simple, everyday language (Korean preferred)
+- **Git Workflow:** Replit → GitHub `staging` → Test on Render → PR to `main` → Production
+- **Production URL:** collaboom.io
+
+## Campaign Types & Rewards
+
+### Basic Campaign
+- **Reward:** $10 cash + free product
+- **Requirements:** TikTok video URL
+- **Color Theme:** Purple-pink gradient
+
+### Link in Bio Campaign  
+- **Reward:** $30 cash + free product
+- **Requirements:** Bio link URL + TikTok video URL
+- **Color Theme:** Emerald-teal gradient
+
+### Amazon Video Upload Campaign
+- **Reward:** $30 cash + free product
+- **Requirements:** Amazon Storefront URL + TikTok video URL
+- **Color Theme:** Amber-orange gradient
+
+### Bonus: Usage of Rights
+- **Additional:** $30 for brand content usage rights
+
+All campaigns follow a **unified submission workflow** where influencers submit all requirements together, and admins verify everything in a centralized Uploads tab.
 
 ## System Architecture
 
 ### Frontend
-- **Framework:** React 18 with TypeScript, Vite, Wouter for routing, and React Query for server state.
-- **UI/UX:** `shadcn/ui` built on Radix UI, Tailwind CSS with custom design tokens. Influencer UI is marketing-focused (Linear/Notion inspired); Admin UI is data-dense (Fluent Design). Theming uses custom CSS variables and Inter font.
-- **State Management:** React Query for server and authentication state, React hooks for local component state, `react-hook-form` with Zod for form validation.
-- **Performance:** Route-level code splitting (React.lazy, Suspense) for on-demand loading, minimal API endpoints for list views, and server-side pagination.
+- **Framework:** React 18 with TypeScript, Vite, Wouter for routing
+- **State Management:** TanStack React Query (v5) for server state with `staleTime: Infinity`
+- **UI/UX:** shadcn/ui (Radix UI), Tailwind CSS, Framer Motion for animations
+- **Design:** Mobile-first, marketing-focused for influencers, data-dense for admins
+- **Theming:** Custom CSS variables, Inter font, dark mode support
 
 ### Backend
-- **Server:** Express.js REST API with session-based authentication.
-- **Database:** PostgreSQL via Drizzle ORM using standard `pg` driver (node-postgres). Provider-agnostic - works with any PostgreSQL instance via DATABASE_URL. A storage abstraction layer allows for flexible database implementations.
-- **Authentication:** Email/password with bcrypt, `express-session`, role-based access control, and session persistence. Google OAuth with automatic retry logic (up to 2 attempts with increasing delays) to handle intermittent Supabase 400 errors on first login.
-- **Session Store:** MemoryStore for development, PostgreSQL via connect-pg-simple for production (creates `session` table automatically).
-- **Security:** SESSION_SECRET required in production, Helmet CSP, sameSite cookies for CSRF protection, rate limiting on auth endpoints.
-- **Admin Seeding:** Run `ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx server/scripts/seed-admin.ts` to create the first admin account.
-- **Core Features:**
-    - **State Machine:** Implements state transitions for applications, influencer accounts, and campaigns.
-    - **Admin Tools:** Notes system, score/penalty event history, shipping issue management, support ticket system, enhanced influencer management.
-    - **Campaign Management:** Dual deadlines, extended content sections (Product Info, Step-by-Step, Eligibility), video guidelines (essential cuts, details, key points, reference videos with embeds), campaign workflow (applicants, approved, shipping, uploads), archive/delete functionality, address override system.
-    - **Influencer Features:** Two-step application confirmation (address, TikTok verification), comment system (visible until video upload), campaign dismiss feature.
-    - **Email Notifications:** Resend API integration for automated emails (signup, approval, shipping, replies, upload verification, tier upgrades) with HTML templates.
-    - **Email Threading:** All campaign-related emails are threaded using `Message-ID`, `In-Reply-To`, and `References` headers for persistent conversation context.
-    - **Ghosting Detection:** Automated penalties for missed deadlines.
-    - **Data Export:** CSV export of approved influencer data for admins.
-    - **Input Validation:** Custom `PhoneInput` component with US-specific formatting and validation.
-    - **Influencer Name Structure:** Uses separate `firstName` and `lastName` fields. Legacy `name` field is auto-populated on save for backward compatibility. Centralized helper function `getInfluencerDisplayName` in `client/src/lib/influencer-utils.ts` handles display with proper fallbacks.
-    - **Score & Tier System:** Three-tier progression system with automated tier upgrade detection:
-        - **Starting Influencer:** completedCampaigns === 0 OR score < 50. Limited to 1 active campaign.
-        - **Standard Influencer:** completedCampaigns >= 1 AND score >= 50 AND < 85.
-        - **VIP Influencer:** completedCampaigns >= 1 AND score >= 85. Automatic application approval.
-        - Tier upgrades trigger congratulatory emails on first completion or reaching 85 points.
-        - Points: +50 signup (auto), +10 address (auto), +0-100 configurable on upload verification.
+- **Server:** Express.js REST API with session-based authentication
+- **Database:** PostgreSQL via Drizzle ORM (Supabase Postgres)
+- **Real-time:** Socket.IO for live updates (uses `refetchType: 'active'` due to global staleTime)
+- **Authentication:** Email/password with bcrypt, Google OAuth via Supabase Auth
+- **Security:** Helmet CSP, sameSite cookies, rate limiting, SESSION_SECRET
 
-## Campaign Types
+### External Services
+- **Database:** Supabase Postgres (ihonpsbeebgriddemopf.supabase.co)
+- **Email:** Resend API for transactional emails with HTML templates
+- **Storage:** Supabase Storage (`collaboom-campaign` bucket) for campaign images
+- **OAuth:** Supabase Auth for Google social login
 
-Collaboom offers three types of PAID campaigns, plus a bonus earning opportunity. ALL campaigns provide free products PLUS cash rewards. All campaigns follow a unified submission workflow where influencers submit all requirements together, and admins verify everything in a single Uploads tab.
+## Core Features
 
-### Unified Workflow (All Campaign Types)
-1. Apply to campaign
-2. Receive product at address (status: delivered)
-3. Submit all requirements together via dashboard:
-   - **Basic:** TikTok video URL only
-   - **Link in Bio:** Bio link URL + TikTok video URL
-   - **Amazon Video Upload:** Amazon Storefront URL + TikTok video URL
-4. Admin verifies all requirements together in Uploads tab
-5. Campaign completed, points/rewards awarded
+### Influencer Features
+- **Signup Flow:** Conversion-optimized with growth-focused messaging
+- **Two-Step Application:** Apply → Confirm participation
+- **Delivery Confirmation:** Confirm product receipt (+2 points reward with celebration popup)
+- **Content Submission:** Unified workflow for all campaign requirements
+- **Payout Requests:** Request full available balance via PayPal email
+- **Campaign Dismiss:** Hide unwanted campaigns from feed
+- **Support Tickets:** Submit and track support requests
+- **Score & Tier System:** Three-tier progression (Starting → Standard → VIP)
 
-### 1. Basic Campaign
-- **Reward:** $10 cash + free product
-- **Platform:** TikTok only
-- **Submission Requirements:** TikTok video URL
-- **Description:** Simple campaign where brands send free products to influencers in exchange for UGC content. Entry-level paid opportunity for creators.
-- **Database Migration:** Formerly called "Gifting" - code supports both 'basic' and legacy 'gifting' values for backward compatibility.
+### Delivery Confirmation System
+- **Tracking:** `deliveryConfirmedBy` field tracks who confirmed ('admin' | 'influencer')
+- **Points Reward:** +2 points automatically awarded when influencer confirms
+- **UI:** Color-coded badges (Amber = Creator confirmed, Blue = Admin confirmed)
+- **Celebration:** Modern popup with Trophy icon, confetti animation, counting effect
 
-### 2. Link in Bio Campaign
-- **Reward:** $30 cash + free product
-- **Platform:** TikTok
-- **Submission Requirements:** Bio link URL (Linktree/Beacons) + TikTok video URL
-- **Requirements:** Linktree, Beacons, or similar bio link service
-- **Schema Fields:** `bioLinkUrl`, `contentUrl` (video), `contentSubmittedAt`
+### Influencer Scoring & Tiers
 
-### 3. Amazon Video Upload Campaign
-- **Reward:** $30 cash + product
-- **Platform:** TikTok + Amazon Storefront
-- **Submission Requirements:** Amazon Storefront URL + TikTok video URL
-- **Requirements:** Must have active Amazon Influencer Storefront
-- **Schema Fields:** `amazonStorefrontUrl`, `contentUrl` (video), `contentSubmittedAt`
+#### Tier Benefits
+| Tier | Score Range | Benefits |
+|------|-------------|----------|
+| Starting | 0-49 | Base access |
+| Standard | 50-99 | Priority consideration |
+| VIP | 100+ | Automatic application approval |
 
-### Bonus: Usage of Rights
-- **Reward:** Additional $30
-- **Applies to:** Any campaign type
-- **Description:** If a brand wants to purchase rights to use your video content (for landing pages, social media ads, website, etc.), you receive an extra $30 bonus.
+#### Score Events
+- Completed campaign: +10 points
+- Delivery confirmed (by influencer): +2 points
+- Missed deadline: -20 points
+- Other violations: Variable penalties
 
-## Payout System
+### Admin Features
+- **Dashboard:** Real-time stats, quick actions, issue alerts
+- **Campaign Management:** Create/edit/archive/delete campaigns, dual deadlines
+- **Application Management:** Review, approve/reject, track status transitions
+- **Uploads Tab:** Centralized content verification for all submission types
+- **Influencer Management:** Notes, score history, account status control
+- **Shipping Management:** Track shipments, mark delivered
+- **Payout Management:** Process payout requests with status tracking
+- **Support Tickets:** Respond to influencer inquiries
+- **Overdue Detection:** Identify applications past deadline, mark as "Missed Deadline"
+- **Data Export:** CSV export for reporting
 
-### Influencer Payout Requests
-- **Balance Calculation:** Available Balance = Total Earned - Total Payouts Requested
-- **Reward Amounts:** $10 for Basic campaigns, $30 for Link in Bio campaigns, $30 for Amazon Video Upload campaigns
-- **Requirements:** PayPal email must be set in influencer profile before requesting payouts
-- **Request Flow:**
-  1. Influencer opens "Cash Earned" sheet from dashboard
-  2. Views Total Earned and Available Balance
-  3. Clicks "Request Payout" button (entire available balance is requested, no partial payouts)
-  4. Confirms request in dialog showing PayPal email
-  5. Request is submitted with "pending" status
-- **Status Flow:** pending → processing → completed/rejected
-- **Notifications:** Admin receives "newPayoutRequest" Socket.IO event when influencer submits request
+### Email Notifications (Resend API)
+- Application status updates
+- Shipping notifications
+- Payout confirmations
+- Threaded email conversations
 
-### Admin Payout Management
-- **Location:** `/admin/payouts` page accessible from admin sidebar
-- **Features:**
-  - Filter by status (pending, processing, completed, rejected)
-  - Search by influencer name, email, TikTok handle, or PayPal email
-  - View detailed request info including timestamps
-  - Actions: Mark as Processing, Mark as Completed, Reject (with optional reason)
-- **Notifications:** Influencer receives "payoutRequestUpdated" Socket.IO event when admin updates status
-- **Sidebar Badge:** Shows count of pending + processing requests
-
-## Admin Video Verification
-
-### Uploads Tab Workflow
-- **Purpose:** Shows videos submitted by influencers awaiting admin verification
-- **Process:** Influencer submits video URL → Appears in Uploads tab → Admin clicks "Verify" → Video is verified
-- **Filter Logic:** Shows applications where:
-  - Status is "delivered" or "uploaded"
-  - contentUrl exists (video submitted by influencer)
-  - pointsAwarded is not set (not yet verified)
-- **Display:** Read-only video link with submission date, Points input, Verify/Missed buttons
-- **Note:** Admins no longer manually enter video URLs - influencers submit them via their dashboard
-
-### Overdue Applications
-- **Filter:** Also shows applications past deadline without contentUrl
-- **Display:** Shows "Not submitted" for video link, "Verify" button disabled
-- **Actions:** Admin can only click "Missed Deadline" for overdue applications without video
-- **Tooltip:** "Video not submitted yet" shown when hovering disabled Verify button
-
-### Campaign-Specific Requirements (Displayed in Uploads Tab)
-- **Basic:** Video URL only
-- **Link in Bio:** Bio Link URL + Video URL (both displayed, both verified together)
-- **Amazon Video Upload:** Storefront URL + Video URL (both displayed, both verified together)
-- **Verification:** Single "Verify" button verifies all requirements at once
+### State Machine
+Manages transitions for:
+- Application status: pending → approved → shipped → delivered → completed
+- Influencer account status: active ↔ suspended ↔ banned
+- Campaign status: active ↔ archived
 
 ## UI Design System
 
-### Campaign Type Color Scheme
-Consistent color gradients used across the platform for campaign types:
-- **Basic:** Purple-pink gradient (`from-purple-50 to-pink-50` / `from-purple-950 to-pink-950` for dark mode)
-- **Link in Bio:** Emerald-teal gradient (`from-emerald-50 to-teal-50` / `from-emerald-950 to-teal-950` for dark mode)
-- **Amazon Video Upload:** Amber-orange gradient (`from-amber-50 to-orange-50` / `from-amber-950 to-orange-950` for dark mode)
+### Color Scheme by Campaign Type
+- **Basic:** Purple-pink gradient (`from-purple-500 to-pink-500`)
+- **Link in Bio:** Emerald-teal gradient (`from-emerald-500 to-teal-500`)
+- **Amazon Upload:** Amber-orange gradient (`from-amber-500 to-orange-500`)
 
 ### Navigation
-- **MainLayout:** Unified header component used across all pages with:
-  - Collaboom logo linking to home
-  - Hamburger menu dropdown with navigation links (Score & Tier, Campaign Types)
-  - Authentication buttons (Sign Up / Login for unauthenticated, Dashboard / Logout for authenticated)
-  - Theme toggle for dark/light mode
-- **Mobile-first:** Hamburger menu provides consistent navigation on all screen sizes
+- **MainLayout:** Unified layout with logo, hamburger menu (mobile), auth buttons, theme toggle
+- **AdminLayout:** Sidebar navigation for admin pages
+
+### Celebrations & Gamification
+- **Points Popup:** Trophy icon, confetti effect (50 pieces), counting animation
+- **Button Badges:** Show rewards before action (e.g., "+2 pts" on Confirm Delivery)
+
+## Error Handling
+
+- **User-Facing:** Clean AlertDialog popups with friendly messages
+- **Developer:** Full error details logged to console via custom `ApiError` class
+- **API Errors:** Standardized error response format with proper HTTP status codes
+
+## Deployment
+
+### Environments
+- **Development:** Replit with hot reload
+- **Staging:** Render (connected to GitHub `staging` branch)
+- **Production:** Render at collaboom.io (connected to GitHub `main` branch)
+
+### Deployment Process
+1. Develop and test in Replit
+2. Push to GitHub `staging` branch
+3. Verify on Render staging environment
+4. Create PR from `staging` to `main`
+5. Merge triggers production deployment
 
 ## Recent Changes
 
-### December 2024: All Campaigns Now Paid
-- **Campaign Type Rename:** "Gifting" renamed to "Basic" with $10 cash reward added
-- **All Campaigns Paid:** Every campaign now offers free products PLUS cash rewards ($10-$30)
-- **Reward Structure:** Basic ($10 + product), Link in Bio ($30 + product), Amazon Video ($30 + product)
-- **Backward Compatibility:** Code handles both 'basic' and legacy 'gifting' database values
-- **Active Campaign Types:** basic, link_in_bio, amazon_video_upload
+### December 2024
+- **Real-time Chat System:** Messenger-style 1:1 chat between influencers and admins
+  - Floating chat button on influencer dashboard
+  - Message gating: influencers can only send one message, then must wait for admin reply
+  - Chat accessed through InfluencerDetailSheet (Messages tab), NOT a separate page
+  - Real-time message delivery via Socket.IO with global handler in `socket.tsx`
+  - Email notifications when admin sends a message
+  - Database tables: `chat_rooms`, `chat_messages`
+  - **Chat Room Auto-Reactivation:** Ended rooms automatically reactivate when influencer sends message
+  - **Unread Badge System:** Red badge on Influencers tab and individual influencer cards
+  - **File Attachments:** Support for file uploads in chat (10MB limit)
+    - Allowed types: Images (JPG, PNG, GIF, WEBP), PDF, CSV, Excel (XLS, XLSX), ZIP, MP4
+    - Files stored in Supabase Storage under `chat/{roomId}/` directory
+    - Inline image preview, download links for other file types
+    - Schema fields: `attachmentUrl`, `attachmentName`, `attachmentType`, `attachmentSize`
+- Added delivery confirmation tracking with `deliveryConfirmedBy` field
+- Implemented +2 points reward for influencer delivery confirmation
+- Created celebration popup with confetti animation (replaces toast)
+- Added "+2 pts" badge to Confirm Delivery button
+- Conversion-optimized signup flow with growth messaging
+- Color-coded delivery confirmation badges in admin UI
 
-### December 2024: Legacy Code Cleanup
-- **Removed Legacy Campaign Type:** `product_cost_covered` campaign type code and references completely removed
-- **Schema Cleanup:** Removed 14 unused database columns (13 from applications, 1 from campaigns):
-  - `campaigns.productCost`
-  - `applications`: productCostSentAt, productCostSentByAdminId, productCostAmount, productCostPaypalTransactionId, purchaseScreenshotUrl, purchaseSubmittedAt, purchaseVerifiedAt, purchaseVerifiedByAdminId, amazonOrderId, reimbursementSentAt, reimbursementSentByAdminId, reimbursementAmount, reimbursementPaypalTransactionId
-- **API Cleanup:** Removed 4 unused endpoints: submit-purchase, verify-purchase, send-reimbursement, standalone submit-amazon-storefront
-- **Frontend Cleanup:** Removed legacy mutations from DashboardPage and AdminCampaignDetailPage
+## File Structure
 
-## External Dependencies
-
-- **PostgreSQL Database:** Primary data store, accessed via Drizzle ORM. Currently using Neon Postgres (migration to Supabase Postgres documented in `docs/MIGRATION_READINESS_REPORT.md`).
-- **Resend API:** Used for sending transactional emails.
-- **Supabase Storage:** Hosts campaign images in the `collaboom-campaign` bucket, requiring specific RLS policies for anonymous access and deletion.
-- **Third-Party UI Libraries:** Radix UI, shadcn/ui, Tailwind CSS, Google Fonts (Inter).
-
-## Error Handling Pattern
-
-### User-Facing Errors
-- **Display:** All user-facing errors appear as AlertDialog popups that require clicking "Confirm" to dismiss (not toast notifications)
-- **Message Format:** Clean, user-friendly messages without technical details (e.g., "PayPal email required for paid campaigns. Please add your PayPal email in your profile to apply.")
-- **Implementation:** Use `formatApiError()` from `@/lib/queryClient` to extract clean messages from API errors
-
-### Developer Debugging
-- **Console Logging:** Full error details are automatically logged to browser console for debugging:
-  - URL, HTTP status code, status text
-  - User-friendly message shown to user
-  - Full API response details and raw response body
-- **ApiError Class:** Custom error class with `status`, `message`, `details`, and `rawResponse` properties
-- **Location:** All API error handling centralized in `client/src/lib/queryClient.ts`
-
-### Pattern for New Error Handlers
-```typescript
-import { formatApiError } from "@/lib/queryClient";
-
-// In mutation onError:
-onError: (error: Error) => {
-  setErrorMessage(formatApiError(error));
-  setShowErrorDialog(true);
-}
 ```
+client/src/
+├── components/
+│   ├── admin/          # Admin-specific components
+│   ├── layout/         # MainLayout, AdminLayout
+│   ├── ui/             # shadcn/ui components
+│   └── *.tsx           # Shared components
+├── hooks/              # Custom React hooks
+├── lib/                # Utilities, API client, Socket.IO
+├── pages/
+│   ├── admin/          # Admin pages
+│   └── *.tsx           # Influencer pages
+└── App.tsx             # Router configuration
+
+server/
+├── routes.ts           # API endpoints
+├── databaseStorage.ts  # Database operations
+├── storage.ts          # Storage interface
+├── emailService.ts     # Resend email integration
+├── socket.ts           # Socket.IO setup
+├── security.ts         # Auth middleware
+└── db.ts               # Drizzle ORM setup
+
+shared/
+└── schema.ts           # Database schema & types
+```
+
+## Development Notes
+
+### Socket.IO Integration
+Due to global `staleTime: Infinity` in React Query, Socket.IO updates use `refetchType: 'active'` parameter to properly invalidate queries.
+
+### Test Account
+- Email: hello@toomyungpeople.com
+- Use for testing delivery confirmation and other features
+
+### Database Commands
+- Schema push: `npm run db:push`
+- Force push (with data loss): `npm run db:push --force`

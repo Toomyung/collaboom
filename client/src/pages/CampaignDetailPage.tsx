@@ -804,7 +804,7 @@ export default function CampaignDetailPage() {
                 </p>
               </div>
 
-              {((campaign as any).campaignType === "link_in_bio" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail && (
+              {((campaign as any).campaignType === "basic" || (campaign as any).campaignType === "gifting" || (campaign as any).campaignType === "link_in_bio" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                   <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
                     This is a paid campaign that requires a PayPal account to receive your reward.
@@ -849,7 +849,7 @@ export default function CampaignDetailPage() {
                 !agreementChecked || 
                 applyMutation.isPending || 
                 !influencer?.tiktokHandle ||
-                (((campaign as any).campaignType === "link_in_bio" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail)
+                (((campaign as any).campaignType === "basic" || (campaign as any).campaignType === "gifting" || (campaign as any).campaignType === "link_in_bio" || (campaign as any).campaignType === "amazon_video_upload") && !influencer?.paypalEmail)
               }
               data-testid="button-confirm-apply"
             >

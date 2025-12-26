@@ -15,6 +15,21 @@ export interface SocketEvents {
   "influencer:updated": { influencerId: string };
   "score:updated": { influencerId: string; newScore: number; tier: string };
   "notification:created": { influencerId: string };
+  "chat:message:new": { roomId: string; message: ChatMessageData };
+  "chat:typing": { roomId: string; isTyping: boolean; senderType: 'influencer' | 'admin' };
+}
+
+export interface ChatMessageData {
+  id: string;
+  roomId: string;
+  senderType: 'influencer' | 'admin';
+  senderId: string;
+  content: string;
+  createdAt: Date;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
+  attachmentSize?: number;
 }
 
 export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any): SocketIOServer {
@@ -34,7 +49,6 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
 
     if (session?.userId) {
       socket.join(`user:${session.userId}`);
-      console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
       
       if (session.userType === "admin") {
         socket.join("admin");
@@ -64,11 +78,8 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
           const session: SessionData = req.session;
           if (session?.userId) {
             socket.join(`user:${session.userId}`);
-            console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
-            
             if (session.userType === "admin") {
               socket.join("admin");
-              console.log(`[Socket.IO] Admin ${session.userId} joined admin room`);
             }
           }
         });
@@ -76,11 +87,8 @@ export function initializeSocket(httpServer: HttpServer, sessionMiddleware: any)
         const session: SessionData = req.session;
         if (session?.userId) {
           socket.join(`user:${session.userId}`);
-          console.log(`[Socket.IO] User ${session.userId} joined room user:${session.userId}`);
-          
           if (session.userType === "admin") {
             socket.join("admin");
-            console.log(`[Socket.IO] Admin ${session.userId} joined admin room`);
           }
         }
       }
@@ -159,9 +167,6 @@ export function emitNotificationCreated(influencerId: string): void {
 // Generic emit to a specific user
 export function emitToUser(userId: string, event: string, data: any): void {
   if (!io) return;
-  const room = io.sockets.adapter.rooms.get(`user:${userId}`);
-  const socketCount = room ? room.size : 0;
-  console.log(`[Socket.IO] Emitting ${event} to user:${userId} (${socketCount} sockets in room)`, JSON.stringify(data));
   io.to(`user:${userId}`).emit(event, data);
 }
 
@@ -169,4 +174,22 @@ export function emitToUser(userId: string, event: string, data: any): void {
 export function emitToAdmins(event: string, data: any): void {
   if (!io) return;
   io.to("admin").emit(event, data);
+}
+
+// Chat events
+export function emitChatMessage(roomId: string, message: ChatMessageData, influencerId: string): void {
+  if (!io) return;
+  const data = { roomId, message };
+  
+  io.to(`chat:${roomId}`).emit("chat:message:new", data);
+  io.to(`user:${influencerId}`).emit("chat:message:new", data);
+  io.to("admin").emit("chat:message:new", data);
+}
+
+export function emitChatTyping(roomId: string, isTyping: boolean, senderType: 'influencer' | 'admin', influencerId: string): void {
+  if (!io) return;
+  const data = { roomId, isTyping, senderType };
+  io.to(`chat:${roomId}`).emit("chat:typing", data);
+  io.to(`user:${influencerId}`).emit("chat:typing", data);
+  io.to("admin").emit("chat:typing", data);
 }

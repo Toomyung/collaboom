@@ -73,8 +73,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { ChatMessenger } from "@/components/ChatMessenger";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { getCampaignThumbnail } from "@/lib/imageUtils";
+import { PointsAwardPopup } from "@/components/PointsAwardPopup";
 
 const statusConfig: Record<
   string,
@@ -247,6 +250,8 @@ export default function DashboardPage() {
   const [showPayoutConfirmDialog, setShowPayoutConfirmDialog] = useState(false);
   const [showDeliveryConfirmDialog, setShowDeliveryConfirmDialog] = useState(false);
   const [applicationToConfirmDelivery, setApplicationToConfirmDelivery] = useState<ApplicationWithDetails | null>(null);
+  const [showPointsPopup, setShowPointsPopup] = useState(false);
+  const [pointsAwarded, setPointsAwarded] = useState(0);
 
   // Function to scroll to a specific application by ID
   const scrollToApplication = (applicationId: string) => {
@@ -467,18 +472,22 @@ export default function DashboardPage() {
 
   const confirmDeliveryMutation = useMutation({
     mutationFn: async (applicationId: string) => {
-      await apiRequest("POST", `/api/applications/${applicationId}/confirm-delivery`);
+      const response = await apiRequest("POST", `/api/applications/${applicationId}/confirm-delivery`);
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: { success: boolean; pointsAwarded?: number }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/applications/detailed"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications/all-history"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payout-requests"] });
-      toast({
-        title: "Delivery confirmed!",
-        description: "Thank you for confirming. Now it's time to create amazing content!",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/influencer/me"] });
+      
       setShowDeliveryConfirmDialog(false);
       setApplicationToConfirmDelivery(null);
+      
+      if (data.pointsAwarded && !showPointsPopup) {
+        setPointsAwarded(data.pointsAwarded);
+        setShowPointsPopup(true);
+      }
     },
     onError: (error: Error) => {
       setShowDeliveryConfirmDialog(false);
@@ -872,6 +881,23 @@ export default function DashboardPage() {
               <span className="font-medium text-emerald-600">Submission</span>
             </div>
             
+            {/* Deadline Warning - only show when status is delivered */}
+            {application.status === "delivered" && (
+              <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/40 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+                      Deadline: {format(deadline, "MMM d, yyyy")} PST
+                    </p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400">
+                      Please submit before the deadline to keep your score safe. Late submissions may result in -20 points.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Status: uploaded - Content submitted, waiting for verification */}
             {application.status === "uploaded" && (application as any).bioLinkUrl && application.contentUrl ? (
               <div className="space-y-4">
@@ -1093,6 +1119,23 @@ export default function DashboardPage() {
               <Upload className="h-4 w-4 text-amber-600" />
               <span className="font-medium text-amber-600">Submission</span>
             </div>
+            
+            {/* Deadline Warning - only show when status is delivered */}
+            {application.status === "delivered" && (
+              <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/40 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+                      Deadline: {format(deadline, "MMM d, yyyy")} PST
+                    </p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400">
+                      Please submit before the deadline to keep your score safe. Late submissions may result in -20 points.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Status: uploaded - Content submitted, waiting for verification */}
             {application.status === "uploaded" && (application as any).amazonStorefrontUrl && application.contentUrl ? (
@@ -1343,8 +1386,8 @@ export default function DashboardPage() {
             
             {/* Confirm Delivery Button - Only shown when status is shipped */}
             {application.status === "shipped" && (
-              <div className="border-t border-blue-500/20 pt-3 mt-3 space-y-3">
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 space-y-2">
+              <div className="border-t border-blue-500/20 pt-4 mt-4 space-y-4">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-2">
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                     <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
@@ -1357,18 +1400,30 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                <Button
-                  onClick={() => {
-                    setApplicationToConfirmDelivery(application);
-                    setShowDeliveryConfirmDialog(true);
+                <motion.div
+                  initial={{ scale: 1 }}
+                  animate={{ 
+                    scale: [1, 1.02, 1],
                   }}
-                  className="w-full"
-                  variant="outline"
-                  data-testid={`button-confirm-delivery-${application.id}`}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
                 >
-                  <Package className="h-4 w-4 mr-2" />
-                  Confirm Delivery
-                </Button>
+                  <Button
+                    onClick={() => {
+                      setApplicationToConfirmDelivery(application);
+                      setShowDeliveryConfirmDialog(true);
+                    }}
+                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-lg shadow-emerald-500/25 dark:shadow-emerald-500/15"
+                    data-testid={`button-confirm-delivery-${application.id}`}
+                  >
+                    <Package className="h-5 w-5 mr-2" />
+                    Confirm Delivery
+                    <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs font-bold">+2 pts</span>
+                  </Button>
+                </motion.div>
               </div>
             )}
           </div>
@@ -1381,6 +1436,21 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-purple-600" />
               <span className="font-medium text-purple-600">Submission</span>
+            </div>
+            
+            {/* Deadline Warning */}
+            <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/40 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Clock className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">
+                    Deadline: {format(deadline, "MMM d, yyyy")} PST
+                  </p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400">
+                    Please submit before the deadline to keep your score safe. Late submissions may result in -20 points.
+                  </p>
+                </div>
+              </div>
             </div>
             
             {/* Already submitted - show status */}
@@ -2736,6 +2806,17 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Points Award Popup with Confetti */}
+      <PointsAwardPopup
+        points={pointsAwarded}
+        reason="delivery_confirmed"
+        open={showPointsPopup}
+        onClose={() => setShowPointsPopup(false)}
+      />
+
+      {/* Floating Chat Messenger */}
+      <ChatMessenger />
     </MainLayout>
   );
 }

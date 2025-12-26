@@ -12,6 +12,8 @@ import {
   type ShippingIssue, type InsertShippingIssue, type ShippingIssueWithDetails,
   type SupportTicket, type InsertSupportTicket, type SupportTicketWithDetails,
   type PayoutRequest, type InsertPayoutRequest, type PayoutRequestWithDetails,
+  type ChatRoom, type InsertChatRoom, type ChatRoomWithDetails,
+  type ChatMessage, type InsertChatMessage,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as bcrypt from 'bcryptjs';
@@ -20,6 +22,7 @@ export interface InfluencerWithStats extends Influencer {
   appliedCount: number;
   acceptedCount: number;
   completedCount: number;
+  unreadChatCount?: number;
 }
 
 export interface PaginatedInfluencersResult {
@@ -151,7 +154,17 @@ export interface IStorage {
     shippingPending: number;
     uploadPending: number;
     openIssues: number;
+    pendingPayouts: number;
+    openTickets: number;
+    unreadChats: number;
   }>;
+  getRecentActivity(limit?: number): Promise<Array<{
+    id: string;
+    type: 'application' | 'upload' | 'payout' | 'ticket' | 'chat';
+    message: string;
+    timestamp: Date;
+    link?: string;
+  }>>;
   
   // Auth
   verifyAdminPassword(id: string, password: string): Promise<boolean>;
@@ -170,6 +183,28 @@ export interface IStorage {
   getPayoutRequest(id: string): Promise<PayoutRequest | undefined>;
   updatePayoutRequest(id: string, data: Partial<PayoutRequest>): Promise<PayoutRequest | undefined>;
   getTotalPayoutsByInfluencer(influencerId: string): Promise<number>;
+  
+  // Chat
+  getOrCreateChatRoom(influencerId: string): Promise<ChatRoom>;
+  getChatRoom(id: string): Promise<ChatRoom | undefined>;
+  getChatRoomByInfluencer(influencerId: string): Promise<ChatRoom | undefined>;
+  getChatMessages(roomId: string, options?: { limit?: number; before?: Date }): Promise<ChatMessage[]>;
+  getLastChatMessage(roomId: string): Promise<ChatMessage | undefined>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  updateChatRoomLastMessage(roomId: string): Promise<void>;
+  markChatMessagesAsRead(roomId: string, readerType: 'influencer' | 'admin'): Promise<void>;
+  getUnreadChatCount(influencerId: string): Promise<number>;
+  getAdminTotalUnreadChatCount(): Promise<number>;
+  getAdminUnreadCountForRoom(roomId: string): Promise<number>;
+  getInfluencerUnreadChatCounts(): Promise<Map<string, number>>;
+  getAllChatRoomsWithUnread(): Promise<ChatRoomWithDetails[]>;
+  canInfluencerSendMessage(roomId: string): Promise<boolean>;
+  
+  // Chat Lifecycle Management
+  endChatRoom(roomId: string, adminId: string): Promise<void>;
+  getExpiredChatRooms(): Promise<ChatRoom[]>;
+  deleteChatMessagesByRoom(roomId: string): Promise<void>;
+  setFirstMessageTimestamp(roomId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1146,10 +1181,15 @@ export class MemStorage implements IStorage {
     shippingPending: number;
     uploadPending: number;
     openIssues: number;
+    pendingPayouts: number;
+    openTickets: number;
+    unreadChats: number;
   }> {
     const campaigns = Array.from(this.campaigns.values());
     const applications = Array.from(this.applications.values());
     const issues = Array.from(this.shippingIssues.values());
+    const payouts = Array.from(this.payoutRequests.values());
+    const tickets = Array.from(this.supportTickets.values());
     
     return {
       activeCampaigns: campaigns.filter(c => c.status === 'active').length,
@@ -1157,7 +1197,21 @@ export class MemStorage implements IStorage {
       shippingPending: applications.filter(a => a.status === 'approved').length,
       uploadPending: applications.filter(a => a.status === 'delivered').length,
       openIssues: issues.filter(i => i.status === 'open').length,
+      pendingPayouts: payouts.filter(p => p.status === 'pending').length,
+      openTickets: tickets.filter(t => t.status === 'open').length,
+      unreadChats: 0, // MemStorage doesn't track chat messages
     };
+  }
+
+  async getRecentActivity(limit: number = 10): Promise<Array<{
+    id: string;
+    type: 'application' | 'upload' | 'payout' | 'ticket' | 'chat';
+    message: string;
+    timestamp: Date;
+    link?: string;
+  }>> {
+    // MemStorage stub - returns empty array
+    return [];
   }
 
   // Auth helpers
@@ -1255,6 +1309,52 @@ export class MemStorage implements IStorage {
       .filter(r => r.influencerId === influencerId && r.status !== "rejected")
       .reduce((sum, r) => sum + r.amount, 0);
   }
+
+  // Chat lifecycle stubs (MemStorage not fully implementing chat)
+  async getOrCreateChatRoom(_influencerId: string): Promise<ChatRoom> {
+    throw new Error("Chat not implemented in MemStorage");
+  }
+  async getChatRoom(_id: string): Promise<ChatRoom | undefined> {
+    return undefined;
+  }
+  async getChatRoomByInfluencer(_influencerId: string): Promise<ChatRoom | undefined> {
+    return undefined;
+  }
+  async getChatMessages(_roomId: string, _options?: { limit?: number; before?: Date }): Promise<ChatMessage[]> {
+    return [];
+  }
+  async getLastChatMessage(_roomId: string): Promise<ChatMessage | undefined> {
+    return undefined;
+  }
+  async createChatMessage(_message: InsertChatMessage): Promise<ChatMessage> {
+    throw new Error("Chat not implemented in MemStorage");
+  }
+  async updateChatRoomLastMessage(_roomId: string): Promise<void> {}
+  async markChatMessagesAsRead(_roomId: string, _readerType: 'influencer' | 'admin'): Promise<void> {}
+  async getUnreadChatCount(_influencerId: string): Promise<number> {
+    return 0;
+  }
+  async getAdminTotalUnreadChatCount(): Promise<number> {
+    return 0;
+  }
+  async getAdminUnreadCountForRoom(_roomId: string): Promise<number> {
+    return 0;
+  }
+  async getInfluencerUnreadChatCounts(): Promise<Map<string, number>> {
+    return new Map();
+  }
+  async getAllChatRoomsWithUnread(): Promise<ChatRoomWithDetails[]> {
+    return [];
+  }
+  async canInfluencerSendMessage(_roomId: string): Promise<boolean> {
+    return true;
+  }
+  async endChatRoom(_roomId: string, _adminId: string): Promise<void> {}
+  async getExpiredChatRooms(): Promise<ChatRoom[]> {
+    return [];
+  }
+  async deleteChatMessagesByRoom(_roomId: string): Promise<void> {}
+  async setFirstMessageTimestamp(_roomId: string): Promise<void> {}
 }
 
 import { DatabaseStorage } from "./databaseStorage";

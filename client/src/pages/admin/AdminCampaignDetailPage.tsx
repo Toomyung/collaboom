@@ -74,6 +74,7 @@ import {
   Link2,
   Video,
   Store,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversationSheet } from "@/components/ConversationSheet";
@@ -714,7 +715,7 @@ export default function AdminCampaignDetailPage() {
   );
   const rejectedApplications = applications?.filter((a) => a.status === "rejected") || [];
   const shippingApplications = applications?.filter((a) => 
-    ["shipped", "delivered"].includes(a.status)
+    ["shipped", "delivered", "uploaded"].includes(a.status)
   ) || [];
   const shippedOnlyApplications = applications?.filter((a) => a.status === "shipped") || [];
   
@@ -1570,8 +1571,16 @@ export default function AdminCampaignDetailPage() {
                           const zip = app.shippingZipCode || app.influencer?.zipCode;
                           const seqNum = app.sequenceNumber ? String(app.sequenceNumber).padStart(3, '0') : '-';
                           
+                          const isLocked = app.status === "uploaded";
+                          
                           return (
-                            <TableRow key={app.id} className="bg-muted/20">
+                            <TableRow 
+                              key={app.id} 
+                              className={cn(
+                                "bg-muted/20",
+                                isLocked && "opacity-60"
+                              )}
+                            >
                               <TableCell className="text-center p-2">
                                 <span className="font-mono text-xs font-medium">{seqNum}</span>
                               </TableCell>
@@ -1649,18 +1658,32 @@ export default function AdminCampaignDetailPage() {
                                 )}
                               </TableCell>
                               <TableCell className="p-2">
-                                <Badge
-                                  className={cn(
-                                    "text-xs",
-                                    app.status === "shipped"
-                                      ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
-                                      : app.status === "delivered"
-                                      ? "bg-purple-500/10 text-purple-600 border-purple-500/30"
-                                      : "bg-yellow-500/10 text-yellow-600 border-yellow-500/30"
+                                <div className="flex flex-col gap-0.5">
+                                  <Badge
+                                    className={cn(
+                                      "text-xs",
+                                      app.status === "shipped"
+                                        ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
+                                        : app.status === "delivered"
+                                        ? "bg-purple-500/10 text-purple-600 border-purple-500/30"
+                                        : app.status === "uploaded"
+                                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                                        : "bg-yellow-500/10 text-yellow-600 border-yellow-500/30"
+                                    )}
+                                  >
+                                    {app.status}
+                                  </Badge>
+                                  {(app.status === "delivered" || app.status === "uploaded") && app.deliveryConfirmedBy && (
+                                    <span className={cn(
+                                      "text-[10px] whitespace-nowrap",
+                                      app.deliveryConfirmedBy === "influencer" 
+                                        ? "text-amber-600" 
+                                        : "text-blue-600"
+                                    )}>
+                                      by {app.deliveryConfirmedBy === "influencer" ? "Creator" : "Admin"}
+                                    </span>
                                   )}
-                                >
-                                  {app.status}
-                                </Badge>
+                                </div>
                               </TableCell>
                               <TableCell className="p-2">
                                 {app.status === "shipped" ? (
@@ -1675,6 +1698,11 @@ export default function AdminCampaignDetailPage() {
                                     <Package className="h-3 w-3 mr-1" />
                                     Delivered
                                   </Button>
+                                ) : app.status === "uploaded" ? (
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Lock className="h-3 w-3" />
+                                    Locked
+                                  </span>
                                 ) : (
                                   <Button
                                     size="sm"

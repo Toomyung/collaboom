@@ -209,3 +209,104 @@ export async function listAllStorageImages(): Promise<string[]> {
     return [];
   }
 }
+
+// Chat attachment upload
+const MAX_CHAT_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/pdf',
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+  'application/vnd.ms-excel', // xls
+  'application/zip',
+  'video/mp4', 'video/quicktime',
+];
+
+export function validateChatAttachment(
+  file: { size: number; mimetype: string; originalname: string }
+): { valid: boolean; error?: string } {
+  if (file.size > MAX_CHAT_ATTACHMENT_SIZE) {
+    return { valid: false, error: `File too large. Maximum size is 10MB.` };
+  }
+  
+  if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    return { 
+      valid: false, 
+      error: `File type not allowed. Allowed types: images, PDF, CSV, Excel, ZIP, MP4.` 
+    };
+  }
+  
+  return { valid: true };
+}
+
+export async function uploadChatAttachment(
+  buffer: Buffer,
+  roomId: string,
+  fileName: string,
+  mimeType: string
+): Promise<string> {
+  const supabase = getSupabaseAdmin();
+  
+  const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const uniqueFileName = `${Date.now()}-${sanitizedFileName}`;
+  const filePath = `chat/${roomId}/${uniqueFileName}`;
+  
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(filePath, buffer, {
+      contentType: mimeType,
+      upsert: false,
+    });
+  
+  if (error) {
+    console.error('[Chat Upload] Error:', error);
+    throw error;
+  }
+  
+  const { data: { publicUrl } } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(filePath);
+  
+  console.log('[Chat Upload] Uploaded:', filePath);
+  return publicUrl;
+}
+
+// Delete all files in a chat room directory
+export async function deleteChatRoomFiles(roomId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const folderPath = `chat/${roomId}`;
+  
+  try {
+    // List all files in the chat room folder
+    const { data: files, error: listError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list(folderPath);
+    
+    if (listError) {
+      console.error('[Chat Cleanup] Error listing files:', listError);
+      return;
+    }
+    
+    if (!files || files.length === 0) {
+      console.log('[Chat Cleanup] No files to delete for room:', roomId);
+      return;
+    }
+    
+    // Build array of file paths to delete
+    const filePaths = files.map(file => `${folderPath}/${file.name}`);
+    
+    // Delete all files
+    const { error: deleteError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove(filePaths);
+    
+    if (deleteError) {
+      console.error('[Chat Cleanup] Error deleting files:', deleteError);
+      return;
+    }
+    
+    console.log('[Chat Cleanup] Deleted', filePaths.length, 'files for room:', roomId);
+  } catch (error) {
+    console.error('[Chat Cleanup] Unexpected error:', error);
+  }
+}

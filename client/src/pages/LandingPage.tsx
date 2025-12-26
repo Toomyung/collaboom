@@ -91,54 +91,60 @@ export default function LandingPage() {
             >
               <Badge className="px-4 py-1.5 text-sm bg-primary/10 text-primary border-primary/20">
                 <Zap className="h-3 w-3 mr-1" />
-                Free Products + Cash Rewards
+                Only 1,000 Followers Required
               </Badge>
               
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1]">
-                Get Paid to{" "}
+                Your First{" "}
                 <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                  Create
+                  Brand Deal
                 </span>
+                {" "}Starts Here
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
-                Join 500+ TikTok creators earning free products and up to $30 per campaign from top brands.
+                Tired of waiting for 10K followers? Skip the line. Get real brand partnerships, free products, and paid campaigns — starting at just 1,000 followers.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/signup" data-testid="link-hero-signup">
+                <Link href={user ? "/campaigns" : "/signup"} data-testid="link-hero-signup">
                   <Button size="lg" className="h-14 px-8 text-lg w-full sm:w-auto" data-testid="button-hero-cta">
-                    Start Earning Today
+                    {user ? "Browse Campaigns" : "Get Your First Brand Deal"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="/campaigns" data-testid="link-browse-campaigns">
+                <Link href={user ? "/dashboard" : "/campaigns"} data-testid="link-browse-campaigns">
                   <Button size="lg" variant="outline" className="h-14 px-8 text-lg w-full sm:w-auto" data-testid="button-browse-campaigns">
-                    Browse Campaigns
+                    {user ? "View My Dashboard" : "See Active Campaigns"}
                   </Button>
                 </Link>
               </div>
 
               {/* Trust Indicators */}
-              <div className="flex items-center gap-6 pt-4">
-                <div className="flex -space-x-2">
-                  {["A", "B", "C", "D"].map((letter, i) => (
-                    <div
-                      key={i}
-                      className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/70 to-purple-500/70 border-2 border-background flex items-center justify-center text-xs font-bold text-white"
-                    >
-                      {letter}
-                    </div>
-                  ))}
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex -space-x-2">
+                    {["A", "B", "C", "D"].map((letter, i) => (
+                      <div
+                        key={i}
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary/70 to-purple-500/70 border-2 border-background flex items-center justify-center text-xs font-bold text-white"
+                      >
+                        {letter}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-bold text-foreground">500+</span>
+                    <span className="text-muted-foreground"> creators</span>
+                  </div>
                 </div>
-                <div className="text-sm">
-                  <span className="font-bold text-foreground">500+</span>
-                  <span className="text-muted-foreground"> creators earning</span>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle className="h-4 w-4 text-emerald-500" />
+                  <span>No 10K requirement</span>
                 </div>
-                <div className="flex items-center gap-1 text-amber-500">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="h-4 w-4 fill-current" />
-                  ))}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CheckCircle className="h-4 w-4 text-emerald-500" />
+                  <span>Real paid campaigns</span>
                 </div>
               </div>
             </motion.div>
@@ -150,48 +156,52 @@ export default function LandingPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {/* Free Products Card */}
+              {/* Low Barrier Card */}
               <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20 hover:border-purple-500/40 transition-all">
                 <CardContent className="p-5">
                   <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4">
-                    <Gift className="h-6 w-6 text-white" />
+                    <Users className="h-6 w-6 text-white" />
                   </div>
-                  <p className="text-3xl font-black">100%</p>
-                  <p className="text-sm text-muted-foreground">Free Products</p>
+                  <p className="text-3xl font-black">1K+</p>
+                  <p className="text-sm text-muted-foreground">Followers to Start</p>
                 </CardContent>
               </Card>
 
-              {/* Cash Rewards Card */}
+              {/* Growth Path Card */}
               <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20 hover:border-emerald-500/40 transition-all row-span-2">
                 <CardContent className="p-5 h-full flex flex-col justify-between">
                   <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                    <DollarSign className="h-6 w-6 text-white" />
+                    <TrendingUp className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-4xl font-black text-emerald-600">$30</p>
-                    <p className="text-sm text-muted-foreground">Cash per campaign</p>
+                    <p className="text-2xl font-black text-emerald-600">Build Your</p>
+                    <p className="text-2xl font-black text-emerald-600">Portfolio</p>
                     <div className="mt-3 space-y-1">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <CheckCircle className="h-3 w-3 text-emerald-500" />
-                        <span>Link in Bio: $30</span>
+                        <Gift className="h-3 w-3 text-purple-500" />
+                        <span>Free products</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <CheckCircle className="h-3 w-3 text-emerald-500" />
-                        <span>Amazon Video: $30</span>
+                        <DollarSign className="h-3 w-3 text-emerald-500" />
+                        <span>Paid campaigns ($10-$30)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Verified className="h-3 w-3 text-blue-500" />
+                        <span>Brand collaboration proof</span>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* VIP Card */}
+              {/* Tier System Card */}
               <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20 hover:border-amber-500/40 transition-all">
                 <CardContent className="p-5">
                   <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-4">
                     <Crown className="h-6 w-6 text-white" />
                   </div>
-                  <p className="text-3xl font-black">VIP</p>
-                  <p className="text-sm text-muted-foreground">Auto-Approved</p>
+                  <p className="text-2xl font-black">Grow to VIP</p>
+                  <p className="text-sm text-muted-foreground">3 Tier System</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -411,9 +421,9 @@ export default function LandingPage() {
               </div>
 
               <div className="mt-8">
-                <Link href="/signup" data-testid="link-dashboard-cta">
+                <Link href={user ? "/dashboard" : "/signup"} data-testid="link-dashboard-cta">
                   <Button size="lg" className="h-12 px-6" data-testid="button-dashboard-cta">
-                    Create Your Dashboard
+                    {user ? "Go to Dashboard" : "Create Your Dashboard"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
@@ -601,24 +611,24 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl sm:text-5xl font-black mb-6">
-              Ready to{" "}
+              Every Big Creator{" "}
               <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                Start Earning?
+                Started Small
               </span>
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join 500+ TikTok creators already getting free products and cash rewards from top brands.
+              Don't wait for 10K followers. Start building your brand portfolio today — free products, paid campaigns, and real experience.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup" data-testid="link-final-cta">
+              <Link href={user ? "/campaigns" : "/signup"} data-testid="link-final-cta">
                 <Button size="lg" className="h-16 px-12 text-xl" data-testid="button-final-cta">
-                  Get Started Free
+                  {user ? "Browse Campaigns" : "Get Your First Brand Deal"}
                   <ArrowRight className="ml-2 h-6 w-6" />
                 </Button>
               </Link>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              No fees, no commitments. Start earning today.
+              100% free to join. Only 1,000 followers required.
             </p>
           </motion.div>
         </div>

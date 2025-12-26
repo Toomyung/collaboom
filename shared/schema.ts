@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -235,6 +235,7 @@ export const applications = pgTable("applications", {
   dismissedAt: timestamp("dismissed_at"), // When user dismissed the rejection notification
   shippedAt: timestamp("shipped_at"),
   deliveredAt: timestamp("delivered_at"),
+  deliveryConfirmedBy: text("delivery_confirmed_by"), // 'admin' | 'influencer' - tracks who confirmed delivery
   uploadedAt: timestamp("uploaded_at"),
   deadlineMissedAt: timestamp("deadline_missed_at"),
   firstTime: boolean("first_time").default(false),
@@ -288,6 +289,7 @@ export const shipping = pgTable("shipping", {
   courier: text("courier"),
   shippedAt: timestamp("shipped_at"),
   deliveredAt: timestamp("delivered_at"),
+  deliveryConfirmedBy: text("delivery_confirmed_by"), // 'admin' | 'influencer' - tracks who confirmed delivery
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -519,4 +521,63 @@ export type PayoutRequest = typeof payoutRequests.$inferSelect;
 
 export type PayoutRequestWithDetails = PayoutRequest & {
   influencer?: Influencer;
+};
+
+// Chat Rooms (1:1 chat between influencer and admin team)
+export const chatRoomStatusEnum = pgEnum("chat_room_status", ["active", "ended", "expired"]);
+
+export const chatRooms = pgTable("chat_rooms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  influencerId: varchar("influencer_id").notNull().unique(),
+  lastMessageAt: timestamp("last_message_at"),
+  lastAdminReadAt: timestamp("last_admin_read_at"),
+  lastInfluencerReadAt: timestamp("last_influencer_read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  firstMessageAt: timestamp("first_message_at"),
+  expiresAt: timestamp("expires_at"),
+  status: chatRoomStatusEnum("status").default("active").notNull(),
+  endedBy: varchar("ended_by"),
+  endedAt: timestamp("ended_at"),
+});
+
+export const insertChatRoomSchema = createInsertSchema(chatRooms).pick({
+  influencerId: true,
+});
+
+export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
+export type ChatRoom = typeof chatRooms.$inferSelect;
+
+// Chat Messages
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id").notNull(),
+  senderType: text("sender_type").notNull(), // 'influencer' | 'admin'
+  senderId: varchar("sender_id").notNull(),
+  body: text("body").notNull(),
+  attachmentUrl: text("attachment_url"),
+  attachmentName: text("attachment_name"),
+  attachmentType: text("attachment_type"), // MIME type
+  attachmentSize: integer("attachment_size"), // bytes
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
+  roomId: true,
+  senderType: true,
+  senderId: true,
+  body: true,
+  attachmentUrl: true,
+  attachmentName: true,
+  attachmentType: true,
+  attachmentSize: true,
+});
+
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export type ChatRoomWithDetails = ChatRoom & {
+  influencer?: Influencer;
+  lastMessage?: ChatMessage;
+  unreadCount?: number;
 };

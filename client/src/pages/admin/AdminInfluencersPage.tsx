@@ -33,6 +33,7 @@ import {
   ChevronRight,
   ShieldX,
   Ban,
+  MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ type InfluencerWithStats = Influencer & {
   appliedCount: number;
   acceptedCount: number;
   completedCount: number;
+  unreadChatCount?: number;
 };
 
 type PaginatedResponse = {
@@ -235,14 +237,25 @@ export default function AdminInfluencersPage() {
                   {influencers.map((inf) => (
                     <TableRow
                       key={inf.id}
-                      className="cursor-pointer"
+                      className={cn(
+                        "cursor-pointer",
+                        (inf.unreadChatCount ?? 0) > 0 && "bg-red-50 dark:bg-red-950/20"
+                      )}
                       onClick={() => handleOpenDrawer(inf)}
                       data-testid={`row-influencer-${inf.id}`}
                     >
                       <TableCell>
-                        <div>
-                          <p className="font-medium text-primary hover:underline">{getInfluencerDisplayName(inf, "Unnamed")}</p>
-                          <p className="text-xs text-muted-foreground">{inf.email}</p>
+                        <div className="flex items-center gap-2">
+                          {(inf.unreadChatCount ?? 0) > 0 && (
+                            <Badge className="bg-red-500 hover:bg-red-600 text-white border-red-600 gap-1 flex-shrink-0">
+                              <MessageCircle className="h-3 w-3" />
+                              <span>{inf.unreadChatCount}</span>
+                            </Badge>
+                          )}
+                          <div>
+                            <p className="font-medium text-primary hover:underline">{getInfluencerDisplayName(inf, "Unnamed")}</p>
+                            <p className="text-xs text-muted-foreground">{inf.email}</p>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">

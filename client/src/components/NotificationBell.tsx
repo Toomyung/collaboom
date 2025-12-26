@@ -36,7 +36,7 @@ function getNotificationIcon(type: string) {
   }
 }
 
-function getNotificationRoute(notification: Notification): string {
+function getNotificationRoute(notification: Notification): string | { action: 'open-chat'; messageId?: string } {
   switch (notification.type) {
     case "approved":
     case "shipping_shipped":
@@ -62,6 +62,9 @@ function getNotificationRoute(notification: Notification): string {
         return `/dashboard#application-${notification.applicationId}`;
       }
       return "/dashboard";
+    case "chat_message":
+      // Chat message - open the chat messenger
+      return { action: 'open-chat' };
     case "payout_requested":
     case "payout_processing":
     case "payout_completed":
@@ -118,13 +121,29 @@ export function NotificationBell() {
     const route = getNotificationRoute(notification);
     setOpen(false);
     
+    // Check if it's a chat action
+    if (typeof route === 'object' && route.action === 'open-chat') {
+      // Navigate to dashboard first if not already there
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/dashboard') {
+        setLocation('/dashboard');
+      }
+      // Dispatch custom event to open chat (with small delay if navigating)
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('open-chat', { 
+          detail: { messageId: route.messageId } 
+        }));
+      }, currentPath !== '/dashboard' ? 100 : 0);
+      return;
+    }
+    
     // Check if we're already on the dashboard and navigating to a dashboard anchor
     const currentPath = window.location.pathname;
-    if (currentPath === '/dashboard' && route.startsWith('/dashboard#')) {
+    if (currentPath === '/dashboard' && typeof route === 'string' && route.startsWith('/dashboard#')) {
       // Manually set the hash and trigger hashchange event
       const hash = route.replace('/dashboard', '');
       window.location.hash = hash;
-    } else {
+    } else if (typeof route === 'string') {
       setLocation(route);
     }
   };
